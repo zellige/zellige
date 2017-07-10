@@ -44,12 +44,17 @@ aaa = do
     x <- zzz
     pure (foobar x)
 
-foobar :: [GJ.Feature] -> ([(Int, Int)], [t1], [t])
+foobar :: [GJ.Feature] -> ([Point], [t1], [t])
 foobar = Prelude.foldr (\x (p, l, o) -> convertFeature p l o x) ([], [], [])
 
-convertFeature p l o (GJ.Feature bb (Point (GJ.PointGeometry c)) props id) = (moreTerrible c <> p, l, o)
-convertFeature p l o (GJ.Feature bb (MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (Prelude.foldr (\pg acc -> moreTerrible (coordinates pg) <> acc) p mpg, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (moreTerrible c <> p, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (blerg p mpg, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.LineString (GJ.LineStringGeometry ls)) props id) = (blerg p ls, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) props id) = (Prelude.foldr (\ls acc -> blerg acc (GJ.lineString ls)) p mls, l, o)
 convertFeature p l o _ = (p, l, o)
+
+blerg :: [Point] -> [GJ.PointGeometry] -> [Point]
+blerg = Prelude.foldr (\pg acc -> moreTerrible (coordinates pg) <> acc)
 
 sToF :: Scientific -> Float
 sToF n = toRealFloat n :: Float
