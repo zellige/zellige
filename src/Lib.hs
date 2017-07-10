@@ -39,25 +39,25 @@ zzz = do
     x <- readGeoJson "./test/integration/19781.json"
     pure (features x)
 
-aaa :: IO ([VG.Point], [VG.LineString], [VG.Polygon])
+aaa :: IO ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VG.Polygon])
 aaa = do
     x <- zzz
     pure (foobar x)
 
-foobar :: [GJ.Feature] -> ([VG.Point], [VG.LineString], [t])
+foobar :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VG.Polygon])
 foobar = Prelude.foldr (\x (p, l, o) -> convertFeature p l o x) ([], [], [])
 
-convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (moreTerrible c <> p, l, o)
-convertFeature p l o (GJ.Feature bb (GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (blerg p mpg, l, o)
-convertFeature p l o (GJ.Feature bb (GJ.LineString (GJ.LineStringGeometry ls)) props id) = (blerg p ls, l, o)
-convertFeature p l o (GJ.Feature bb (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) props id) = (p, blergLine l mls, o)
+convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (VT.Feature 0 DMZ.empty (DV.fromList (moreTerrible c)) : p, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (VT.Feature 0 DMZ.empty (DV.fromList (blerg [] mpg)) : p, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.LineString ls) props id) = (p, VT.Feature 0 DMZ.empty (DV.fromList (blergLine [] [ls])) : l, o)
+convertFeature p l o (GJ.Feature bb (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) props id) = (p, VT.Feature 0 DMZ.empty (DV.fromList (blergLine [] mls)) : l, o)
 convertFeature p l o _ = (p, l, o)
 
 blerg :: [VG.Point] -> [GJ.PointGeometry] -> [VG.Point]
 blerg = Prelude.foldr (\pg acc -> moreTerrible (coordinates pg) <> acc)
 
 blergLine :: [VG.LineString] -> [GJ.LineStringGeometry] -> [VG.LineString]
-blergLine lsa lsga = Prelude.foldr (\lsg acc -> (VG.LineString (DVU.fromList $ blerg [] (lineString lsg))) : acc) lsa lsga
+blergLine = Prelude.foldr (\lsg acc -> VG.LineString (DVU.fromList (blerg [] (lineString lsg))) : acc)
 
 sToF :: Scientific -> Float
 sToF n = toRealFloat n :: Float
