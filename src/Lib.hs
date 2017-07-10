@@ -3,7 +3,7 @@
 module Lib where
 
 import           Control.Monad.IO.Class
-import           Data.Aeson                      (eitherDecode)
+import           Data.Aeson
 import qualified Data.ByteString                 as BS
 import qualified Data.ByteString.Lazy            as LBS (ByteString, fromStrict,
                                                          readFile, writeFile)
@@ -11,7 +11,7 @@ import           Data.Geography.GeoJSON          as GJ
 import           Data.Map.Lazy                   as DMZ
 import           Data.Monoid                     ((<>))
 import           Data.Scientific
-import           Data.Text                       (pack)
+import           Data.Text                       (Text, pack)
 import           Data.Vector                     as DV
 import           Data.Vector.Unboxed             as DVU
 import           Geography.VectorTile            as V
@@ -23,7 +23,7 @@ someFunc :: IO ()
 someFunc = putStrLn "someFunc"
 
 writeOut = do
-    _ <- BS.writeFile "/tmp/out.mvt" (encode $ untile t0)
+    _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)
     pure ()
 
 t0 = VectorTile (DMZ.fromList [(pack "", l0)])
@@ -47,7 +47,7 @@ aaa = do
 foobar :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VG.Polygon])
 foobar = Prelude.foldr (\x (p, l, o) -> convertFeature p l o x) ([], [], [])
 
-convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (VT.Feature 0 DMZ.empty (DV.fromList (moreTerrible c)) : p, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (VT.Feature 0 (convertProps props) (DV.fromList (moreTerrible c)) : p, l, o)
 convertFeature p l o (GJ.Feature bb (GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (VT.Feature 0 DMZ.empty (DV.fromList (blerg [] mpg)) : p, l, o)
 convertFeature p l o (GJ.Feature bb (GJ.LineString ls) props id) = (p, VT.Feature 0 DMZ.empty (DV.fromList (blergLine [] [ls])) : l, o)
 convertFeature p l o (GJ.Feature bb (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) props id) = (p, VT.Feature 0 DMZ.empty (DV.fromList (blergLine [] mls)) : l, o)
@@ -66,6 +66,10 @@ fToInt :: Float -> Int
 fToInt = round
 
 terrible = fToInt . sToF
+
+convertProps :: Value -> Map Text Val
+convertProps (Object x) = undefined
+convertProps _ = DMZ.empty
 
 moreTerrible :: [Scientific] -> [VG.Point]
 moreTerrible [] = []
