@@ -16,13 +16,18 @@ cabal-version:       >=1.10
 library
   hs-source-dirs:      src
   exposed-modules:     Lib
+                     , Wkt
   build-depends:       base >= 4.7 && < 5
+                     , aeson
                      , bytestring
                      , containers
+                     , handa-geodata
+                     , scientific
                      , text
+                     , trifecta
+                     , utf8-string
                      , vector
                      , vectortiles
-                     , wkt
   default-language:    Haskell2010
 
 executable zellige-exe
