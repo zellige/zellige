@@ -21,6 +21,7 @@ library
                      , aeson
                      , bytestring
                      , containers
+                     , unordered-containers
                      , handa-geodata
                      , scientific
                      , text
