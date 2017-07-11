@@ -19,32 +19,32 @@ geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feat
 geoJsonFeaturesToMvtFeatures = Prelude.foldr convertFeature ([], [], [])
 
 convertFeature :: GJ.Feature -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon]) -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
-convertFeature (GJ.Feature _ geom@(GJ.Point _) props fid) (p, l, o) = (mkFeature mvtPoint geom props fid : p, l, o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiPoint _) props fid) (p, l, o)  = (mkFeature mvtPoint geom props fid : p, l, o)
-convertFeature (GJ.Feature _ geom@(GJ.LineString _) props fid) (p, l, o) = (p, mkFeature mvtLineString geom props fid : l, o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiLineString _) props fid) (p, l, o) = (p, mkFeature mvtLineString geom props fid : l, o)
-convertFeature (GJ.Feature _ geom@(GJ.Polygon _) props fid) (p, l, o) = (p, l, mkFeature mvtPolygon geom props fid : o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiPolygon _) props fid) (p, l, o) = (p, l, mkFeature mvtPolygon geom props fid : o)
+convertFeature (GJ.Feature _ geom@(GJ.Point _) props fid) (p, l, o) = (mkFeature convertPoint geom props fid : p, l, o)
+convertFeature (GJ.Feature _ geom@(GJ.MultiPoint _) props fid) (p, l, o)  = (mkFeature convertPoint geom props fid : p, l, o)
+convertFeature (GJ.Feature _ geom@(GJ.LineString _) props fid) (p, l, o) = (p, mkFeature convertLineString geom props fid : l, o)
+convertFeature (GJ.Feature _ geom@(GJ.MultiLineString _) props fid) (p, l, o) = (p, mkFeature convertLineString geom props fid : l, o)
+convertFeature (GJ.Feature _ geom@(GJ.Polygon _) props fid) (p, l, o) = (p, l, mkFeature convertPolygon geom props fid : o)
+convertFeature (GJ.Feature _ geom@(GJ.MultiPolygon _) props fid) (p, l, o) = (p, l, mkFeature convertPolygon geom props fid : o)
 convertFeature (GJ.Feature bb (GJ.GeometryCollection geoms) props fid) plo = Prelude.foldr (\geom plo' -> convertFeature (GJ.Feature bb geom props fid) plo') plo geoms
-
-data MVT a = MVTPoint { mvtPoint :: VG.Point }
-  | MVTLineString { mvtLineString :: VG.LineString }
-  | MVTPolygon { mvtPolygon :: VG.Polygon}
 
 convertId :: Maybe Value -> Int
 convertId (Just (Number n)) = (fToInt . sToF) n
 convertId _ = 0
 
-convertGeom :: GJ.Geometry -> DV.Vector (MVT a)
-convertGeom (GJ.Point p) = MVTPoint <$> DV.fromList (moreTerrible $ GJ.coordinates p)
-convertGeom (GJ.MultiPoint mpg) = MVTPoint <$> DV.fromList (blerg [] (GJ.points mpg))
-convertGeom (GJ.LineString ls) = MVTLineString <$> DV.fromList (blergLine [] [ls])
-convertGeom (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) = MVTLineString <$> DV.fromList (blergLine [] mls)
-convertGeom (GJ.Polygon poly) = MVTPolygon <$> DV.fromList (blergPoly [] [poly])
-convertGeom (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = MVTPolygon <$> DV.fromList (blergPoly [] polys)
+convertPoint :: GJ.Geometry -> DV.Vector VG.Point
+convertPoint (GJ.Point p) = DV.fromList (moreTerrible $ GJ.coordinates p)
+convertPoint (GJ.MultiPoint mpg) = DV.fromList (blerg [] (GJ.points mpg))
 
-mkFeature :: (MVT a -> g) -> GJ.Geometry -> Value -> Maybe Value -> VT.Feature g
-mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f <$> convertGeom geom)
+convertLineString :: GJ.Geometry -> DV.Vector VG.LineString
+convertLineString (GJ.LineString ls) = DV.fromList (blergLine [] [ls])
+convertLineString (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) = DV.fromList (blergLine [] mls)
+
+convertPolygon :: GJ.Geometry -> DV.Vector VG.Polygon
+convertPolygon (GJ.Polygon poly) = DV.fromList (blergPoly [] [poly])
+convertPolygon (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = DV.fromList (blergPoly [] polys)
+
+mkFeature :: (t -> DV.Vector g) -> t -> Value -> Maybe Value -> VT.Feature g
+mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f geom)
 
 blerg :: [VG.Point] -> [GJ.PointGeometry] -> [VG.Point]
 blerg = Prelude.foldr (\pg acc -> moreTerrible (GJ.coordinates pg) <> acc)
