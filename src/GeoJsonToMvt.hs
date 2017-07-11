@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module GeoJsonToMvt where
 
 import           Data.Aeson
+import qualified Data.Foldable                   as F (foldMap)
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.HashMap.Strict             as HM
 import qualified Data.Map.Lazy                   as DMZ
@@ -16,16 +18,16 @@ import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
 geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
-geoJsonFeaturesToMvtFeatures = Prelude.foldr convertFeature ([], [], [])
+geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 
-convertFeature :: GJ.Feature -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon]) -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
-convertFeature (GJ.Feature _ geom@(GJ.Point _) props fid) (p, l, o) = (mkFeature convertPoint geom props fid : p, l, o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiPoint _) props fid) (p, l, o)  = (mkFeature convertPoint geom props fid : p, l, o)
-convertFeature (GJ.Feature _ geom@(GJ.LineString _) props fid) (p, l, o) = (p, mkFeature convertLineString geom props fid : l, o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiLineString _) props fid) (p, l, o) = (p, mkFeature convertLineString geom props fid : l, o)
-convertFeature (GJ.Feature _ geom@(GJ.Polygon _) props fid) (p, l, o) = (p, l, mkFeature convertPolygon geom props fid : o)
-convertFeature (GJ.Feature _ geom@(GJ.MultiPolygon _) props fid) (p, l, o) = (p, l, mkFeature convertPolygon geom props fid : o)
-convertFeature (GJ.Feature bb (GJ.GeometryCollection geoms) props fid) plo = Prelude.foldr (\geom plo' -> convertFeature (GJ.Feature bb geom props fid) plo') plo geoms
+convertFeature :: GJ.Feature -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
+convertFeature (GJ.Feature _ geom@(GJ.Point _) props fid) = ([mkFeature convertPoint geom props fid], [], [])
+convertFeature (GJ.Feature _ geom@(GJ.MultiPoint _) props fid) = ([mkFeature convertPoint geom props fid], [], [])
+convertFeature (GJ.Feature _ geom@(GJ.LineString _) props fid) = ([], [mkFeature convertLineString geom props fid], [])
+convertFeature (GJ.Feature _ geom@(GJ.MultiLineString _) props fid) = ([], [mkFeature convertLineString geom props fid], [])
+convertFeature (GJ.Feature _ geom@(GJ.Polygon _) props fid) = ([], [], [mkFeature convertPolygon geom props fid])
+convertFeature (GJ.Feature _ geom@(GJ.MultiPolygon _) props fid) = ([], [], [mkFeature convertPolygon geom props fid])
+convertFeature (GJ.Feature bb (GJ.GeometryCollection geoms) props fid) = F.foldMap (\geom -> convertFeature (GJ.Feature bb geom props fid)) geoms
 
 convertId :: Maybe Value -> Int
 convertId (Just (Number n)) = (fToInt . sToF) n
