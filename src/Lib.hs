@@ -49,13 +49,17 @@ aaa = do
 foobar :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
 foobar = Prelude.foldr (\x (p, l, o) -> convertFeature p l o x) ([], [], [])
 
-convertFeature p l o (GJ.Feature bb (GJ.Point (GJ.PointGeometry c)) props id) = (VT.Feature 0 (convertProps props) (DV.fromList (moreTerrible c)) : p, l, o)
-convertFeature p l o (GJ.Feature bb (GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (VT.Feature 0 (convertProps props) (DV.fromList (blerg [] mpg)) : p, l, o)
+convertFeature p l o (GJ.Feature bb geom@(GJ.Point (GJ.PointGeometry c)) props id) = (VT.Feature 0 (convertProps props) (convertGeom geom) : p, l, o)
+convertFeature p l o (GJ.Feature bb geom@(GJ.MultiPoint (GJ.MultiPointGeometry mpg)) props id) = (VT.Feature 0 (convertProps props) (convertGeom geom) : p, l, o)
 convertFeature p l o (GJ.Feature bb (GJ.LineString ls) props id) = (p, VT.Feature 0 (convertProps props) (DV.fromList (blergLine [] [ls])) : l, o)
 convertFeature p l o (GJ.Feature bb (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) props id) = (p, VT.Feature 0 (convertProps props) (DV.fromList (blergLine [] mls)) : l, o)
 convertFeature p l o (GJ.Feature bb (GJ.Polygon poly) props id) = (p, l, VT.Feature 0 (convertProps props) (DV.fromList (blergPoly [] [poly])) : o)
 convertFeature p l o (GJ.Feature bb (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) props id) = (p, l, VT.Feature 0 (convertProps props) (DV.fromList (blergPoly [] polys)) : o)
-convertFeature p l o _ = (p, l, o)
+convertFeature p l o (GJ.Feature bb (GJ.GeometryCollection geoms) props id) = undefined -- Prelude.foldr (\geom (p', l', o') -> convertFeature p' l' o' geom) ([], [], []) geoms
+
+convertGeom (GJ.Point p) = convertGeom (GJ.MultiPoint (GJ.MultiPointGeometry [p]))
+convertGeom (GJ.MultiPoint mpg) = DV.fromList (blerg [] (GJ.points mpg))
+convertGeom _ = undefined
 
 blerg :: [VG.Point] -> [GJ.PointGeometry] -> [VG.Point]
 blerg = Prelude.foldr (\pg acc -> moreTerrible (coordinates pg) <> acc)
