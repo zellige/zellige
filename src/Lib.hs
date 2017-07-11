@@ -36,10 +36,11 @@ pv = DV.fromList [yyy]
 yyy = VG.Polygon xxx DV.empty
 xxx = DVU.fromList ([(0, 0), (0,1), (1,1), (1,0), (0,0)] :: [(Int,Int)])
 
-aaa :: IO ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
+aaa :: IO Layer
 aaa = do
     x <- liftIO $ readGeoJson "./test/integration/19781.json"
-    pure $ (foobar . features) x
+    let (p, l, o) = (foobar . features) x
+    pure (Layer 2 "asdf" (DV.fromList p) (DV.fromList l) (DV.fromList o) 2048)
 
 foobar :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
 foobar = Prelude.foldr convertFeature ([], [], [])
