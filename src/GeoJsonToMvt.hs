@@ -35,27 +35,30 @@ convertId _ = 0
 
 convertPoint :: GJ.Geometry -> DV.Vector VG.Point
 convertPoint (GJ.Point p) = DV.fromList (moreTerrible $ GJ.coordinates p)
-convertPoint (GJ.MultiPoint mpg) = DV.fromList (blerg [] (GJ.points mpg))
+convertPoint (GJ.MultiPoint mpg) = DV.fromList . pointToMvt $ GJ.points mpg
 
 convertLineString :: GJ.Geometry -> DV.Vector VG.LineString
-convertLineString (GJ.LineString ls) = DV.fromList (blergLine [] [ls])
-convertLineString (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) = DV.fromList (blergLine [] mls)
+convertLineString (GJ.LineString ls) = DV.fromList (lineToMvt [ls])
+convertLineString (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) = DV.fromList $ lineToMvt mls
 
 convertPolygon :: GJ.Geometry -> DV.Vector VG.Polygon
-convertPolygon (GJ.Polygon poly) = DV.fromList (blergPoly [] [poly])
-convertPolygon (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = DV.fromList (blergPoly [] polys)
+convertPolygon (GJ.Polygon poly) = DV.fromList $ polygonToMvt [poly]
+convertPolygon (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = DV.fromList $ polygonToMvt polys
 
-mkFeature :: (t -> DV.Vector g) -> t -> Value -> Maybe Value -> VT.Feature g
+mkFeature :: (GJ.Geometry -> DV.Vector g) -> GJ.Geometry -> Value -> Maybe Value -> VT.Feature g
 mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f geom)
 
-blerg :: [VG.Point] -> [GJ.PointGeometry] -> [VG.Point]
-blerg = Prelude.foldr (\pg acc -> moreTerrible (GJ.coordinates pg) <> acc)
+pointToMvt :: [GJ.PointGeometry] -> [VG.Point]
+pointToMvt = F.foldMap (moreTerrible . GJ.coordinates)
 
-blergLine :: [VG.LineString] -> [GJ.LineStringGeometry] -> [VG.LineString]
-blergLine = Prelude.foldr (\lsg acc -> VG.LineString (DVU.fromList (blerg [] (GJ.lineString lsg))) : acc)
+lineToMvt :: [GJ.LineStringGeometry] -> [VG.LineString]
+lineToMvt = F.foldMap (\lsg -> [VG.LineString . DVU.fromList . pointToMvt $ GJ.lineString lsg])
 
-blergPoly :: [VG.Polygon] -> [GJ.PolygonGeometry] -> [VG.Polygon]
-blergPoly = Prelude.foldr (\poly acc -> VG.Polygon (DVU.fromList (blerg [] (GJ.exterior poly))) (DV.fromList (blergPoly [] (Prelude.fmap (\x -> GJ.PolygonGeometry x []) (GJ.holes poly)))) : acc)
+polygonToMvt :: [GJ.PolygonGeometry] -> [VG.Polygon]
+polygonToMvt = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))])
+  where
+    ext = DVU.fromList . pointToMvt
+    int y = DV.fromList . polygonToMvt $ fmap (\x -> GJ.PolygonGeometry x []) y
 
 sToF :: Scientific -> Float
 sToF n = toRealFloat n :: Float
