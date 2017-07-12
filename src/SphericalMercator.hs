@@ -6,7 +6,6 @@ mvtX = 28999
 mvtY = 19781
 zoom = 15
 
--- Based on https://github.com/terranodo/tegola/blob/master/maths/webmercator/main.go
 wgs84MajorRadius :: Double
 wgs84MajorRadius = 6378137.0
 
