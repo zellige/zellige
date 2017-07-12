@@ -28,7 +28,7 @@ lonToX x = checkX tmpX
 latToY :: Double -> Double
 latToY y = checkY tmpY
       where
-        tmpY = wgs84MajorRadius * log(tan((pi*0.25) + (0.5 * degreesToRadians y)))
+        tmpY = wgs84MajorRadius * log(tan((pi * 0.25) + (0.5 * degreesToRadians y)))
         checkY y' = if y' < -maxExtents then -maxExtents else y'
 
 -- Bounding box in 3857 based on x y zoom.
