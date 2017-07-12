@@ -1,6 +1,6 @@
 module GeoJsonToMvt where
 
-import           Data.Aeson
+import qualified Data.Aeson                      as A
 import qualified Data.Foldable                   as F (foldMap)
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.HashMap.Strict             as HM
@@ -45,15 +45,15 @@ convertPolygon :: GJ.Geometry -> DV.Vector VG.Polygon
 convertPolygon (GJ.Polygon poly) = DV.fromList $ polygonToMvt [poly]
 convertPolygon (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = DV.fromList $ polygonToMvt polys
 
-mkFeature :: (GJ.Geometry -> DV.Vector g) -> GJ.Geometry -> Value -> Maybe Value -> VT.Feature g
+mkFeature :: (GJ.Geometry -> DV.Vector g) -> GJ.Geometry -> A.Value -> Maybe A.Value -> VT.Feature g
 mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f geom)
   where
-    convertProps :: Value -> DMZ.Map T.Text VT.Val
-    convertProps (Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
+    convertProps :: A.Value -> DMZ.Map T.Text VT.Val
+    convertProps (A.Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
     convertProps _ = DMZ.empty
 
-    convertId :: Maybe Value -> Int
-    convertId (Just (Number n)) = (fToInt . sToF) n
+    convertId :: Maybe A.Value -> Int
+    convertId (Just (A.Number n)) = (fToInt . sToF) n
     convertId _ = 0
 
 pointToMvt :: [GJ.PointGeometry] -> [VG.Point]
@@ -77,10 +77,10 @@ fToInt = round
 terrible :: Scientific -> Int
 terrible = fToInt . sToF
 
-convertElems :: (t, Value) -> Maybe (t, VT.Val)
-convertElems (k, String v) = Just (k, VT.St v)
-convertElems (k, Number v) = Just (k, VT.Do (sToF v))
-convertElems (k, Bool v) = Just (k, VT.B v)
+convertElems :: (t, A.Value) -> Maybe (t, VT.Val)
+convertElems (k, A.String v) = Just (k, VT.St v)
+convertElems (k, A.Number v) = Just (k, VT.Do (sToF v))
+convertElems (k, A.Bool v) = Just (k, VT.B v)
 convertElems _ = Nothing
 
 sciLatLongToPoints :: [Scientific] -> [VG.Point]
