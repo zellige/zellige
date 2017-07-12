@@ -17,6 +17,8 @@ import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
+import           SphericalMercator
+
 geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> ([VT.Feature VG.Point], [VT.Feature VG.LineString], [VT.Feature VG.Polygon])
 geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 
@@ -60,10 +62,10 @@ polygonToMvt = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ
     ext = DVU.fromList . pointToMvt
     int y = DV.fromList . polygonToMvt $ fmap (\x -> GJ.PolygonGeometry x []) y
 
-sToF :: Scientific -> Float
-sToF n = toRealFloat n :: Float
+sToF :: Scientific -> Double
+sToF n = toRealFloat n :: Double
 
-fToInt :: Float -> Int
+fToInt :: Double -> Int
 fToInt = round
 
 terrible :: Scientific -> Int
@@ -75,13 +77,13 @@ convertProps _ = DMZ.empty
 
 convertElems :: (t, Value) -> Maybe (t, VT.Val)
 convertElems (k, String v) = Just (k, VT.St v)
-convertElems (k, Number v) = Just (k, VT.Fl (sToF v))
+convertElems (k, Number v) = Just (k, VT.Do (sToF v))
 convertElems (k, Bool v) = Just (k, VT.B v)
 convertElems _ = Nothing
 
 moreTerrible :: [Scientific] -> [VG.Point]
 moreTerrible [] = []
-moreTerrible (k:v:t) = (terrible k, terrible v) : moreTerrible t
+moreTerrible (k:lon:t) = (lonToX (sToF k), latToY (sToF lon)) : moreTerrible t
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)
