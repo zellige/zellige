@@ -1,6 +1,3 @@
-{-# LANGUAGE FlexibleContexts  #-}
-{-# LANGUAGE OverloadedStrings #-}
-
 module GeoJsonToMvt where
 
 import           Data.Aeson
