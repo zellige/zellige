@@ -53,7 +53,7 @@ mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f 
     convertProps _ = DMZ.empty
 
     convertId :: Maybe A.Value -> Int
-    convertId (Just (A.Number n)) = (fToInt . sToF) n
+    convertId (Just (A.Number n)) = (round . sToF) n
     convertId _ = 0
 
 pointToMvt :: [GJ.PointGeometry] -> [VG.Point]
@@ -70,12 +70,6 @@ polygonToMvt = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ
 
 sToF :: Scientific -> Double
 sToF n = toRealFloat n :: Double
-
-fToInt :: Double -> Int
-fToInt = round
-
-terrible :: Scientific -> Int
-terrible = fToInt . sToF
 
 convertElems :: (t, A.Value) -> Maybe (t, VT.Val)
 convertElems (k, A.String v) = Just (k, VT.St v)
