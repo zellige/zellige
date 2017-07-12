@@ -50,6 +50,3 @@ boundingBox x y z = (minX, minY, maxX, maxY)
       maxX = -maxExtents + (fromIntegral x * resolution) + resolution
       maxY = maxExtents - (fromIntegral y * resolution) - resolution
       resolution = maxExtents * 2 / (2.0 ** fromIntegral z)
-
--- 	nx = int64((p.X() - c.tile.Minx) * c.extent / c.xspan)
--- 	ny = int64((p.Y() - c.tile.Miny) * c.extent / c.yspan)
