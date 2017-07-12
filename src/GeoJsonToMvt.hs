@@ -69,7 +69,7 @@ polygonToMvt = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ
     int y = DV.fromList . polygonToMvt $ fmap (\x -> GJ.PolygonGeometry x []) y
 
 sToF :: Scientific -> Double
-sToF n = toRealFloat n
+sToF = toRealFloat
 
 convertElems :: (t, A.Value) -> Maybe (t, VT.Val)
 convertElems (k, A.String v) = Just (k, VT.St v)
