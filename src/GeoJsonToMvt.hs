@@ -83,7 +83,7 @@ convertElems _ = Nothing
 
 moreTerrible :: [Scientific] -> [VG.Point]
 moreTerrible [] = []
-moreTerrible (k:lon:t) = (lonToX (sToF k), latToY (sToF lon)) : moreTerrible t
+moreTerrible (lat:lon:t) = latLonToXY (sToF lat, sToF lon) : moreTerrible t
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)

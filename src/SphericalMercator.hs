@@ -1,40 +1,29 @@
 module SphericalMercator where
 
--- Based on https://github.com/terranodo/tegola/blob/master/maths/webmercator/main.go
+-- Remove these
+mvtExtents = 2048
+mvtX = 28999
+mvtY = 19781
+zoom = 15
 
+-- Based on https://github.com/terranodo/tegola/blob/master/maths/webmercator/main.go
 wgs84MajorRadius :: Double
 wgs84MajorRadius = 6378137.0
-
-wgs84MinorRadius :: Double
-wgs84MinorRadius = 6356752.3142 :: Double
 
 maxExtents :: Double
 maxExtents = 20037508.342789244 :: Double
 
-wgs84Ratio :: Double
-wgs84Ratio  = wgs84MinorRadius / wgs84MajorRadius
-
--- First eccentricity
-eccentricity :: Double
-eccentricity = sqrt (1.0 - (wgs84Ratio * wgs84Ratio) )
-
-coms :: Double
-coms = 0.5 * eccentricity
-
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-lonToX :: Double -> Int
-lonToX x = round ((absLonToX x - minX) * 2048 / spanX)
-  where
-    spanX = maxX - minX
-    (minX, _, maxX, _) = boundingBox 28999 19781 15
-
-latToY :: Double -> Int
-latToY y = round ((absLatToY y - minY) * 2048 / spanY)
-  where
-    spanY = maxY - minY
-    (_, minY, _, maxY) = boundingBox 28999 19781 15
+latLonToXY :: (Double, Double) -> (Int, Int)
+latLonToXY (lat, lon) = (x, y)
+    where
+      x = round ((absLonToX lat - minX) * mvtExtents / spanX)
+      y = round ((absLatToY lon - minY) * mvtExtents / spanY)
+      spanX = maxX - minX
+      spanY = maxY - minY
+      (minX, minY, maxX, maxY) = boundingBox mvtX mvtY zoom
 
 absLonToX :: Double -> Double
 absLonToX x = wgs84MajorRadius * degreesToRadians x
