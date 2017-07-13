@@ -27,12 +27,12 @@ geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 convertFeature :: GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 convertFeature (GJ.Feature _ geom props fid) = go geom
   where
-      go (GJ.Point p)                  = mkPoint $ convertPoint p
-      go (GJ.MultiPoint mpg)           = mkPoint $ convertMultiPoint mpg
-      go (GJ.LineString ls)            = mkLineString $ convertLineString ls
-      go (GJ.MultiLineString mls)      = mkLineString $ convertMultiLineString mls
-      go (GJ.Polygon poly)             = mkPolygon $ convertPolygon poly
-      go (GJ.MultiPolygon mp)          = mkPolygon $ convertMultiPolygon mp
+      go (GJ.Point p)                  = mkPoint . convertPoint $ p
+      go (GJ.MultiPoint mpg)           = mkPoint . convertMultiPoint $ mpg
+      go (GJ.LineString ls)            = mkLineString . convertLineString $ ls
+      go (GJ.MultiLineString mls)      = mkLineString . convertMultiLineString $ mls
+      go (GJ.Polygon poly)             = mkPolygon . convertPolygon $ poly
+      go (GJ.MultiPolygon mp)          = mkPolygon . convertMultiPolygon $ mp
       go (GJ.GeometryCollection geoms) = F.foldMap go geoms
       mkPoint p       = (mkFeature p, mempty, mempty)
       mkLineString l  = (mempty, mkFeature l, mempty)
