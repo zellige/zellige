@@ -25,36 +25,45 @@ geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point)
 geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 
 convertFeature :: GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-convertFeature (GJ.Feature _ geom@(GJ.Point _) props fid) = (DV.singleton (mkFeature convertPoint geom props fid), DV.empty, DV.empty)
-convertFeature (GJ.Feature _ geom@(GJ.MultiPoint _) props fid) = (DV.singleton (mkFeature convertPoint geom props fid), DV.empty, DV.empty)
-convertFeature (GJ.Feature _ geom@(GJ.LineString _) props fid) = (DV.empty, DV.singleton (mkFeature convertLineString geom props fid), DV.empty)
-convertFeature (GJ.Feature _ geom@(GJ.MultiLineString _) props fid) = (DV.empty, DV.singleton (mkFeature convertLineString geom props fid), DV.empty)
-convertFeature (GJ.Feature _ geom@(GJ.Polygon _) props fid) = (DV.empty, DV.empty, DV.singleton (mkFeature convertPolygon geom props fid))
-convertFeature (GJ.Feature _ geom@(GJ.MultiPolygon _) props fid) = (DV.empty, DV.empty, DV.singleton (mkFeature convertPolygon geom props fid))
-convertFeature (GJ.Feature bb (GJ.GeometryCollection geoms) props fid) = F.foldMap (\geom -> convertFeature (GJ.Feature bb geom props fid)) geoms
-
-convertPoint :: GJ.Geometry -> DV.Vector VG.Point
-convertPoint (GJ.Point p) = DV.fromList (sciLatLongToPoints $ GJ.coordinates p)
-convertPoint (GJ.MultiPoint mpg) = DV.fromList . pointToMvt $ GJ.points mpg
-
-convertLineString :: GJ.Geometry -> DV.Vector VG.LineString
-convertLineString (GJ.LineString ls) = DV.fromList (lineToMvt [ls])
-convertLineString (GJ.MultiLineString (GJ.MultiLineStringGeometry mls)) = DV.fromList $ lineToMvt mls
-
-convertPolygon :: GJ.Geometry -> DV.Vector VG.Polygon
-convertPolygon (GJ.Polygon poly) = DV.fromList $ polygonToMvt [poly]
-convertPolygon (GJ.MultiPolygon (GJ.MultiPolygonGeometry polys)) = DV.fromList $ polygonToMvt polys
-
-mkFeature :: (GJ.Geometry -> DV.Vector g) -> GJ.Geometry -> A.Value -> Maybe A.Value -> VT.Feature g
-mkFeature f geom props fid = VT.Feature (convertId fid) (convertProps props) (f geom)
+convertFeature (GJ.Feature _ parentGeom props fid) = go parentGeom
   where
-    convertProps :: A.Value -> DMZ.Map T.Text VT.Val
-    convertProps (A.Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
-    convertProps _ = DMZ.empty
+      go (GJ.Point p)                  = mkPoint . mkFeature $ convertPoint p
+      go (GJ.MultiPoint mpg)           = mkPoint . mkFeature $ convertMultiPoint mpg
+      go (GJ.LineString ls)            = mkLineString . mkFeature $ convertLineString ls
+      go (GJ.MultiLineString mls)      = mkLineString . mkFeature  $ convertMultiLineString mls
+      go (GJ.Polygon poly)             = mkPolygon . mkFeature $ convertPolygon poly
+      go (GJ.MultiPolygon mp)          = mkPolygon . mkFeature $ convertMultiPolygon mp
+      go (GJ.GeometryCollection geoms) = F.foldMap go geoms
+      mkPoint p       = (DV.singleton p, mempty, mempty)
+      mkLineString l  = (mempty, DV.singleton l, mempty)
+      mkPolygon o     = (mempty, mempty, DV.singleton o)
+      mkFeature geoms = VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
 
-    convertId :: Maybe A.Value -> Int
-    convertId (Just (A.Number n)) = (round . sToF) n
-    convertId _ = 0
+convertPoint :: GJ.PointGeometry -> [VG.Point]
+convertPoint = sciLatLongToPoints . GJ.coordinates
+
+convertMultiPoint :: GJ.MultiPointGeometry -> [VG.Point]
+convertMultiPoint = pointToMvt . GJ.points
+
+convertLineString :: GJ.LineStringGeometry -> [VG.LineString]
+convertLineString = lineToMvt . pure
+
+convertMultiLineString :: GJ.MultiLineStringGeometry -> [VG.LineString]
+convertMultiLineString (GJ.MultiLineStringGeometry mls) = lineToMvt mls
+
+convertPolygon :: GJ.PolygonGeometry -> [VG.Polygon]
+convertPolygon = polygonToMvt . pure
+
+convertMultiPolygon :: GJ.MultiPolygonGeometry -> [VG.Polygon]
+convertMultiPolygon (GJ.MultiPolygonGeometry polys) = polygonToMvt polys
+
+convertProps :: A.Value -> DMZ.Map T.Text VT.Val
+convertProps (A.Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
+convertProps _ = DMZ.empty
+
+convertId :: Maybe A.Value -> Int
+convertId (Just (A.Number n)) = (round . sToF) n
+convertId _ = 0
 
 pointToMvt :: [GJ.PointGeometry] -> [VG.Point]
 pointToMvt = F.foldMap (sciLatLongToPoints . GJ.coordinates)
