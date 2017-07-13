@@ -26,52 +26,60 @@ clipPolygons bb polys = undefined -- concatMap (\bbLine -> fmap (clipPolygon bbL
   where
     bbLines = linesFromPolygon (VG.Polygon (DVU.fromList bb) DV.empty)
 
-clipPolygon :: [(VG.Point, VG.Point)] -> VG.Polygon -> VG.Polygon
-clipPolygon bbLines poly = foldl (\acc x -> clipPolygonWithLine x acc) poly bbLines
-
-clipPolygonWithLine :: (VG.Point, VG.Point) -> VG.Polygon -> VG.Polygon
-clipPolygonWithLine line p = VG.Polygon (DVU.fromList $ xxx line p ) DV.empty
-
-xxx :: (VG.Point, VG.Point) -> VG.Polygon -> [VG.Point]
-xxx line p = last foo : foo
+clipPolygon :: [VG.Point] -> VG.Polygon -> VG.Polygon
+clipPolygon bb poly = VG.Polygon (DVU.fromList clip) mempty
   where
-    foo = concatMap (`lineLHS` line) (linesFromPolygon p)
+    clip = xxx bb poly
+
+xxx bb poly = foldl (\polyPts bbLine -> foo polyPts bbLine) (polyList poly) bbLines
+    where
+      foo polyPts bbLine = foldl (\acc2 polyLine -> clipEdges polyLine bbLine ++ acc2) [] (linesFromPoints (last polyPts : polyPts))
+      bbLines = linesFromPoints (last bb : bb)
 
 linesFromPolygon :: VG.Polygon -> [(VG.Point, VG.Point)]
-linesFromPolygon p = linesFromPoints . DVU.toList $ VG.polyPoints p
+linesFromPolygon p = linesFromPoints (polyList p)
+
+polyList :: VG.Polygon -> [VG.Point]
+polyList p = last polys : polys
+  where
+    polys = DVU.toList $ VG.polyPoints p
 
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
 
--- Is line within polygon
-lineLHS :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> [VG.Point]
-lineLHS l1@(p1, p2) l2 =
-  case (pointLHS p1 l2, pointLHS p2 l2) of
+clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> [VG.Point]
+clipEdges polyLine@(s, e) clipLine =
+  case (inside e clipLine, inside s clipLine) of
+    (True, True)   -> [e]
+    (True, False)  -> [e, lineIntersectPoint clipLine polyLine]
+    (False, True)  -> [lineIntersectPoint clipLine polyLine]
     (False, False) -> []
-    (True, True) -> [p2]
-    (False, True) -> [lineIntersectPoint l1 l2, p2]
-    (True, False) -> [lineIntersectPoint l1 l2]
 
 lineIntersectPoint :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> VG.Point
 lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
-    let (r, s) = (x1 * y2 - y1 * x2, x1' * y2' - y1' * x2')
-        (t, u, v, w) = (x1 - x2, y1' - y2', y1 - y2, x1' - x2')
-        d = t * u - v * w
-        x = (r * w - t * s) `div` d
-        y = (r * u - v * s) `div` d
+    let
+      (dx, dy) = (x1 - x2, y1 - y2)
+      (dx', dy') = (x1' - x2', y1' - y2')
+      n1 = (x1 * y2) - (y1 * x2)
+      n2 = (x1' * y2') - (y1' * x2')
+      d = (dx * dy' - dy * dx')
+      x = (n1 * dx' - n2 * dx) `div` d
+      y = (n1 * dy' - n2 * dy) `div` d
     in (x, y)
 
 -- Is point of LHS of Line
-pointLHS :: VG.Point -> (VG.Point, VG.Point) -> Bool
-pointLHS (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) >= (y2 - y1) * (x - x1)
+inside :: VG.Point -> (VG.Point, VG.Point) -> Bool
+inside (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
 
 -- Is point inside bounding box
 pointInsideExtent :: ((Int, Int), (Int, Int)) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
 testPoly = clipPolygons clipPts [poly]
-testSingle = clipPolygon (linesFromPoints clipPts) poly
+testSingle = clipPolygon clipPts poly
 poly = VG.Polygon (DVU.fromList polyPts) DV.empty
 polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
            (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
 clipPts = [(100,100), (300,100), (300,300), (100,300)] :: [(Int,Int)]
+-- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
+--  {175 300} {125 300} {100 250}]
