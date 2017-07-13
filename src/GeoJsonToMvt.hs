@@ -27,17 +27,17 @@ geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 convertFeature :: GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 convertFeature (GJ.Feature _ geom props fid) = go geom
   where
-      go (GJ.Point p)                  = mkPoint . mkFeature $ convertPoint p
-      go (GJ.MultiPoint mpg)           = mkPoint . mkFeature $ convertMultiPoint mpg
-      go (GJ.LineString ls)            = mkLineString . mkFeature $ convertLineString ls
-      go (GJ.MultiLineString mls)      = mkLineString . mkFeature  $ convertMultiLineString mls
-      go (GJ.Polygon poly)             = mkPolygon . mkFeature $ convertPolygon poly
-      go (GJ.MultiPolygon mp)          = mkPolygon . mkFeature $ convertMultiPolygon mp
+      go (GJ.Point p)                  = mkPoint $ convertPoint p
+      go (GJ.MultiPoint mpg)           = mkPoint $ convertMultiPoint mpg
+      go (GJ.LineString ls)            = mkLineString $ convertLineString ls
+      go (GJ.MultiLineString mls)      = mkLineString $ convertMultiLineString mls
+      go (GJ.Polygon poly)             = mkPolygon $ convertPolygon poly
+      go (GJ.MultiPolygon mp)          = mkPolygon $ convertMultiPolygon mp
       go (GJ.GeometryCollection geoms) = F.foldMap go geoms
-      mkPoint p       = (DV.singleton p, mempty, mempty)
-      mkLineString l  = (mempty, DV.singleton l, mempty)
-      mkPolygon o     = (mempty, mempty, DV.singleton o)
-      mkFeature geoms = VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
+      mkPoint p       = (mkFeature p, mempty, mempty)
+      mkLineString l  = (mempty, mkFeature l, mempty)
+      mkPolygon o     = (mempty, mempty, mkFeature o)
+      mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
 
 convertPoint :: GJ.PointGeometry -> [VG.Point]
 convertPoint = sciLatLongToPoints . GJ.coordinates
