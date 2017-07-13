@@ -14,12 +14,14 @@ import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
 import           SphericalMercator
+import           Types
 
 mvtExtents = 2048
 mvtX = 28999
 mvtY = 19781
 zoom = 15
-bb = boundingBox mvtX mvtY zoom
+gtc = GoogleTileCoords mvtX mvtY zoom
+bb = boundingBox gtc
 
 geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
@@ -89,7 +91,7 @@ convertElems _ = Nothing
 sciLatLongToPoints :: [Scientific] -> [VG.Point]
 sciLatLongToPoints [] = []
 sciLatLongToPoints [_] = []
-sciLatLongToPoints x = fmap (\(lat, lon) -> latLonToXYInTile mvtExtents bb (sToF lat, sToF lon)) (zip <*> tail $ x)
+sciLatLongToPoints x = fmap (\(lat, lon) -> latLonToXYInTile mvtExtents bb (LatLon (sToF lat) (sToF lon))) (zip <*> tail $ x)
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)

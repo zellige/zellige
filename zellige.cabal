@@ -18,6 +18,8 @@ library
   exposed-modules:     Lib
                      , GeoJsonToMvt
                      , SphericalMercator
+                     , Types
+                     , Clip
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
