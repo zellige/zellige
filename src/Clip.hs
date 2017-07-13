@@ -30,15 +30,16 @@ clipPolygon bb poly = VG.Polygon (DVU.fromList $ clip bb poly) mempty
 clip :: [VG.Point] -> VG.Polygon -> [VG.Point]
 clip bb poly = foldl (foo bb) (polyList poly) bbLines
   where
-    bbLines = linesFromPoints (last bb : bb)
+    bbLines = pointsToLines bb
 
 foo :: [VG.Point] -> [VG.Point] -> (VG.Point, VG.Point) -> [VG.Point]
-foo bb polyPts bbLine = foldl (\acc2 polyLine -> clipEdges polyLine bbLine ++ acc2) [] (newLinesFromPts polyPts)
-  where
-    newLinesFromPts polyPts = linesFromPoints (last polyPts : polyPts)
+foo bb polyPts bbLine = foldl (\pts polyLine -> clipEdges polyLine bbLine ++ pts) [] (pointsToLines polyPts)
 
 polyList :: VG.Polygon -> [VG.Point]
 polyList p =  DVU.toList $ VG.polyPoints p
+
+pointsToLines :: [a] ->  [(a, a)]
+pointsToLines pts = linesFromPoints (last pts : pts)
 
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
