@@ -27,13 +27,13 @@ clipPolygons bb polys = undefined -- concatMap (\bbLine -> fmap (clipPolygon bbL
     bbLines = linesFromPolygon (VG.Polygon (DVU.fromList bb) DV.empty)
 
 clipPolygon :: [VG.Point] -> VG.Polygon -> VG.Polygon
-clipPolygon bb poly = VG.Polygon (DVU.fromList clip) mempty
-  where
-    clip = xxx bb poly
+clipPolygon bb poly = VG.Polygon (DVU.fromList $ clip bb poly) mempty
 
-xxx bb poly = foldl (\polyPts bbLine -> foo polyPts bbLine) (polyList poly) bbLines
+clip :: [VG.Point] -> VG.Polygon -> [VG.Point]
+clip bb poly = foldl foo (polyList poly) bbLines
     where
-      foo polyPts bbLine = foldl (\acc2 polyLine -> clipEdges polyLine bbLine ++ acc2) [] (linesFromPoints (last polyPts : polyPts))
+      foo polyPts bbLine = foldl (\acc2 polyLine -> clipEdges polyLine bbLine ++ acc2) [] (newLinesFromPts polyPts)
+      newLinesFromPts polyPts = linesFromPoints (last polyPts : polyPts)
       bbLines = linesFromPoints (last bb : bb)
 
 linesFromPolygon :: VG.Polygon -> [(VG.Point, VG.Point)]
