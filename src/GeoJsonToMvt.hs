@@ -16,7 +16,7 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           SphericalMercator
 import           Types
 
-mvtExtents = 2048
+mvtExtents = 2048 :: Integer
 mvtX = 28999
 mvtY = 19781
 zoom = 15

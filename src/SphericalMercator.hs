@@ -11,11 +11,12 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Double -> BoundingBox -> LatLon -> (Int, Int)
+latLonToXYInTile :: Integer -> BoundingBox -> LatLon -> (Int, Int)
 latLonToXYInTile extents (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (x, y)
     where
-      x = round ((lonToX lat - minX) * extents / spanX)
-      y = round ((latToY lon - minY) * extents / spanY)
+      x = round ((lonToX lat - minX) * dExtents / spanX)
+      y = round ((latToY lon - minY) * dExtents / spanY)
+      dExtents = fromIntegral extents
       spanX = maxX - minX
       spanY = maxY - minY
 
