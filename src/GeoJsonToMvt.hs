@@ -25,7 +25,7 @@ geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point)
 geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
 
 convertFeature :: GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-convertFeature (GJ.Feature _ parentGeom props fid) = go parentGeom
+convertFeature (GJ.Feature _ geom props fid) = go geom
   where
       go (GJ.Point p)                  = mkPoint . mkFeature $ convertPoint p
       go (GJ.MultiPoint mpg)           = mkPoint . mkFeature $ convertMultiPoint mpg
