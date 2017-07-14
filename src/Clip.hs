@@ -1,5 +1,4 @@
--- Based on https://rosettacode.org/wiki/Sutherland-Hodgman_polygon_clipping#Haskell
--- Seems wrong.
+{-# LANGUAGE FlexibleContexts #-}
 
 module Clip where
 
@@ -25,12 +24,43 @@ clipPoints = filter . pointInsideExtent
 clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
 clipLines bb lines = undefined
 
-findOutcode bb lines = fmap (F.maximumBy $ O.comparing fst) <$> xxx bb lines
-xxx bb = fmap (fmap (\(p1, p2) -> [toP1 bb p1, toP2 bb p2]) . getLines)
+findOutcode bb lines = fmap evalDiffKeepSame <$> makeAPass bb lines
+  where
+    evalDiffKeepSame (a@(o1, (p1, f1)), b@(o2, (p2, f2))) =
+      case (o1, o2) of
+        (Clip.Inside, Clip.Inside) -> (p1, p2)
+        _ -> case compare o1 o2 of
+          GT -> f2 (clipPoint o1 bb p1 p2)
+          LT -> f1 (clipPoint o2 bb p1 p2)
+          EQ -> (p1, p2)
+
+-- fmap (F.maximumBy $ O.comparing fst)
+
+-- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
+makeAPass bb lines = foldr (\l acc -> keepInRemoveOut l ++ acc) [] <$> xxx bb lines
+  where
+    keepInRemoveOut (a@(o1, (p1, _)), b@(o2, (p2, _))) =
+      case (o1, o2) of
+        (Clip.Left, Clip.Left) -> []
+        (Clip.Right, Clip.Right) -> []
+        (Bottom, Bottom) -> []
+        (Top, Top) -> []
+        _ -> [(a, b)]
+
+clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
+  case outCode of
+    Clip.Top -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
+    Clip.Left -> (minx, y1 + (y2 - y1) * (minx - x1) `div` (x2 - x1))
+    Clip.Right -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
+    Clip.Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
+    otherwise -> undefined
+
+-- xxx :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f [[(OutCode, String)]]
+xxx bb = fmap (fmap (fmap (\(p1, p2) -> (toP1 bb p1, toP2 bb p2))) getLines)
   where
     getLines line = linesFromPoints . DVU.toList $ VG.lsPoints line
-    toP1 bb p1 = (computeOutCode bb p1, \p -> [p1, p])
-    toP2 bb p2 = (computeOutCode bb p2, \p -> [p, p2])
+    toP1 bb p1 = (computeOutCode bb p1, (p1, \p -> (p1, p)))
+    toP2 bb p2 = (computeOutCode bb p2, (p2, \p -> (p, p2)))
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
