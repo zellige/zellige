@@ -25,10 +25,12 @@ clipPoints = filter . pointInsideExtent
 clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
 clipLines bb lines = undefined
 
-fst3 (a, _, _) = a
-
-findOutcode bb lines = fmap (\x -> F.maximumBy (O.comparing fst) x) (xxx bb lines)
-xxx bb = fmap (\line -> fmap (\p -> (computeOutCode bb p, p)) (DVU.toList $ VG.lsPoints line))
+findOutcode bb lines = fmap (F.maximumBy $ O.comparing fst) <$> xxx bb lines
+xxx bb = fmap (fmap (\(p1, p2) -> [toP1 bb p1, toP2 bb p2]) . getLines)
+  where
+    getLines line = linesFromPoints . DVU.toList $ VG.lsPoints line
+    toP1 bb p1 = (computeOutCode bb p1, \p -> [p1, p])
+    toP2 bb p2 = (computeOutCode bb p2, \p -> [p, p2])
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
@@ -60,7 +62,7 @@ foo :: [VG.Point] -> [VG.Point] -> (VG.Point, VG.Point) -> [VG.Point]
 foo bb polyPts bbLine = foldl (\pts polyLine -> clipEdges polyLine bbLine ++ pts) [] (pointsToLines polyPts)
 
 polyList :: VG.Polygon -> [VG.Point]
-polyList p =  DVU.toList $ VG.polyPoints p
+polyList p = DVU.toList $ VG.polyPoints p
 
 pointsToLines :: [a] ->  [(a, a)]
 pointsToLines pts = linesFromPoints (last pts : pts)
