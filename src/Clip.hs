@@ -26,20 +26,16 @@ clipLines bb lines = undefined
 
 findOutcode bb lines = fmap evalDiffKeepSame <$> makeAPass bb lines
   where
-    evalDiffKeepSame (a@(o1, (p1, f1)), b@(o2, (p2, f2))) =
-      case (o1, o2) of
-        (Clip.Inside, Clip.Inside) -> (p1, p2)
-        _ -> case compare o1 o2 of
-          GT -> f2 (clipPoint o1 bb p1 p2)
-          LT -> f1 (clipPoint o2 bb p1 p2)
-          EQ -> (p1, p2)
-
--- fmap (F.maximumBy $ O.comparing fst)
+    evalDiffKeepSame (a@(o1, p1), b@(o2, p2)) =
+      case compare o1 o2 of
+        GT -> (clipPoint o1 bb p1 p2, p2)
+        LT -> (p1, clipPoint o2 bb p1 p2)
+        EQ -> (p1, p2)
 
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
 makeAPass bb lines = foldr (\l acc -> keepInRemoveOut l ++ acc) [] <$> xxx bb lines
   where
-    keepInRemoveOut (a@(o1, (p1, _)), b@(o2, (p2, _))) =
+    keepInRemoveOut (a@(o1, _), b@(o2, _)) =
       case (o1, o2) of
         (Clip.Left, Clip.Left) -> []
         (Clip.Right, Clip.Right) -> []
@@ -59,8 +55,8 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
 xxx bb = fmap (fmap (fmap (\(p1, p2) -> (toP1 bb p1, toP2 bb p2))) getLines)
   where
     getLines line = linesFromPoints . DVU.toList $ VG.lsPoints line
-    toP1 bb p1 = (computeOutCode bb p1, (p1, \p -> (p1, p)))
-    toP2 bb p2 = (computeOutCode bb p2, (p2, \p -> (p, p2)))
+    toP1 bb p1 = (computeOutCode bb p1, p1)
+    toP2 bb p2 = (computeOutCode bb p2, p2)
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
