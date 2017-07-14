@@ -3,6 +3,8 @@
 
 module Clip where
 
+import qualified Data.Maybe                    as M
+import qualified Data.Tuple                    as T (swap)
 import qualified Data.Vector                   as DV
 import qualified Data.Vector.Unboxed           as DVU
 import qualified Geography.VectorTile.Geometry as VG
@@ -15,11 +17,26 @@ createBoundingBoxPts extent = ((0, 0), (fromIntegral extent, fromIntegral extent
 createBoundingBoxPolygon :: Integer -> [VG.Point]
 createBoundingBoxPolygon extent = [(0, 0), (0, fromIntegral extent), (fromIntegral extent, fromIntegral extent), (fromIntegral extent, 0), (0, 0)]
 
-clipPoints :: ((Int, Int), (Int, Int)) -> [VG.Point] -> [VG.Point]
+clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
-clipLines :: ((Int, Int), (Int, Int)) -> [VG.LineString] -> [VG.LineString]
+clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
 clipLines = undefined
+
+data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show)
+
+instance Enum OutCode where
+    fromEnum = M.fromJust . flip lookup table
+    toEnum = M.fromJust . flip lookup (map T.swap table)
+table = [(Inside, 0), (Clip.Left, 1), (Clip.Right, 2), (Bottom, 4), (Top, 8)]
+
+computeOutCode :: (VG.Point, VG.Point, VG.Point, VG.Point) -> VG.Point -> OutCode
+computeOutCode ((topX, topY), (rightX, rightY), (bottomX, bottomY), (leftX, leftYd)) (x,y)
+  | x < leftX = Clip.Left
+  | x > rightX = Clip.Right
+  | y < topY = Clip.Top
+  | y > rightY = Clip.Bottom
+  | otherwise = Clip.Inside
 
 clipPolygons :: [VG.Point] -> [VG.Polygon] -> [VG.Polygon]
 clipPolygons bb = concatMap (pure . clipPolygon bb)
@@ -69,7 +86,7 @@ inside :: VG.Point -> (VG.Point, VG.Point) -> Bool
 inside (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
 
 -- Is point inside bounding box
-pointInsideExtent :: ((Int, Int), (Int, Int)) -> VG.Point -> Bool
+pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
 testPoly = clipPolygons clipPts [poly]
@@ -82,3 +99,4 @@ clipPts = [(100,100), (300,100), (300,300), (100,300)] :: [(Int,Int)]
 answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
 -- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
 --  {175 300} {125 300} {100 250}]
+
