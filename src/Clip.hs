@@ -3,7 +3,9 @@
 
 module Clip where
 
+import qualified Data.Foldable                 as F
 import qualified Data.Maybe                    as M
+import qualified Data.Ord                      as O
 import qualified Data.Tuple                    as T (swap)
 import qualified Data.Vector                   as DV
 import qualified Data.Vector.Unboxed           as DVU
@@ -21,21 +23,26 @@ clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
 clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
-clipLines = undefined
+clipLines bb lines = undefined
 
-data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show)
+fst3 (a, _, _) = a
+
+findOutcode bb lines = fmap (\x -> F.maximumBy (O.comparing fst) x) (xxx bb lines)
+xxx bb = fmap (\line -> fmap (\p -> (computeOutCode bb p, p)) (DVU.toList $ VG.lsPoints line))
+
+data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
 instance Enum OutCode where
     fromEnum = M.fromJust . flip lookup table
     toEnum = M.fromJust . flip lookup (map T.swap table)
 table = [(Inside, 0), (Clip.Left, 1), (Clip.Right, 2), (Bottom, 4), (Top, 8)]
 
-computeOutCode :: (VG.Point, VG.Point, VG.Point, VG.Point) -> VG.Point -> OutCode
-computeOutCode ((topX, topY), (rightX, rightY), (bottomX, bottomY), (leftX, leftYd)) (x,y)
-  | x < leftX = Clip.Left
-  | x > rightX = Clip.Right
-  | y < topY = Clip.Top
-  | y > rightY = Clip.Bottom
+computeOutCode :: (VG.Point, VG.Point) -> VG.Point -> OutCode
+computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
+  | x < minX = Clip.Left
+  | x > maxX = Clip.Right
+  | y < minY = Clip.Top
+  | y > maxY = Clip.Bottom
   | otherwise = Clip.Inside
 
 clipPolygons :: [VG.Point] -> [VG.Polygon] -> [VG.Polygon]
@@ -96,6 +103,10 @@ poly = VG.Polygon (DVU.fromList polyPts) mempty
 polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
            (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
 clipPts = [(100,100), (300,100), (300,300), (100,300)] :: [(Int,Int)]
+bb = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
+lines = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
+  VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
+  VG.LineString (DVU.fromList ([(0, 0), (70, 70)] :: [(Int,Int)]))]
 answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
 -- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
 --  {175 300} {125 300} {100 250}]
