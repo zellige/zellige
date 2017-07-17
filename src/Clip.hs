@@ -26,26 +26,27 @@ clipLines bb lines = undefined
 
 findOutcode bb lines = iter bb <$> outCodeForLineStrings bb lines
 
-iter bb lines = makeAPass $ fmap (evalDiffKeepSame bb) lines
+iter bb lines = filter removeSame $ fmap (evalDiffKeepSame bb) lines
 
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
   case compare o1 o2 of
-    GT -> evalDiffKeepSame bb (computeNewOutCode $ clipPoint o1 bb p1 p2, b)
-    LT -> evalDiffKeepSame bb (a, computeNewOutCode $ clipPoint o2 bb p1 p2)
+    GT -> evalDiffKeepSame bb gtEval
+    LT -> evalDiffKeepSame bb ltEval
     EQ -> (a, b)
   where
+    gtEval = (clipAndCompute, b)
+    ltEval = (a, clipAndCompute)
+    clipAndCompute = computeNewOutCode $ clipPoint o1 bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
-makeAPass = filter removeOutside
-  where
-    removeOutside ((o1, _), (o2, _)) =
-      case (o1, o2) of
-        (Clip.Left   , Clip.Left  ) -> False
-        (Clip.Right  , Clip.Right ) -> False
-        (Clip.Bottom , Clip.Bottom) -> False
-        (Clip.Top    , Clip.Top   ) -> False
-        _ -> True
+removeSame ((o1, _), (o2, _)) =
+  case (o1, o2) of
+    (Clip.Left   , Clip.Left  ) -> False
+    (Clip.Right  , Clip.Right ) -> False
+    (Clip.Bottom , Clip.Bottom) -> False
+    (Clip.Top    , Clip.Top   ) -> False
+    _ -> True
 
 clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
   case outCode of
