@@ -47,15 +47,15 @@ makeAPass bb lines = filter removeOutside <$> outCodeForLineStrings bb lines
 
 clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
   case outCode of
-    Clip.Left   -> (minx, (y1 + (y2 - y1) * (minx - x1)) `div` (x2 - x1))
-    Clip.Right  -> (maxx, (y1 + (y2 - y1) * (maxx - x1)) `div` (x2 - x1))
-    Clip.Bottom -> ((x1 + (x2 - x1) * (miny - y1)) `div` (y2 - y1), miny)
-    Clip.Top    -> ((x1 + (x2 - x1) * (maxy - y1)) `div` (y2 - y1), maxy)
+    Clip.Left   -> (minx, y1 + (y2 - y1) * (minx - x1) `div` (x2 - x1))
+    Clip.Right  -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
+    Clip.Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
+    Clip.Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
     otherwise -> undefined
 
 outCodeForLineStrings bb = fmap (fmap (\ (p1, p2) -> outCodeForLine bb p1 p2) . getLines)
   where
-    getLines line = linesFromPoints . DVU.toList $ VG.lsPoints line
+    getLines line = linesFromPoints (DVU.toList $ VG.lsPoints line)
 
 -- xxx :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f [[(OutCode, String)]]
 outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
@@ -65,12 +65,12 @@ outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
-computeOutCode :: (VG.Point, VG.Point) -> VG.Point -> OutCode
+-- computeOutCode :: ((Float, Float), (Float, Float)) -> (Float, Float) -> OutCode
 computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
-  | x < minX = Clip.Left
-  | x > maxX  = Clip.Right
-  | y < minY  = Clip.Bottom
   | y > maxY  = Clip.Top
+  | y < minY  = Clip.Bottom
+  | x > maxX  = Clip.Right
+  | x < minX  = Clip.Left
   | otherwise = Clip.Inside
 
 clipPolygons :: [VG.Point] -> [VG.Polygon] -> [VG.Polygon]
