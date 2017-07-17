@@ -24,18 +24,20 @@ clipPoints = filter . pointInsideExtent
 clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
 clipLines bb lines = undefined
 
-findOutcode bb lines = fmap (evalDiffKeepSame bb) <$> makeAPass bb lines
+findOutcode bb lines = iter bb <$> outCodeForLineStrings bb lines
+
+iter bb lines = makeAPass $ fmap (evalDiffKeepSame bb) lines
 
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
   case compare o1 o2 of
-    GT -> (computeNewOutCode bb $ clipPoint o1 bb p1 p2, b)
-    LT -> (a, computeNewOutCode bb $ clipPoint o2 bb p1 p2)
+    GT -> evalDiffKeepSame bb (computeNewOutCode $ clipPoint o1 bb p1 p2, b)
+    LT -> evalDiffKeepSame bb (a, computeNewOutCode $ clipPoint o2 bb p1 p2)
     EQ -> (a, b)
   where
-    computeNewOutCode bb p = (computeOutCode bb p, p)
+    computeNewOutCode p = (computeOutCode bb p, p)
 
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
-makeAPass bb lines = filter removeOutside <$> outCodeForLineStrings bb lines
+makeAPass = filter removeOutside
   where
     removeOutside ((o1, _), (o2, _)) =
       case (o1, o2) of
@@ -65,7 +67,6 @@ outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
--- computeOutCode :: ((Float, Float), (Float, Float)) -> (Float, Float) -> OutCode
 computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | y > maxY  = Clip.Top
   | y < minY  = Clip.Bottom
