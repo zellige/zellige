@@ -30,13 +30,12 @@ iter bb lines = filter removeSame $ fmap (evalDiffKeepSame bb) lines
 
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
   case compare o1 o2 of
-    GT -> evalDiffKeepSame bb gtEval
-    LT -> evalDiffKeepSame bb ltEval
+    GT -> eval (clipAndCompute o1, b)
+    LT -> eval (a, clipAndCompute o2)
     EQ -> (a, b)
   where
-    gtEval = (clipAndCompute, b)
-    ltEval = (a, clipAndCompute)
-    clipAndCompute = computeNewOutCode $ clipPoint o1 bb p1 p2
+    eval = evalDiffKeepSame bb
+    clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
@@ -136,7 +135,7 @@ clipPts = [(100,100), (300,100), (300,300), (100,300)] :: [(Int,Int)]
 linesBbTst = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
 linesTst = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
   VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
-  VG.LineString (DVU.fromList ([(5, 5), (90, 140)] :: [(Int,Int)])),
+  VG.LineString (DVU.fromList ([(5, 5), (45, 50), (90, 140)] :: [(Int,Int)])),
   VG.LineString (DVU.fromList ([(0, 0), (60, 60)] :: [(Int,Int)]))]
 answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
 -- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
