@@ -38,6 +38,12 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
+relist a@(x:xs) = x : (second a)
+  where
+    second (x:y:xs) = y : second xs
+    second _ = []
+relist _ = []
+
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
 removeSame ((o1, _), (o2, _)) =
   case (o1, o2) of
