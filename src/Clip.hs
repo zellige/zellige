@@ -22,12 +22,15 @@ clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
 clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
-clipLines bb lines = ((VG.LineString . DVU.fromList) . segmentToLine) <$> fmap (foldMap (\((_,p1),(_,p2)) -> [p1, p2])) (findOutcode bb lines)
+clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> [p1, p2])) outCodes
+  where
+    createLineString = (VG.LineString . DVU.fromList) . segmentToLine
+    outCodes = findOutCode bb lines
 
-findOutcode bb lines = iter bb <$> outCodeForLineStrings bb lines
+findOutCode :: Functor f => ((Int, Int), (Int, Int)) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
+findOutCode bb lines = filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
 
-iter bb lines = filter removeSame $ fmap (evalDiffKeepSame bb) lines
-
+evalDiffKeepSame :: Integral a => ((a, a), (a, a)) -> ((OutCode, (a, a)), (OutCode, (a, a))) -> ((OutCode, (a, a)), (OutCode, (a, a)))
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
   case compare o1 o2 of
     GT -> eval (clipAndCompute o1, b)
@@ -38,8 +41,8 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
--- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
-removeSame ((o1, _), (o2, _)) =
+isSame :: ((OutCode, t1), (OutCode, t)) -> Bool
+isSame ((o1, _), (o2, _)) =
   case (o1, o2) of
     (Clip.Left   , Clip.Left  ) -> False
     (Clip.Right  , Clip.Right ) -> False
@@ -47,6 +50,7 @@ removeSame ((o1, _), (o2, _)) =
     (Clip.Top    , Clip.Top   ) -> False
     _ -> True
 
+clipPoint :: Integral a => OutCode -> ((a, a), (a, a)) -> (a, a) -> (a, a) -> (a, a)
 clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
   case outCode of
     Clip.Left   -> (minx, y1 + (y2 - y1) * (minx - x1) `div` (x2 - x1))
@@ -55,11 +59,13 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
     Clip.Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
     otherwise -> undefined
 
-outCodeForLineStrings bb = fmap (fmap (\ (p1, p2) -> outCodeForLine bb p1 p2) . getLines)
+outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
+outCodeForLineStrings bb = fmap $ fmap out . getLines
   where
+    out = uncurry (outCodeForLine bb)
     getLines line = linesFromPoints (DVU.toList $ VG.lsPoints line)
 
--- xxx :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f [[(OutCode, String)]]
+outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
 outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
   where
     toP1 bb p1 = (computeOutCode bb p1, p1)
@@ -67,6 +73,7 @@ outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
 
 data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
 
+computeOutCode :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> OutCode
 computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | y > maxY  = Clip.Top
   | y < minY  = Clip.Bottom
@@ -97,9 +104,10 @@ pointsToLines pts = linesFromPoints (last pts : pts)
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
 
-segmentToLine a@(x:xs) = x : (second a)
+segmentToLine :: [a] -> [a]
+segmentToLine a@(x:_) = x : second a
   where
-    second (x:y:xs) = y : second xs
+    second (_:y:xs) = y : second xs
     second _ = []
 segmentToLine _ = []
 
