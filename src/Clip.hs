@@ -24,9 +24,9 @@ pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
 clipLines :: Clip.BoundingBox -> [VG.LineString] -> [VG.LineString]
-clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> [p1, p2])) outCodes
+clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
   where
-    createLineString = (VG.LineString . DVU.fromList) . segmentToLine
+    createLineString x = VG.LineString (vectorSegmentToLine x)
     outCodes = findOutCode bb lines
 
 findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
@@ -106,6 +106,12 @@ pointsToLines pts = linesFromPoints (last pts : pts)
 
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
+
+vectorSegmentToLine :: DVU.Vector VG.Point -> DVU.Vector VG.Point
+vectorSegmentToLine l = if DVU.length l > 1 then DVU.cons start (second l) else mempty
+  where
+    start = DVU.head l
+    second = DVU.ifilter (\i _ -> odd i)
 
 segmentToLine :: [a] -> [a]
 segmentToLine a@(x:_) = x : second a
