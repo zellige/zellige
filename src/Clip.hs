@@ -1,5 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
+-- TODO Work out how to create instance of Unboxed Vector
+
 module Clip where
 
 import qualified Data.Foldable                 as F
@@ -26,7 +28,7 @@ pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX &
 clipLines :: Clip.BoundingBox -> [VG.LineString] -> [VG.LineString]
 clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
   where
-    createLineString x = VG.LineString (vectorSegmentToLine x)
+    createLineString x = VG.LineString (segmentToLine x)
     outCodes = findOutCode bb lines
 
 findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
@@ -65,7 +67,7 @@ outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString 
 outCodeForLineStrings bb = fmap $ fmap out . getLines
   where
     out = uncurry (outCodeForLine bb)
-    getLines line = vectorLinesFromPoints $ VG.lsPoints line
+    getLines line = linesFromPoints $ VG.lsPoints line
 
 outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
 outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
@@ -87,49 +89,38 @@ clipPolygons :: Clip.BoundingBox -> [VG.Polygon] -> [VG.Polygon]
 clipPolygons bb = concatMap (pure . clipPolygon bb)
 
 clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
-clipPolygon bb poly = VG.Polygon (DVU.fromList $ clip bb poly) mempty
+clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
 
-clip :: Clip.BoundingBox -> VG.Polygon -> [VG.Point]
-clip ((x1, y1), (x2, y2)) poly = foldl (foo bb) (polyList poly) bbLines
+clip :: Clip.BoundingBox -> VG.Polygon -> DVU.Vector VG.Point
+clip ((x1, y1), (x2, y2)) poly = DVU.foldl (foo bb) (VG.polyPoints poly) bbLines
   where
-    bb = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+    bb = DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     bbLines = pointsToLines bb
 
-foo :: [VG.Point] -> [VG.Point] -> (VG.Point, VG.Point) -> [VG.Point]
-foo bb polyPts bbLine = foldl (\pts polyLine -> clipEdges polyLine bbLine ++ pts) [] (pointsToLines polyPts)
+foo :: t -> DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
+foo bb polyPts bbLine = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
 
-polyList :: VG.Polygon -> [VG.Point]
-polyList p = DVU.toList $ VG.polyPoints p
+pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
+pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
 
-pointsToLines :: [a] ->  [(a, a)]
-pointsToLines pts = linesFromPoints (last pts : pts)
+-- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
+linesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
+linesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
 
-linesFromPoints :: [a] -> [(a, a)]
-linesFromPoints = zip <*> tail
-
-vectorLinesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
-vectorLinesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
-
-vectorSegmentToLine :: DVU.Vector VG.Point -> DVU.Vector VG.Point
-vectorSegmentToLine l = if DVU.length l > 1 then DVU.cons start (second l) else mempty
+-- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
+segmentToLine :: DVU.Vector VG.Point -> DVU.Vector VG.Point
+segmentToLine l = if DVU.length l > 1 then DVU.cons start (second l) else mempty
   where
     start = DVU.head l
     second = DVU.ifilter (\i _ -> odd i)
 
-segmentToLine :: [a] -> [a]
-segmentToLine a@(x:_) = x : second a
-  where
-    second (_:y:xs) = y : second xs
-    second _ = []
-segmentToLine _ = []
-
-clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> [VG.Point]
+clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
 clipEdges polyLine@(s, e) clipLine =
   case (inside e clipLine, inside s clipLine) of
-    (True, True)   -> [e]
-    (True, False)  -> [e, lineIntersectPoint clipLine polyLine]
-    (False, True)  -> [lineIntersectPoint clipLine polyLine]
-    (False, False) -> []
+    (True, True)   -> DVU.singleton e
+    (True, False)  -> DVU.fromList [e, lineIntersectPoint clipLine polyLine]
+    (False, True)  -> DVU.singleton (lineIntersectPoint clipLine polyLine)
+    (False, False) -> DVU.empty
 
 lineIntersectPoint :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> VG.Point
 lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
