@@ -21,8 +21,8 @@ createBoundingBoxPolygon extent = [(0, 0), (0, fromIntegral extent), (fromIntegr
 clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
---clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
-clipLines bb lines = fmap VG.LineString $ fmap (DVU.fromList) $ fmap (segmentToLine) $ fmap (foldMap (\((_,p1),(_,p2)) -> [p1, p2])) (findOutcode bb lines)
+clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
+clipLines bb lines = ((VG.LineString . DVU.fromList) . segmentToLine) <$> fmap (foldMap (\((_,p1),(_,p2)) -> [p1, p2])) (findOutcode bb lines)
 
 findOutcode bb lines = iter bb <$> outCodeForLineStrings bb lines
 
