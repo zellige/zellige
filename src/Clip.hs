@@ -21,8 +21,8 @@ createBoundingBoxPolygon extent = [(0, 0), (0, fromIntegral extent), (fromIntegr
 clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
-clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
-clipLines bb lines = undefined
+--clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
+clipLines bb lines = fmap VG.LineString $ fmap (DVU.fromList) $ fmap (segmentToLine) $ fmap (foldMap (\((_,p1),(_,p2)) -> [p1, p2])) (findOutcode bb lines)
 
 findOutcode bb lines = iter bb <$> outCodeForLineStrings bb lines
 
@@ -37,12 +37,6 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
     eval = evalDiffKeepSame bb
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
-
-relist a@(x:xs) = x : (second a)
-  where
-    second (x:y:xs) = y : second xs
-    second _ = []
-relist _ = []
 
 -- makeAPass :: (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, t1), (OutCode, t))]
 removeSame ((o1, _), (o2, _)) =
@@ -102,6 +96,12 @@ pointsToLines pts = linesFromPoints (last pts : pts)
 
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
+
+segmentToLine a@(x:xs) = x : (second a)
+  where
+    second (x:y:xs) = y : second xs
+    second _ = []
+segmentToLine _ = []
 
 clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> [VG.Point]
 clipEdges polyLine@(s, e) clipLine =
