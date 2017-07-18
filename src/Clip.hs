@@ -12,22 +12,24 @@ import qualified Geography.VectorTile.Geometry as VG
 
 import           Types
 
-createBoundingBoxPts :: Integer -> ((Int, Int), (Int, Int))
-createBoundingBoxPts extent = ((0, 0), (fromIntegral extent, fromIntegral extent))
+type BoundingBox = (VG.Point, VG.Point)
 
-createBoundingBoxPolygon :: Integer -> [VG.Point]
-createBoundingBoxPolygon extent = [(0, 0), (0, fromIntegral extent), (fromIntegral extent, fromIntegral extent), (fromIntegral extent, 0), (0, 0)]
+createBoundingBoxPts :: Int -> Clip.BoundingBox
+createBoundingBoxPts extent = ((0, 0), (extent, extent))
 
-clipPoints :: (VG.Point, VG.Point) -> [VG.Point] -> [VG.Point]
+clipPoints :: Clip.BoundingBox -> [VG.Point] -> [VG.Point]
 clipPoints = filter . pointInsideExtent
 
-clipLines :: (VG.Point, VG.Point) -> [VG.LineString] -> [VG.LineString]
+pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
+pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
+
+clipLines :: Clip.BoundingBox -> [VG.LineString] -> [VG.LineString]
 clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> [p1, p2])) outCodes
   where
     createLineString = (VG.LineString . DVU.fromList) . segmentToLine
     outCodes = findOutCode bb lines
 
-findOutCode :: Functor f => ((Int, Int), (Int, Int)) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
+findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
 findOutCode bb lines = filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
 
 evalDiffKeepSame :: Integral a => ((a, a), (a, a)) -> ((OutCode, (a, a)), (OutCode, (a, a))) -> ((OutCode, (a, a)), (OutCode, (a, a)))
@@ -41,7 +43,7 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
-isSame :: ((OutCode, t1), (OutCode, t)) -> Bool
+isSame :: ((OutCode, a), (OutCode, b)) -> Bool
 isSame ((o1, _), (o2, _)) =
   case (o1, o2) of
     (Clip.Left   , Clip.Left  ) -> False
@@ -81,15 +83,16 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x < minX  = Clip.Left
   | otherwise = Clip.Inside
 
-clipPolygons :: [VG.Point] -> [VG.Polygon] -> [VG.Polygon]
+clipPolygons :: Clip.BoundingBox -> [VG.Polygon] -> [VG.Polygon]
 clipPolygons bb = concatMap (pure . clipPolygon bb)
 
-clipPolygon :: [VG.Point] -> VG.Polygon -> VG.Polygon
+clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (DVU.fromList $ clip bb poly) mempty
 
-clip :: [VG.Point] -> VG.Polygon -> [VG.Point]
-clip bb poly = foldl (foo bb) (polyList poly) bbLines
+clip :: Clip.BoundingBox -> VG.Polygon -> [VG.Point]
+clip ((x1, y1), (x2, y2)) poly = foldl (foo bb) (polyList poly) bbLines
   where
+    bb = [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     bbLines = pointsToLines bb
 
 foo :: [VG.Point] -> [VG.Point] -> (VG.Point, VG.Point) -> [VG.Point]
@@ -135,17 +138,13 @@ lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
 inside :: VG.Point -> (VG.Point, VG.Point) -> Bool
 inside (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
 
--- Is point inside bounding box
-pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
-pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
-
 testPoly = clipPolygons clipPts [poly]
 testSingle = clipPolygon clipPts poly
 isOkay = VG.Polygon (DVU.fromList answer) mempty == testSingle
 poly = VG.Polygon (DVU.fromList polyPts) mempty
 polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
            (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
-clipPts = [(100,100), (300,100), (300,300), (100,300)] :: [(Int,Int)]
+clipPts = ((100, 100), (300, 300))
 linesBbTst = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
 linesTst = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
   VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
