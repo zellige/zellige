@@ -29,8 +29,8 @@ clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.f
     createLineString x = VG.LineString (vectorSegmentToLine x)
     outCodes = findOutCode bb lines
 
-findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
-findOutCode bb lines = filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
+findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
+findOutCode bb lines = DV.filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
 
 evalDiffKeepSame :: Integral a => ((a, a), (a, a)) -> ((OutCode, (a, a)), (OutCode, (a, a))) -> ((OutCode, (a, a)), (OutCode, (a, a)))
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
@@ -61,11 +61,11 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
     Clip.Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
     otherwise -> undefined
 
-outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f [((OutCode, VG.Point), (OutCode, VG.Point))]
+outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
 outCodeForLineStrings bb = fmap $ fmap out . getLines
   where
     out = uncurry (outCodeForLine bb)
-    getLines line = linesFromPoints (DVU.toList $ VG.lsPoints line)
+    getLines line = vectorLinesFromPoints $ VG.lsPoints line
 
 outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
 outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
@@ -106,6 +106,9 @@ pointsToLines pts = linesFromPoints (last pts : pts)
 
 linesFromPoints :: [a] -> [(a, a)]
 linesFromPoints = zip <*> tail
+
+vectorLinesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
+vectorLinesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
 
 vectorSegmentToLine :: DVU.Vector VG.Point -> DVU.Vector VG.Point
 vectorSegmentToLine l = if DVU.length l > 1 then DVU.cons start (second l) else mempty
