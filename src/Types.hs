@@ -1,4 +1,17 @@
+{-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
+
 module Types where
+
+import           Data.Monoid
+import           Data.Vector.Generic.Base
+import           Data.Vector.Generic.Mutable
+import qualified Data.Vector.Unboxed          as U
+import           Data.Vector.Unboxed.Deriving
+import           Data.Word
+import           Prelude                      hiding (Left, Right)
+
 
 data BoundingBox = BoundingBox
   { _bbMinX :: Double
@@ -16,5 +29,44 @@ data GoogleTileCoords = GoogleTileCoords
   , _gtcY    :: Integer
   , _gtcZoom :: Integer
   } deriving (Eq, Show)
+
+data Options = Options
+  { oVersion :: Last Int
+  , oName    :: Last String
+  , oExtent  :: Last Int
+  } deriving (Show, Eq)
+
+instance Monoid Options where
+  mempty = Options mempty mempty mempty
+  mappend x y = Options
+    { oVersion = oVersion x <> oVersion y
+    , oName    = oName    x <> oName    y
+    , oExtent  = oExtent  x <> oExtent  y
+    }
+
+data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Ord, Enum, Bounded, Read, Show)
+
+outCodeToWord8 :: OutCode -> Word8
+outCodeToWord8 c =
+    case c of
+      Inside -> 0
+      Left -> 1
+      Right -> 2
+      Bottom -> 4
+      Top -> 8
+
+word8ToOutCode :: Word8 -> OutCode
+word8ToOutCode w =
+    case w of
+      0 -> Inside
+      1 -> Left
+      2 -> Right
+      4 -> Bottom
+      _ -> Top
+
+derivingUnbox "OutCode"
+  [t| OutCode -> Word8 |]
+  [| outCodeToWord8 |]
+  [| word8ToOutCode |]
 
 

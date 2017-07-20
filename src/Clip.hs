@@ -9,8 +9,14 @@ import qualified Data.Maybe                    as M
 import qualified Data.Ord                      as O
 import qualified Data.Tuple                    as T (swap)
 import qualified Data.Vector                   as DV
+import           Data.Vector.Generic.Base
+import           Data.Vector.Generic.Mutable
 import qualified Data.Vector.Unboxed           as DVU
+import qualified Data.Vector.Unboxed           as U
+import           Data.Vector.Unboxed.Deriving
+import           Data.Word
 import qualified Geography.VectorTile.Geometry as VG
+import           Prelude                       hiding (Left, Right)
 
 import           Types
 
@@ -19,14 +25,14 @@ type BoundingBox = (VG.Point, VG.Point)
 createBoundingBoxPts :: Int -> Clip.BoundingBox
 createBoundingBoxPts extent = ((0, 0), (extent, extent))
 
-clipPoints :: Clip.BoundingBox -> [VG.Point] -> [VG.Point]
-clipPoints = filter . pointInsideExtent
+clipPoints :: Clip.BoundingBox -> DV.Vector VG.Point -> DV.Vector VG.Point
+clipPoints = DV.filter . pointInsideExtent
 
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
-clipLines :: Clip.BoundingBox -> [VG.LineString] -> [VG.LineString]
-clipLines bb lines = fmap (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
+clipLines :: Clip.BoundingBox -> DV.Vector VG.LineString -> DV.Vector VG.LineString
+clipLines bb lines = DV.map (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
   where
     createLineString x = VG.LineString (segmentToLine x)
     outCodes = findOutCode bb lines
@@ -48,19 +54,19 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
 isSame :: ((OutCode, a), (OutCode, b)) -> Bool
 isSame ((o1, _), (o2, _)) =
   case (o1, o2) of
-    (Clip.Left   , Clip.Left  ) -> False
-    (Clip.Right  , Clip.Right ) -> False
-    (Clip.Bottom , Clip.Bottom) -> False
-    (Clip.Top    , Clip.Top   ) -> False
+    (Left   , Left  ) -> False
+    (Right  , Right ) -> False
+    (Bottom , Bottom) -> False
+    (Top    , Top   ) -> False
     _ -> True
 
 clipPoint :: Integral a => OutCode -> ((a, a), (a, a)) -> (a, a) -> (a, a) -> (a, a)
 clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
   case outCode of
-    Clip.Left   -> (minx, y1 + (y2 - y1) * (minx - x1) `div` (x2 - x1))
-    Clip.Right  -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
-    Clip.Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
-    Clip.Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
+    Left   -> (minx, y1 + (y2 - y1) * (minx - x1) `div` (x2 - x1))
+    Right  -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
+    Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
+    Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
     otherwise -> undefined
 
 outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
@@ -75,18 +81,16 @@ outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
     toP1 bb p1 = (computeOutCode bb p1, p1)
     toP2 bb p2 = (computeOutCode bb p2, p2)
 
-data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Show, Ord)
-
 computeOutCode :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> OutCode
 computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
-  | y > maxY  = Clip.Top
-  | y < minY  = Clip.Bottom
-  | x > maxX  = Clip.Right
-  | x < minX  = Clip.Left
-  | otherwise = Clip.Inside
+  | y > maxY  = Top
+  | y < minY  = Bottom
+  | x > maxX  = Right
+  | x < minX  = Left
+  | otherwise = Inside
 
-clipPolygons :: Clip.BoundingBox -> [VG.Polygon] -> [VG.Polygon]
-clipPolygons bb = concatMap (pure . clipPolygon bb)
+clipPolygons :: Clip.BoundingBox -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
+clipPolygons bb = DV.foldl (\acc f -> DV.cons (clipPolygon bb f) acc) DV.empty
 
 clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
@@ -138,19 +142,19 @@ lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
 inside :: VG.Point -> (VG.Point, VG.Point) -> Bool
 inside (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
 
-testPoly = clipPolygons clipPts [poly]
-testSingle = clipPolygon clipPts poly
-isOkay = VG.Polygon (DVU.fromList answer) mempty == testSingle
-poly = VG.Polygon (DVU.fromList polyPts) mempty
-polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
-           (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
-clipPts = ((100, 100), (300, 300))
-linesBbTst = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
-linesTst = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
-  VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
-  VG.LineString (DVU.fromList ([(5, 5), (45, 50), (90, 140)] :: [(Int,Int)])),
-  VG.LineString (DVU.fromList ([(0, 0), (60, 60)] :: [(Int,Int)]))]
-answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
+-- testPoly = clipPolygons clipPts [poly]
+-- testSingle = clipPolygon clipPts poly
+-- isOkay = VG.Polygon (DVU.fromList answer) mempty == testSingle
+-- poly = VG.Polygon (DVU.fromList polyPts) mempty
+-- polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
+--            (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
+-- clipPts = ((100, 100), (300, 300))
+-- linesBbTst = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
+-- linesTst = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
+--   VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
+--   VG.LineString (DVU.fromList ([(5, 5), (45, 50), (90, 140)] :: [(Int,Int)])),
+--   VG.LineString (DVU.fromList ([(0, 0), (60, 60)] :: [(Int,Int)]))]
+-- answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
 -- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
 --  {175 300} {125 300} {100 250}]
 
