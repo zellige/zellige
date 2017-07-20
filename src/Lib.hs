@@ -5,7 +5,7 @@ module Lib where
 import           Control.Monad.IO.Class
 import           Data.Aeson
 import qualified Data.ByteString.Lazy            as LBS (readFile)
-import           Data.Geography.GeoJSON          as GJ
+import qualified Data.Geography.GeoJSON          as GJ
 import           Data.Monoid                     ((<>))
 import           Data.Text
 import qualified Data.Vector                     as DV
@@ -27,16 +27,16 @@ readLayer file version name extent = do
     geoJson <- liftIO $ readGeoJson file
     let (p, l, o) = getFeatures geoJson
         bb = createBoundingBoxPts extent
-        cP = DV.map (\f -> f { VT._geometries = clipPoints bb (VT._geometries f) } ) p
-        cL = DV.map (\f -> f { VT._geometries = clipLines bb (VT._geometries f) } ) l
-        cO = DV.map (\f -> f { VT._geometries = clipPolygons bb (VT._geometries f) } ) o
+        cG convF bb startGeom = startGeom { VT._geometries = convF bb (VT._geometries startGeom) }
+        cP = DV.map (cG clipPoints bb) p
+        cL = DV.map (cG clipLines bb) l
+        cO = DV.map (cG clipPolygons bb) o
     pure (VT.Layer version name p l o extent)
 
-getFeatures :: GJ.FeatureCollection
-     -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-getFeatures = geoJsonFeaturesToMvtFeatures . features
+getFeatures :: GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeatures = geoJsonFeaturesToMvtFeatures . GJ.features
 
-readGeoJson :: FilePath -> IO FeatureCollection
+readGeoJson :: FilePath -> IO GJ.FeatureCollection
 readGeoJson geoJsonFile = do
     bs <- LBS.readFile geoJsonFile
     let ebs = eitherDecode bs :: Either String GJ.FeatureCollection
