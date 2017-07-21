@@ -26,7 +26,7 @@ defaultVersion = 2
 newtype Pixels = Pixels {_pixels :: Int} deriving (Show, Eq, Num)
 
 gtc :: GoogleTileCoords
-gtc = GoogleTileCoords defZoom mvtX mvtY
+gtc = GoogleTileCoords defZoom (Coords mvtX mvtY)
   where
     defZoom = 15
     mvtX = 28999
@@ -51,9 +51,13 @@ data LatLon = LatLon
   , _llLon :: Double }
 
 data GoogleTileCoords = GoogleTileCoords
-  { _gtcZoom :: Integer
-  , _gtcX    :: Integer
-  , _gtcY    :: Integer
+  { _gtcZoom   :: Integer
+  , _gtcCoords :: Coords
+  } deriving (Eq, Show)
+
+data Coords = Coords
+  { _coordsX :: Integer
+  , _coordsY :: Integer
   } deriving (Eq, Show)
 
 data Options = Options

@@ -20,12 +20,12 @@ someFunc :: IO ()
 someFunc = putStrLn "someFunc"
 
 testFile :: IO VT.Layer
-testFile = readLayer "./test/integration/19781.json" 15 28999 19781 2048 "foobar"
+testFile = readLayer "./test/integration/19781.json" 15 (28999, 19781) 2048 "foobar"
 
-readLayer :: FilePath -> Integer -> Integer -> Integer -> Int -> Text -> IO VT.Layer
-readLayer file zoom x y extents name = do
+readLayer :: FilePath -> Integer -> (Integer, Integer) -> Int -> Text -> IO VT.Layer
+readLayer file zoom (x, y) extents name = do
     geoJson <- liftIO $ readGeoJson file
-    let newGtc = GoogleTileCoords zoom x y
+    let newGtc = GoogleTileCoords zoom (Coords x y)
         config = Config newGtc (Pixels extents) name defaultVersion
     pure $ createMvt config geoJson
 

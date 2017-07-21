@@ -36,7 +36,7 @@ latToY y = checkY tmpY
 
 -- Bounding box in 3857 based on x y zoom.
 boundingBox :: GoogleTileCoords -> BoundingBox
-boundingBox (GoogleTileCoords zoom x y) = BoundingBox minX minY maxX maxY
+boundingBox (GoogleTileCoords zoom (Coords x y)) = BoundingBox minX minY maxX maxY
     where
       minX = -maxExtents + fromIntegral x * resolution
       minY = maxExtents - fromIntegral y * resolution
