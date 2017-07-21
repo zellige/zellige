@@ -5,13 +5,19 @@
 module Types where
 
 import           Data.Monoid
-import           Data.Vector.Generic.Base
-import           Data.Vector.Generic.Mutable
-import qualified Data.Vector.Unboxed          as U
 import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import           Prelude                      hiding (Left, Right)
 
+mvtExtents :: Integer
+mvtExtents = 2048 :: Integer
+
+gtc :: GoogleTileCoords
+gtc = GoogleTileCoords mvtX mvtY defZoom
+  where
+    defZoom = 15
+    mvtX = 28999
+    mvtY = 19781
 
 data BoundingBox = BoundingBox
   { _bbMinX :: Double

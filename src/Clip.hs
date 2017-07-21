@@ -4,19 +4,10 @@
 
 module Clip where
 
-import qualified Data.Foldable                 as F
-import qualified Data.Maybe                    as M
-import qualified Data.Ord                      as O
-import qualified Data.Tuple                    as T (swap)
 import qualified Data.Vector                   as DV
-import           Data.Vector.Generic.Base
-import           Data.Vector.Generic.Mutable
 import qualified Data.Vector.Unboxed           as DVU
-import qualified Data.Vector.Unboxed           as U
-import           Data.Vector.Unboxed.Deriving
-import           Data.Word
 import qualified Geography.VectorTile.Geometry as VG
-import           Prelude                       hiding (Left, Right)
+import           Prelude                       hiding (Left, Right, lines)
 
 import           Types
 
@@ -67,7 +58,7 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
     Right  -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
     Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
     Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
-    otherwise -> undefined
+    _ -> undefined
 
 outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
 outCodeForLineStrings bb = fmap $ fmap out . getLines
@@ -76,10 +67,10 @@ outCodeForLineStrings bb = fmap $ fmap out . getLines
     getLines line = linesFromPoints $ VG.lsPoints line
 
 outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
-outCodeForLine bb p1 p2 = (toP1 bb p1, toP2 bb p2)
+outCodeForLine bb p1 p2 = (toP1, toP2)
   where
-    toP1 bb p1 = (computeOutCode bb p1, p1)
-    toP2 bb p2 = (computeOutCode bb p2, p2)
+    toP1 = (computeOutCode bb p1, p1)
+    toP2 = (computeOutCode bb p2, p2)
 
 computeOutCode :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> OutCode
 computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
@@ -96,13 +87,13 @@ clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
 
 clip :: Clip.BoundingBox -> VG.Polygon -> DVU.Vector VG.Point
-clip ((x1, y1), (x2, y2)) poly = DVU.foldl (foo bb) (VG.polyPoints poly) bbLines
+clip ((x1, y1), (x2, y2)) poly = DVU.foldl (foo) (VG.polyPoints poly) bbLines
   where
     bb = DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     bbLines = pointsToLines bb
 
-foo :: t -> DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
-foo bb polyPts bbLine = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
+foo :: DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
+foo polyPts bbLine = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
 
 pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
 pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts

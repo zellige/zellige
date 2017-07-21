@@ -16,11 +16,7 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           SphericalMercator
 import           Types
 
-mvtExtents = 2048 :: Integer
-mvtX = 28999
-mvtY = 19781
-zoom = 15
-gtc = GoogleTileCoords mvtX mvtY zoom
+bb :: BoundingBox
 bb = boundingBox gtc
 
 geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
@@ -104,4 +100,3 @@ sciLatLongToPoints x = fmap (\(lat, lon) -> latLonToXYInTile mvtExtents bb (LatL
 -- pv = DV.fromList [yyy]
 -- yyy = VG.Polygon xxx DV.empty
 -- xxx = DVU.fromList ([(0, 0), (0,1), (1,1), (1,0), (0,0)] :: [(Int,Int)])
-

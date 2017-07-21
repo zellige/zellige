@@ -9,7 +9,6 @@ import qualified Data.Geography.GeoJSON          as GJ
 import           Data.Monoid                     ((<>))
 import           Data.Text
 import qualified Data.Vector                     as DV
-import qualified Geography.VectorTile            as V
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
@@ -26,12 +25,12 @@ readLayer :: FilePath -> Int -> Text -> Int -> IO VT.Layer
 readLayer file version name extent = do
     geoJson <- liftIO $ readGeoJson file
     let (p, l, o) = getFeatures geoJson
-        bb = createBoundingBoxPts extent
-        cG convF bb startGeom = startGeom { VT._geometries = convF bb (VT._geometries startGeom) }
-        cP = DV.map (cG clipPoints bb) p
-        cL = DV.map (cG clipLines bb) l
-        cO = DV.map (cG clipPolygons bb) o
-    pure (VT.Layer version name p l o extent)
+        myBb = createBoundingBoxPts extent
+        cG convF startGeom = startGeom { VT._geometries = convF myBb (VT._geometries startGeom) }
+        cP = DV.map (cG clipPoints) p
+        cL = DV.map (cG clipLines) l
+        cO = DV.map (cG clipPolygons) o
+    pure (VT.Layer version name cP cL cO extent)
 
 getFeatures :: GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 getFeatures = geoJsonFeaturesToMvtFeatures . GJ.features
