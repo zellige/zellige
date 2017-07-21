@@ -1,4 +1,4 @@
-module GeoJsonToMvt where
+module Data.Geometry.GeoJsonToMvt where
 
 import qualified Data.Aeson                      as A
 import qualified Data.Foldable                   as F (foldMap)
@@ -13,8 +13,8 @@ import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
-import           SphericalMercator
-import           Types
+import           Data.Geometry.SphericalMercator
+import           Data.Geometry.Types
 
 geoJsonFeaturesToMvtFeatures :: Config -> [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 geoJsonFeaturesToMvtFeatures config = F.foldMap (convertFeature config)

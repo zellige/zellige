@@ -3,7 +3,7 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 
-module Types where
+module Data.Geometry.Types where
 
 import           Data.Monoid
 import           Data.Text

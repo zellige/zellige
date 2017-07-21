@@ -2,27 +2,27 @@
 
 -- TODO Work out how to create instance of Unboxed Vector
 
-module Clip where
+module Data.Geometry.Clip where
 
 import qualified Data.Vector                   as DV
 import qualified Data.Vector.Unboxed           as DVU
 import qualified Geography.VectorTile.Geometry as VG
 import           Prelude                       hiding (Left, Right, lines)
 
-import           Types
+import           Data.Geometry.Types
 
 type BoundingBox = (VG.Point, VG.Point)
 
-createBoundingBoxPts :: Pixels -> Clip.BoundingBox
+createBoundingBoxPts :: Pixels -> Data.Geometry.Clip.BoundingBox
 createBoundingBoxPts (Pixels extent) = ((0, 0), (extent, extent))
 
-clipPoints :: Clip.BoundingBox -> DV.Vector VG.Point -> DV.Vector VG.Point
+clipPoints :: Data.Geometry.Clip.BoundingBox -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent
 
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
-clipLines :: Clip.BoundingBox -> DV.Vector VG.LineString -> DV.Vector VG.LineString
+clipLines :: Data.Geometry.Clip.BoundingBox -> DV.Vector VG.LineString -> DV.Vector VG.LineString
 clipLines bb lines = DV.map (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
   where
     createLineString x = VG.LineString (segmentToLine x)
@@ -80,13 +80,13 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x < minX  = Left
   | otherwise = Inside
 
-clipPolygons :: Clip.BoundingBox -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
+clipPolygons :: Data.Geometry.Clip.BoundingBox -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
 clipPolygons bb = DV.foldl (\acc f -> DV.cons (clipPolygon bb f) acc) DV.empty
 
-clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
+clipPolygon :: Data.Geometry.Clip.BoundingBox -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
 
-clip :: Clip.BoundingBox -> VG.Polygon -> DVU.Vector VG.Point
+clip :: Data.Geometry.Clip.BoundingBox -> VG.Polygon -> DVU.Vector VG.Point
 clip ((x1, y1), (x2, y2)) poly = DVU.foldl foo (VG.polyPoints poly) bbLines
   where
     bb = DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]

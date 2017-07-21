@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Lib where
+module Data.Geometry.MapnikVectorTile where
 
 import           Control.Monad.IO.Class
 import           Data.Aeson
@@ -12,9 +12,9 @@ import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
-import           Clip
-import           GeoJsonToMvt
-import           Types
+import           Data.Geometry.Clip
+import           Data.Geometry.GeoJsonToMvt
+import           Data.Geometry.Types
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"

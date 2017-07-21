@@ -1,6 +1,6 @@
 module Main where
 
-import Lib
+import           Data.Geometry.MapnikVectorTile
 
 main :: IO ()
 main = someFunc

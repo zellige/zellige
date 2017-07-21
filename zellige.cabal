@@ -15,11 +15,11 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib
-                     , GeoJsonToMvt
-                     , SphericalMercator
-                     , Types
-                     , Clip
+  exposed-modules:     Data.Geometry.Clip
+                     , Data.Geometry.GeoJsonToMvt
+                     , Data.Geometry.MapnikVectorTile
+                     , Data.Geometry.SphericalMercator
+                     , Data.Geometry.Types                     
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
