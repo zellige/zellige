@@ -1,23 +1,43 @@
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Types where
 
 import           Data.Monoid
+import           Data.Text
 import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import           Prelude                      hiding (Left, Right)
 
-mvtExtents :: Integer
-mvtExtents = 2048 :: Integer
+mvtExtents :: Pixels
+mvtExtents = 2048 :: Pixels
+
+defaultExtents :: Pixels
+defaultExtents = 2048 :: Pixels
+
+defaultBuffer :: Pixels
+defaultBuffer = 128 :: Pixels
+
+defaultVersion :: Int
+defaultVersion = 2
+
+newtype Pixels = Pixels {_pixels :: Int} deriving (Show, Eq, Num)
 
 gtc :: GoogleTileCoords
-gtc = GoogleTileCoords mvtX mvtY defZoom
+gtc = GoogleTileCoords defZoom mvtX mvtY
   where
     defZoom = 15
     mvtX = 28999
     mvtY = 19781
+
+data Config = Config
+  { _gtc     :: GoogleTileCoords
+  , _extents :: Pixels
+  , _name    :: Text
+  , _version :: Int
+  } deriving (Show, Eq)
 
 data BoundingBox = BoundingBox
   { _bbMinX :: Double
@@ -31,9 +51,9 @@ data LatLon = LatLon
   , _llLon :: Double }
 
 data GoogleTileCoords = GoogleTileCoords
-  { _gtcX    :: Integer
+  { _gtcZoom :: Integer
+  , _gtcX    :: Integer
   , _gtcY    :: Integer
-  , _gtcZoom :: Integer
   } deriving (Eq, Show)
 
 data Options = Options

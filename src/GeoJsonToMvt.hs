@@ -16,44 +16,41 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           SphericalMercator
 import           Types
 
-bb :: BoundingBox
-bb = boundingBox gtc
+geoJsonFeaturesToMvtFeatures :: Config -> [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+geoJsonFeaturesToMvtFeatures config = F.foldMap (convertFeature config)
 
-geoJsonFeaturesToMvtFeatures :: [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-geoJsonFeaturesToMvtFeatures = F.foldMap convertFeature
-
-convertFeature :: GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-convertFeature (GJ.Feature _ geom props fid) = go geom
+convertFeature :: Config -> GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+convertFeature config (GJ.Feature _ geom props fid) = go geom
   where
-      go (GJ.Point p)                  = mkPoint . convertPoint $ p
-      go (GJ.MultiPoint mpg)           = mkPoint . convertMultiPoint $ mpg
-      go (GJ.LineString ls)            = mkLineString . convertLineString $ ls
-      go (GJ.MultiLineString mls)      = mkLineString . convertMultiLineString $ mls
-      go (GJ.Polygon poly)             = mkPolygon . convertPolygon $ poly
-      go (GJ.MultiPolygon mp)          = mkPolygon . convertMultiPolygon $ mp
+      go (GJ.Point p)                  = mkPoint . convertPoint config $ p
+      go (GJ.MultiPoint mpg)           = mkPoint . convertMultiPoint config $ mpg
+      go (GJ.LineString ls)            = mkLineString . convertLineString config $ ls
+      go (GJ.MultiLineString mls)      = mkLineString . convertMultiLineString config $ mls
+      go (GJ.Polygon poly)             = mkPolygon . convertPolygon config $ poly
+      go (GJ.MultiPolygon mp)          = mkPolygon . convertMultiPolygon config $ mp
       go (GJ.GeometryCollection geoms) = F.foldMap go geoms
       mkPoint p       = (mkFeature p, mempty, mempty)
       mkLineString l  = (mempty, mkFeature l, mempty)
       mkPolygon o     = (mempty, mempty, mkFeature o)
       mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
 
-convertPoint :: GJ.PointGeometry -> [VG.Point]
-convertPoint = sciLatLongToPoints . GJ.coordinates
+convertPoint :: Config -> GJ.PointGeometry -> [VG.Point]
+convertPoint config = sciLatLongToPoints config . GJ.coordinates
 
-convertMultiPoint :: GJ.MultiPointGeometry -> [VG.Point]
-convertMultiPoint = pointToMvt . GJ.points
+convertMultiPoint :: Config -> GJ.MultiPointGeometry -> [VG.Point]
+convertMultiPoint config = pointToMvt config . GJ.points
 
-convertLineString :: GJ.LineStringGeometry -> [VG.LineString]
-convertLineString = lineToMvt . pure
+convertLineString :: Config -> GJ.LineStringGeometry -> [VG.LineString]
+convertLineString config = lineToMvt config . pure
 
-convertMultiLineString :: GJ.MultiLineStringGeometry -> [VG.LineString]
-convertMultiLineString (GJ.MultiLineStringGeometry mls) = lineToMvt mls
+convertMultiLineString :: Config -> GJ.MultiLineStringGeometry -> [VG.LineString]
+convertMultiLineString config (GJ.MultiLineStringGeometry mls) = lineToMvt config mls
 
-convertPolygon :: GJ.PolygonGeometry -> [VG.Polygon]
-convertPolygon = polygonToMvt . pure
+convertPolygon :: Config -> GJ.PolygonGeometry -> [VG.Polygon]
+convertPolygon config = polygonToMvt config . pure
 
-convertMultiPolygon :: GJ.MultiPolygonGeometry -> [VG.Polygon]
-convertMultiPolygon (GJ.MultiPolygonGeometry polys) = polygonToMvt polys
+convertMultiPolygon :: Config -> GJ.MultiPolygonGeometry -> [VG.Polygon]
+convertMultiPolygon config (GJ.MultiPolygonGeometry polys) = polygonToMvt config polys
 
 convertProps :: A.Value -> DMZ.Map T.Text VT.Val
 convertProps (A.Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
@@ -63,17 +60,17 @@ convertId :: Maybe A.Value -> Int
 convertId (Just (A.Number n)) = (round . sToF) n
 convertId _ = 0
 
-pointToMvt :: [GJ.PointGeometry] -> [VG.Point]
-pointToMvt = F.foldMap (sciLatLongToPoints . GJ.coordinates)
+pointToMvt :: Config -> [GJ.PointGeometry] -> [VG.Point]
+pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
 
-lineToMvt :: [GJ.LineStringGeometry] -> [VG.LineString]
-lineToMvt = F.foldMap (\lsg -> [VG.LineString . DVU.fromList . pointToMvt $ GJ.lineString lsg])
+lineToMvt :: Config -> [GJ.LineStringGeometry] -> [VG.LineString]
+lineToMvt config = F.foldMap (\lsg -> [VG.LineString . DVU.fromList . pointToMvt config $ GJ.lineString lsg])
 
-polygonToMvt :: [GJ.PolygonGeometry] -> [VG.Polygon]
-polygonToMvt = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))])
+polygonToMvt :: Config -> [GJ.PolygonGeometry] -> [VG.Polygon]
+polygonToMvt config = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))])
   where
-    ext = DVU.fromList . pointToMvt
-    int y = DV.fromList . polygonToMvt $ fmap (\x -> GJ.PolygonGeometry x []) y
+    ext = DVU.fromList . pointToMvt config
+    int y = DV.fromList . polygonToMvt config $ fmap (\x -> GJ.PolygonGeometry x []) y
 
 sToF :: Scientific -> Double
 sToF = toRealFloat
@@ -84,10 +81,10 @@ convertElems (k, A.Number v) = Just (k, VT.Do (sToF v))
 convertElems (k, A.Bool v) = Just (k, VT.B v)
 convertElems _ = Nothing
 
-sciLatLongToPoints :: [Scientific] -> [VG.Point]
-sciLatLongToPoints [] = []
-sciLatLongToPoints [_] = []
-sciLatLongToPoints x = fmap (\(lat, lon) -> latLonToXYInTile mvtExtents bb (LatLon (sToF lat) (sToF lon))) (zip <*> tail $ x)
+sciLatLongToPoints :: Config -> [Scientific] -> [VG.Point]
+sciLatLongToPoints _ [] = []
+sciLatLongToPoints _ [_] = []
+sciLatLongToPoints config x = fmap (\(lat, lon) -> latLonToXYInTile (_extents config) (boundingBox $ _gtc config) (LatLon (sToF lat) (sToF lon))) (zip <*> tail $ x)
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)

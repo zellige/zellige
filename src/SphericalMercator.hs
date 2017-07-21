@@ -11,8 +11,8 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Integer -> BoundingBox -> LatLon -> (Int, Int)
-latLonToXYInTile extents (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (x, y)
+latLonToXYInTile :: Pixels -> BoundingBox -> LatLon -> (Int, Int)
+latLonToXYInTile (Pixels extents) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (x, y)
     where
       x = round ((lonToX lat - minX) * dExtents / spanX)
       y = round ((latToY lon - minY) * dExtents / spanY)
@@ -36,7 +36,7 @@ latToY y = checkY tmpY
 
 -- Bounding box in 3857 based on x y zoom.
 boundingBox :: GoogleTileCoords -> BoundingBox
-boundingBox (GoogleTileCoords x y zoom) = BoundingBox minX minY maxX maxY
+boundingBox (GoogleTileCoords zoom x y) = BoundingBox minX minY maxX maxY
     where
       minX = -maxExtents + fromIntegral x * resolution
       minY = maxExtents - fromIntegral y * resolution

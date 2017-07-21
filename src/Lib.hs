@@ -14,26 +14,36 @@ import qualified Geography.VectorTile.VectorTile as VT
 
 import           Clip
 import           GeoJsonToMvt
+import           Types
 
 someFunc :: IO ()
 someFunc = putStrLn "someFunc"
 
 testFile :: IO VT.Layer
-testFile = readLayer "./test/integration/19781.json" 2 "foobar" 2048
+testFile = readLayer "./test/integration/19781.json" 15 28999 19781 2048 "foobar"
 
-readLayer :: FilePath -> Int -> Text -> Int -> IO VT.Layer
-readLayer file version name extent = do
+readLayer :: FilePath -> Integer -> Integer -> Integer -> Int -> Text -> IO VT.Layer
+readLayer file zoom x y extents name = do
     geoJson <- liftIO $ readGeoJson file
-    let (p, l, o) = getFeatures geoJson
-        myBb = createBoundingBoxPts extent
-        cG convF startGeom = startGeom { VT._geometries = convF myBb (VT._geometries startGeom) }
+    let newGtc = GoogleTileCoords zoom x y
+        config = Config newGtc (Pixels extents) name defaultVersion
+    pure $ createMvt config geoJson
+
+createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
+createMvt config geoJson = do
+    let (p, l, o) = getFeatures config geoJson
+        extent = _extents config
+        version = _version config
+        name = _name config
+        clipBb = createBoundingBoxPts extent
+        cG convF startGeom = startGeom { VT._geometries = convF clipBb (VT._geometries startGeom) }
         cP = DV.map (cG clipPoints) p
         cL = DV.map (cG clipLines) l
         cO = DV.map (cG clipPolygons) o
-    pure (VT.Layer version name cP cL cO extent)
+    VT.Layer version name cP cL cO (_pixels extent)
 
-getFeatures :: GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-getFeatures = geoJsonFeaturesToMvtFeatures . GJ.features
+getFeatures :: Config -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeatures config = geoJsonFeaturesToMvtFeatures config . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
 readGeoJson geoJsonFile = do

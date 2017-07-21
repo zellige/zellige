@@ -13,8 +13,8 @@ import           Types
 
 type BoundingBox = (VG.Point, VG.Point)
 
-createBoundingBoxPts :: Int -> Clip.BoundingBox
-createBoundingBoxPts extent = ((0, 0), (extent, extent))
+createBoundingBoxPts :: Pixels -> Clip.BoundingBox
+createBoundingBoxPts (Pixels extent) = ((0, 0), (extent, extent))
 
 clipPoints :: Clip.BoundingBox -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent
@@ -87,7 +87,7 @@ clipPolygon :: Clip.BoundingBox -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
 
 clip :: Clip.BoundingBox -> VG.Polygon -> DVU.Vector VG.Point
-clip ((x1, y1), (x2, y2)) poly = DVU.foldl (foo) (VG.polyPoints poly) bbLines
+clip ((x1, y1), (x2, y2)) poly = DVU.foldl foo (VG.polyPoints poly) bbLines
   where
     bb = DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
     bbLines = pointsToLines bb
