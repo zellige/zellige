@@ -4,37 +4,37 @@ module Data.Geometry.MapnikVectorTile where
 
 import           Control.Monad.IO.Class
 import           Data.Aeson
+import qualified Data.ByteString                 as B (writeFile)
 import qualified Data.ByteString.Lazy            as LBS (readFile)
 import qualified Data.Geography.GeoJSON          as GJ
+import           Data.Map                        as M
 import           Data.Monoid                     ((<>))
-import           Data.Text
 import qualified Data.Vector                     as DV
+import qualified Geography.VectorTile            as VT
 import qualified Geography.VectorTile.Geometry   as VG
-import qualified Geography.VectorTile.VectorTile as VT
+import qualified Geography.VectorTile.VectorTile as VVT
+import qualified Options.Generic                 as OG
 
 import           Data.Geometry.Clip
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.Types
 
-someFunc :: IO ()
-someFunc = putStrLn "someFunc"
+writeLayer :: LayerConfig OG.Unwrapped -> IO ()
+writeLayer lc = do
+    let config = configFromLayerConfig lc
+    inputLayer <- readLayer (_layerInput lc) config
+    let outputLayer = VT.encode . VT.untile $ VVT.VectorTile (M.fromList [(_layerName lc, inputLayer)])
+    B.writeFile (_layerOutput lc) outputLayer
 
-testFile :: IO VT.Layer
-testFile = readLayer "./test/integration/19781.json" 15 (28999, 19781) (Pixels 2048) "foobar"
-
-readLayer :: FilePath -> Integer -> (Integer, Integer) -> Pixels -> Text -> IO VT.Layer
-readLayer file zoom (x, y) extents name = do
-    geoJson <- liftIO $ readGeoJson file
-    let newGtc = GoogleTileCoords zoom (Coords x y)
-        config = Config newGtc extents name defaultVersion
+readLayer :: FilePath -> Config -> IO VT.Layer
+readLayer filePath config = do
+    geoJson <- liftIO $ readGeoJson filePath
     pure $ createMvt config geoJson
 
 createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
 createMvt config geoJson = do
     let (p, l, o) = getFeatures config geoJson
-        extent = _extents config
-        version = _version config
-        name = _name config
+        (extent, version, name) = (,,) <$> _extents <*> _version <*> _name $ config
         clipBb = createBoundingBoxPts extent
         cG convF startGeom = startGeom { VT._geometries = convF clipBb (VT._geometries startGeom) }
         cP = DV.map (cG clipPoints) p

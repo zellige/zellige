@@ -1,6 +1,15 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Main where
 
-import           Data.Geometry.MapnikVectorTile
+import           Options.Generic
+
+import qualified Data.Geometry.MapnikVectorTile as MVT
 
 main :: IO ()
-main = someFunc
+main = do
+  x <- unwrapRecord "Zellige - GeoJSON to MVT"
+  MVT.writeLayer x
+
+
+

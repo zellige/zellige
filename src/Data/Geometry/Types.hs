@@ -1,7 +1,13 @@
+{-# LANGUAGE DataKinds                  #-}
+{-# LANGUAGE DeriveGeneric              #-}
+{-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
+{-# LANGUAGE TypeOperators              #-}
 
 module Data.Geometry.Types where
 
@@ -9,33 +15,21 @@ import           Data.Monoid
 import           Data.Text
 import           Data.Vector.Unboxed.Deriving
 import           Data.Word
+import           Options.Generic
 import           Prelude                      hiding (Left, Right)
-
-mvtExtents :: Pixels
-mvtExtents = 2048 :: Pixels
-
-defaultExtents :: Pixels
-defaultExtents = 2048 :: Pixels
-
-defaultBuffer :: Pixels
-defaultBuffer = 128 :: Pixels
 
 defaultVersion :: Int
 defaultVersion = 2
 
 newtype Pixels = Pixels {_pixels :: Int} deriving (Show, Eq, Num)
 
-gtc :: GoogleTileCoords
-gtc = GoogleTileCoords defZoom (Coords mvtX mvtY)
-  where
-    defZoom = 15
-    mvtX = 28999
-    mvtY = 19781
+mkConfig :: Text -> Integer -> (Integer, Integer) -> Pixels -> Config
+mkConfig name z (x, y) extents = Config name (GoogleTileCoords z (Coords x y)) extents defaultVersion
 
 data Config = Config
-  { _gtc     :: GoogleTileCoords
+  { _name    :: Text
+  , _gtc     :: GoogleTileCoords
   , _extents :: Pixels
-  , _name    :: Text
   , _version :: Int
   } deriving (Show, Eq)
 
@@ -99,4 +93,24 @@ derivingUnbox "OutCode"
   [| outCodeToWord8 |]
   [| word8ToOutCode |]
 
+data LayerConfig w = LayerConfig
+  { _layerInput  :: w ::: FilePath <?> "Input GeoJSON file"
+  , _layerOutput :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
+  , _layerName   :: w ::: Text <?> "Name of layer"
+  , _layerZoom   :: w ::: Integer <?> "Zoom level of layer"
+  , _layerX      :: w ::: Integer <?> "Longitude of layer"
+  , _layerY      :: w ::: Integer <?> "Latitude of layer"
+  , _layerExtent :: w ::: Int <?> "Size in pixels of layer"
+  } deriving (Generic)
+
+modifiers :: Modifiers
+modifiers = lispCaseModifiers
+
+instance ParseRecord (LayerConfig Wrapped) where
+  parseRecord = parseRecordWithModifiers modifiers
+
+deriving instance Show (LayerConfig Unwrapped)
+
+configFromLayerConfig :: LayerConfig Unwrapped -> Config
+configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerExtent lc)
 
