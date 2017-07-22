@@ -13,8 +13,8 @@ import           Data.Geometry.Types
 
 type BoundingBox = (VG.Point, VG.Point)
 
-createBoundingBoxPts :: Pixels -> Data.Geometry.Clip.BoundingBox
-createBoundingBoxPts (Pixels extent) = ((0, 0), (extent, extent))
+createBoundingBoxPts :: Pixels -> Pixels -> Data.Geometry.Clip.BoundingBox
+createBoundingBoxPts (Pixels buffer) (Pixels extent) = ((-buffer, -buffer), (extent+buffer, extent+buffer))
 
 clipPoints :: Data.Geometry.Clip.BoundingBox -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent

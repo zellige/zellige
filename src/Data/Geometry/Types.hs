@@ -21,14 +21,18 @@ import           Prelude                      hiding (Left, Right)
 defaultVersion :: Int
 defaultVersion = 2
 
+defaultBuffer :: Pixels
+defaultBuffer = Pixels 128
+
 newtype Pixels = Pixels {_pixels :: Int} deriving (Show, Eq, Num)
 
-mkConfig :: Text -> Integer -> (Integer, Integer) -> Pixels -> Config
-mkConfig name z (x, y) extents = Config name (GoogleTileCoords z (Coords x y)) extents defaultVersion
+mkConfig :: Text -> Integer -> (Integer, Integer) -> Pixels -> Pixels -> Config
+mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
 
 data Config = Config
   { _name    :: Text
   , _gtc     :: GoogleTileCoords
+  , _buffer  :: Pixels
   , _extents :: Pixels
   , _version :: Int
   } deriving (Show, Eq)
@@ -100,7 +104,8 @@ data LayerConfig w = LayerConfig
   , _layerZoom   :: w ::: Integer <?> "Zoom level of layer"
   , _layerX      :: w ::: Integer <?> "Longitude of layer"
   , _layerY      :: w ::: Integer <?> "Latitude of layer"
-  , _layerExtent :: w ::: Int <?> "Size in pixels of layer"
+  , _layerBuffer :: w ::: Int <?> "Buffer in pixels"
+  , _layerExtent :: w ::: Int <?> "Layer size in pixels"
   } deriving (Generic)
 
 modifiers :: Modifiers
@@ -112,5 +117,5 @@ instance ParseRecord (LayerConfig Wrapped) where
 deriving instance Show (LayerConfig Unwrapped)
 
 configFromLayerConfig :: LayerConfig Unwrapped -> Config
-configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerExtent lc)
+configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc)
 

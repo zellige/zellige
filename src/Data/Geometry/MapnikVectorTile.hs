@@ -35,8 +35,8 @@ readLayer filePath config = do
 createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
 createMvt config geoJson = do
     let (p, l, o) = getFeatures config geoJson
-        (extent, version, name) = (,,) <$> _extents <*> _version <*> _name $ config
-        clipBb = createBoundingBoxPts extent
+        (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
+        clipBb = createBoundingBoxPts buffer extent
         cG convF startGeom = startGeom { VT._geometries = convF clipBb (VT._geometries startGeom) }
         cP = DV.map (cG clipPoints) p
         cL = DV.map (cG clipLines) l
@@ -53,7 +53,7 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO (VVT.VectorTile)
+readMvt :: FilePath -> IO VVT.VectorTile
 readMvt filePath = do
     b <- B.readFile filePath
     let db = VT.decode b
