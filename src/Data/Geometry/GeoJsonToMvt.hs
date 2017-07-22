@@ -17,9 +17,11 @@ import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types
 
 geoJsonFeaturesToMvtFeatures :: Config -> [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-geoJsonFeaturesToMvtFeatures config = F.foldMap (convertFeature config)
+geoJsonFeaturesToMvtFeatures config = F.foldMap (convertFeature extentsBb)
+  where
+    extentsBb = (_extents config, boundingBox $ _gtc config)
 
-convertFeature :: Config -> GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+convertFeature :: (Pixels, BoundingBox) -> GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 convertFeature config (GJ.Feature _ geom props fid) = go geom
   where
       go (GJ.Point p)                  = mkPoint . convertPoint config $ p
@@ -34,22 +36,22 @@ convertFeature config (GJ.Feature _ geom props fid) = go geom
       mkPolygon o     = (mempty, mempty, mkFeature o)
       mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
 
-convertPoint :: Config -> GJ.PointGeometry -> [VG.Point]
+convertPoint :: (Pixels, BoundingBox) -> GJ.PointGeometry -> [VG.Point]
 convertPoint config = sciLatLongToPoints config . GJ.coordinates
 
-convertMultiPoint :: Config -> GJ.MultiPointGeometry -> [VG.Point]
+convertMultiPoint :: (Pixels, BoundingBox) -> GJ.MultiPointGeometry -> [VG.Point]
 convertMultiPoint config = pointToMvt config . GJ.points
 
-convertLineString :: Config -> GJ.LineStringGeometry -> [VG.LineString]
+convertLineString :: (Pixels, BoundingBox) -> GJ.LineStringGeometry -> [VG.LineString]
 convertLineString config = lineToMvt config . pure
 
-convertMultiLineString :: Config -> GJ.MultiLineStringGeometry -> [VG.LineString]
+convertMultiLineString :: (Pixels, BoundingBox) -> GJ.MultiLineStringGeometry -> [VG.LineString]
 convertMultiLineString config (GJ.MultiLineStringGeometry mls) = lineToMvt config mls
 
-convertPolygon :: Config -> GJ.PolygonGeometry -> [VG.Polygon]
+convertPolygon :: (Pixels, BoundingBox) -> GJ.PolygonGeometry -> [VG.Polygon]
 convertPolygon config = polygonToMvt config . pure
 
-convertMultiPolygon :: Config -> GJ.MultiPolygonGeometry -> [VG.Polygon]
+convertMultiPolygon :: (Pixels, BoundingBox) -> GJ.MultiPolygonGeometry -> [VG.Polygon]
 convertMultiPolygon config (GJ.MultiPolygonGeometry polys) = polygonToMvt config polys
 
 convertProps :: A.Value -> DMZ.Map T.Text VT.Val
@@ -60,13 +62,13 @@ convertId :: Maybe A.Value -> Int
 convertId (Just (A.Number n)) = (round . sToF) n
 convertId _ = 0
 
-pointToMvt :: Config -> [GJ.PointGeometry] -> [VG.Point]
+pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> [VG.Point]
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
 
-lineToMvt :: Config -> [GJ.LineStringGeometry] -> [VG.LineString]
+lineToMvt :: (Pixels, BoundingBox) -> [GJ.LineStringGeometry] -> [VG.LineString]
 lineToMvt config = F.foldMap (\lsg -> [VG.LineString . DVU.fromList . pointToMvt config $ GJ.lineString lsg])
 
-polygonToMvt :: Config -> [GJ.PolygonGeometry] -> [VG.Polygon]
+polygonToMvt :: (Pixels, BoundingBox) -> [GJ.PolygonGeometry] -> [VG.Polygon]
 polygonToMvt config = F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))])
   where
     ext = DVU.fromList . pointToMvt config
@@ -81,10 +83,10 @@ convertElems (k, A.Number v) = Just (k, VT.Do (sToF v))
 convertElems (k, A.Bool v) = Just (k, VT.B v)
 convertElems _ = Nothing
 
-sciLatLongToPoints :: Config -> [Scientific] -> [VG.Point]
+sciLatLongToPoints :: (Pixels, BoundingBox) -> [Scientific] -> [VG.Point]
 sciLatLongToPoints _ [] = []
 sciLatLongToPoints _ [_] = []
-sciLatLongToPoints config x = fmap (\(lat, lon) -> latLonToXYInTile (_extents config) (boundingBox $ _gtc config) (LatLon (sToF lat) (sToF lon))) (zip <*> tail $ x)
+sciLatLongToPoints (ext, bb) x = fmap (\(lat, lon) -> latLonToXYInTile ext bb (LatLon (sToF lat) (sToF lon))) (zip <*> tail $ x)
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)
