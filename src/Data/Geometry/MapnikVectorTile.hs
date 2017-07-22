@@ -4,11 +4,12 @@ module Data.Geometry.MapnikVectorTile where
 
 import           Control.Monad.IO.Class
 import           Data.Aeson
-import qualified Data.ByteString                 as B (writeFile)
+import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Lazy            as LBS (readFile)
 import qualified Data.Geography.GeoJSON          as GJ
 import           Data.Map                        as M
 import           Data.Monoid                     ((<>))
+import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile            as VT
 import qualified Geography.VectorTile.Geometry   as VG
@@ -51,3 +52,12 @@ readGeoJson geoJsonFile = do
     let ebs = eitherDecode bs :: Either String GJ.FeatureCollection
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
+
+readMvt :: FilePath -> IO (VVT.VectorTile)
+readMvt filePath = do
+    b <- B.readFile filePath
+    let db = VT.decode b
+        rawDecodeError a = error (("Unable to read " <> filePath <> ": ") <> T.unpack a)
+        x = either rawDecodeError id db
+        t = VT.tile x
+    pure (either rawDecodeError id t)
