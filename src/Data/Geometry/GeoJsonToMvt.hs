@@ -95,15 +95,3 @@ sciLatLongToPoints (ext, bb) x = DV.map (\(lat, lon) -> latLonToXYInTile ext bb 
 
 createLines :: [a] -> DV.Vector (a, a)
 createLines a = DV.fromList $ (zip <*> tail) a
-
--- writeOut = do
---     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)
---     pure ()
-
--- t0 = VectorTile (DMZ.fromList [(pack "", l0)])
--- l0 = Layer 2 "water" DV.empty DV.empty (DV.fromList [f0]) 4096
--- f0 = VT.Feature 0 props pv
--- props = DMZ.fromList [("uid", I64 123), ("foo", St "bar"), ("cat", St "flew")]
--- pv = DV.fromList [yyy]
--- yyy = VG.Polygon xxx DV.empty
--- xxx = DVU.fromList ([(0, 0), (0,1), (1,1), (1,0), (0,0)] :: [(Int,Int)])
