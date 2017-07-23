@@ -3,7 +3,7 @@
 module Data.Geometry.GeoJsonToMvt where
 
 import qualified Data.Aeson                      as A
-import qualified Data.Foldable                   as F (foldMap)
+import qualified Data.Foldable                   as F (foldMap, foldr)
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.HashMap.Strict             as HM
 import qualified Data.Map.Lazy                   as DMZ
@@ -31,11 +31,10 @@ convertFeature config (GJ.Feature _ geom props fid) = go geom
       go (GJ.Polygon poly)             = mkPolygon . convertPolygon config $ poly
       go (GJ.MultiPolygon mp)          = mkPolygon . convertMultiPolygon config $ mp
       go (GJ.GeometryCollection geoms) = F.foldMap go geoms
-      mkPoint p       = (mkFeature' p, mempty, mempty)
-      mkLineString l  = (mempty, mkFeature' l, mempty)
-      mkPolygon o     = (mempty, mempty, mkFeature' o)
---      mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) (DV.fromList geoms)
-      mkFeature' geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) geoms
+      mkPoint p       = (mkFeature p, mempty, mempty)
+      mkLineString l  = (mempty, mkFeature l, mempty)
+      mkPolygon o     = (mempty, mempty, mkFeature o)
+      mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) geoms
 
 convertPoint :: (Pixels, BoundingBox) -> GJ.PointGeometry -> DV.Vector VG.Point
 convertPoint config = sciLatLongToPoints config . GJ.coordinates
@@ -66,18 +65,18 @@ convertId _ = 0
 pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
 
--- foldMap f = foldr (mappend . f) mempty
 lineToMvt :: (Pixels, BoundingBox) -> [GJ.LineStringGeometry] -> DV.Vector VG.LineString
-lineToMvt config lsgs = DV.fromList $ F.foldMap (\lsg -> [createLineString lsg]) lsgs
+lineToMvt config = F.foldr (\lsg acc -> DV.cons (createLineString lsg) acc) DV.empty
     where
       createLineString lsg = VG.LineString (getPoints lsg)
       getPoints lsg = DV.convert $ pointToMvt config $ GJ.lineString lsg
 
 polygonToMvt :: (Pixels, BoundingBox) -> [GJ.PolygonGeometry] -> DV.Vector VG.Polygon
-polygonToMvt config pgs = DV.fromList $ F.foldMap (\poly -> [VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))]) pgs
+polygonToMvt config = F.foldr (\poly acc -> DV.cons (mkPolygon poly) acc) DV.empty
   where
+    mkPolygon poly = VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))
     ext p = DV.convert $ pointToMvt config p
-    int p = DV.convert $ polygonToMvt config $ fmap (\x -> GJ.PolygonGeometry x []) p
+    int p = polygonToMvt config $ fmap (\x -> GJ.PolygonGeometry x []) p
 
 sToF :: Scientific -> Double
 sToF = toRealFloat
