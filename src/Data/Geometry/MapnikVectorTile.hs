@@ -18,6 +18,7 @@ import qualified Options.Generic                 as OG
 
 import           Data.Geometry.Clip
 import           Data.Geometry.GeoJsonToMvt
+import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types
 
 writeLayer :: LayerConfig OG.Unwrapped -> IO ()
@@ -34,7 +35,8 @@ readLayer filePath config = do
 
 createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
 createMvt config geoJson = do
-    let (p, l, o) = getFeatures config geoJson
+    let extentsBb = (_extents config, boundingBox $ _gtc config)
+        (p, l, o) = getFeatures extentsBb geoJson
         (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
         clipBb = createBoundingBoxPts buffer extent
         cG convF startGeom = startGeom { VT._geometries = convF clipBb (VT._geometries startGeom) }
@@ -43,8 +45,8 @@ createMvt config geoJson = do
         cO = DV.map (cG clipPolygons) o
     VT.Layer version name cP cL cO (_pixels extent)
 
-getFeatures :: Config -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-getFeatures config = geoJsonFeaturesToMvtFeatures config . GJ.features
+getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
 readGeoJson geoJsonFile = do
