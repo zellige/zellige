@@ -16,6 +16,8 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types
 
+-- Add validation of GeoJSON objects
+
 geoJsonFeaturesToMvtFeatures :: Config -> [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 geoJsonFeaturesToMvtFeatures config = F.foldMap (convertFeature extentsBb)
   where
