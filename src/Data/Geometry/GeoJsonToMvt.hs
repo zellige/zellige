@@ -91,10 +91,10 @@ convertElems _ = Nothing
 sciLatLongToPoints :: (Pixels, BoundingBox) -> [Scientific] -> DV.Vector VG.Point
 sciLatLongToPoints _ [] = DV.empty
 sciLatLongToPoints _ [_] = DV.empty
-sciLatLongToPoints (ext, bb) x = DV.map (\(lat, lon) -> latLonToXYInTile ext bb (LatLon (sToF lat) (sToF lon))) (createLines $ DV.fromList x)
+sciLatLongToPoints (ext, bb) x = DV.map (\(lat, lon) -> latLonToXYInTile ext bb (LatLon (sToF lat) (sToF lon))) (createLines x)
 
-createLines :: DV.Vector a -> DV.Vector (a, a)
-createLines = DV.zip <*> DV.tail
+createLines :: [a] -> DV.Vector (a, a)
+createLines a = DV.fromList $ (zip <*> tail) a
 
 -- writeOut = do
 --     _ <- BS.writeFile "/tmp/out.mvt" (V.encode $ untile t0)
