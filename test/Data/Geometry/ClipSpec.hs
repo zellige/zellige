@@ -43,5 +43,6 @@ testClipPolygon =
   describe "simple polygon test" $
     it "Returns clipped polygon" $ do
       let actual = clipPolygon clipPts poly
-          result = clipPolygon clipPts poly
+          resultPts = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
+          result = VG.Polygon (DVU.fromList resultPts) mempty
       actual `shouldBe` result
