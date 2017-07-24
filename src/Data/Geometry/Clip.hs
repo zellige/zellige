@@ -132,20 +132,3 @@ lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
 -- Is point of LHS of Line
 inside :: VG.Point -> (VG.Point, VG.Point) -> Bool
 inside (x, y) ((x1, y1), (x2, y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
-
--- testPoly = clipPolygons clipPts [poly]
--- testSingle = clipPolygon clipPts poly
--- isOkay = VG.Polygon (DVU.fromList answer) mempty == testSingle
--- poly = VG.Polygon (DVU.fromList polyPts) mempty
--- polyPts = [( 50,150), (200, 50), (350,150), (350,300), (250,300),
---            (200,250), (150,350), (100,250), (100,200)] :: [(Int,Int)]
--- clipPts = ((100, 100), (300, 300))
--- linesBbTst = ((10,10),(60,60)) :: ((Int, Int), (Int, Int))
--- linesTst = [VG.LineString (DVU.fromList ([(11, 11), (59, 59)] :: [(Int,Int)])),
---   VG.LineString (DVU.fromList ([(0, 0), (0, 100)] :: [(Int,Int)])),
---   VG.LineString (DVU.fromList ([(5, 5), (45, 50), (90, 140)] :: [(Int,Int)])),
---   VG.LineString (DVU.fromList ([(0, 0), (60, 60)] :: [(Int,Int)]))]
--- answer = [(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
--- [{100 116.66667} {125 100} {275 100} {300 116.66667} {300 300} {250 300} {200 250}
---  {175 300} {125 300} {100 250}]
-
