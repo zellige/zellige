@@ -51,7 +51,7 @@ getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
 readGeoJson geoJsonFile = do
     bs <- LBS.readFile geoJsonFile
-    let ebs = eitherDecode bs :: Either String GJ.FeatureCollection
+    let ebs = eitherDecode' bs :: Either String GJ.FeatureCollection
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
