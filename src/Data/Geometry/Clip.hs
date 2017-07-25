@@ -4,12 +4,11 @@
 
 module Data.Geometry.Clip where
 
-import qualified Data.Vector                     as DV
-import qualified Data.Vector.Unboxed             as DVU
-import qualified Geography.VectorTile.Geometry   as VG
-import           Prelude                         hiding (Left, Right, lines)
+import qualified Data.Vector                   as DV
+import qualified Data.Vector.Unboxed           as DVU
+import qualified Geography.VectorTile.Geometry as VG
+import           Prelude                       hiding (Left, Right, lines)
 
-import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types
 
 createBoundingBoxPts :: Pixels -> Pixels -> (VG.Point, VG.Point)
@@ -98,14 +97,10 @@ clip bb poly = DVU.foldl foo (VG.polyPoints poly) (createClipPoly bb)
 createClipPoly :: (VG.Point, VG.Point) -> DVU.Vector (VG.Point, VG.Point)
 createClipPoly ((x1, y1), (x2, y2)) = pointsToLines $ DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
 
-myPts :: DVU.Vector (Int, Int)
-myPts = DVU.fromList [(2712480,-1036479),(2713274,-1037797),(2714139,-1038761),(2714453,-1039514),(2714678,-1039662),(2714426,-1040008),(2714428,-1040392),(2715245,-1042453),(2713898,-1042680),(2714023,-1043453),(2713030,-1043609),(2713117,-1044494),(2711330,-1044752),(2711189,-1043881),(2710089,-1044063),(2709725,-1041780),(2708773,-1041295),(2707213,-1041499),(2706762,-1041217),(2706557,-1040019),(2707013,-1039496),(2708270,-1039212),(2709647,-1039668),(2709629,-1039276),(2710596,-1039112),(2710260,-1039364),(2710480,-1039720),(2710931,-1039643),(2710916,-1039477),(2712138,-1039988),(2713023,-1039860),(2713328,-1039433),(2713132,-1038583),(2712708,-1037829),(2711814,-1036762),(2712145,-1036498),(2712480,-1036479)]
-
-myBB :: Data.Geometry.Types.BoundingBox
-myBB = boundingBox (GoogleTileCoords 15 (Coords 28999 19781))
-
 foo :: DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
-foo polyPts bbLine = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
+foo polyPts bbLine = if DVU.null polyPts then DVU.empty else newPoints
+  where
+    newPoints = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
 
 pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
 pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
