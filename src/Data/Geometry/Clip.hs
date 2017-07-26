@@ -71,6 +71,10 @@ outCodeForLineStrings bb = fmap $ fmap out . getLines
     out = uncurry (outCodeForLine bb)
     getLines line = linesFromPoints $ VG.lsPoints line
 
+-- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
+linesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
+linesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
+
 outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
 outCodeForLine bb p1 p2 = (toP1, toP2)
   where
@@ -92,7 +96,10 @@ clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> VG.Polygon
 clipPolygon bb poly = VG.Polygon (clip bb poly) mempty
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> DVU.Vector VG.Point
-clip bb poly = DVU.foldl foo (VG.polyPoints poly) (createClipPoly bb)
+clip bb poly = completePoly newClippedPoly
+  where
+    newClippedPoly = DVU.foldl foo (VG.polyPoints poly) (createClipPoly bb)
+    completePoly newPoly = if DVU.null newPoly then newPoly else DVU.cons (DVU.last newClippedPoly) newClippedPoly
 
 createClipPoly :: (VG.Point, VG.Point) -> DVU.Vector (VG.Point, VG.Point)
 createClipPoly ((x1, y1), (x2, y2)) = pointsToLines $ DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
@@ -104,10 +111,6 @@ foo polyPts bbLine = if DVU.null polyPts then polyPts else newPoints
 
 pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
 pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
-
--- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
-linesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
-linesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
 
 clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
 clipEdges polyLine@(s, e) clipLine =
