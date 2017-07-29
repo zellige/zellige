@@ -33,6 +33,8 @@ readLayer filePath config = do
     geoJson <- liftIO $ readGeoJson filePath
     pure $ createMvt config geoJson
 
+-- 22/3787055/2575631
+-- 15/29585/20121
 createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
 createMvt config geoJson = do
     let extentsBb = (_extents config, boundingBox $ _gtc config)
