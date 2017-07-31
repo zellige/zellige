@@ -54,7 +54,7 @@ isSame ((o1, _), (o2, _)) =
     (Right  , Right ) -> False
     (Bottom , Bottom) -> False
     (Top    , Top   ) -> False
-    _ -> True
+    _                 -> True
 
 clipPoint :: Integral a => OutCode -> ((a, a), (a, a)) -> (a, a) -> (a, a) -> (a, a)
 clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
@@ -63,7 +63,7 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
     Right  -> (maxx, y1 + (y2 - y1) * (maxx - x1) `div` (x2 - x1))
     Bottom -> (x1 + (x2 - x1) * (miny - y1) `div` (y2 - y1), miny)
     Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
-    _ -> undefined
+    _      -> undefined
 
 outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
 outCodeForLineStrings bb = fmap $ fmap out . getLines
