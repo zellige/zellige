@@ -3,15 +3,15 @@
 module Data.Geometry.GeoJsonToMvt where
 
 import qualified Data.Aeson                      as A
-import qualified Data.Foldable                   as F (foldMap, foldr)
+import qualified Data.Foldable                   as F (foldMap)
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.HashMap.Strict             as HM
+import qualified Data.List                       as DL
 import qualified Data.Map.Lazy                   as DMZ
 import           Data.Maybe
 import           Data.Scientific
 import qualified Data.Text                       as T (Text)
 import qualified Data.Vector                     as DV
---import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VT
 
@@ -66,13 +66,13 @@ pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
 
 lineToMvt :: (Pixels, BoundingBox) -> [GJ.LineStringGeometry] -> DV.Vector VG.LineString
-lineToMvt config = F.foldr (\lsg acc -> DV.cons (createLineString lsg) acc) DV.empty
+lineToMvt config = DL.foldl' (\acc lsg -> DV.cons (createLineString lsg) acc) DV.empty
     where
       createLineString lsg = VG.LineString (getPoints lsg)
       getPoints lsg = DV.convert $ pointToMvt config $ GJ.lineString lsg
 
 polygonToMvt :: (Pixels, BoundingBox) -> [GJ.PolygonGeometry] -> DV.Vector VG.Polygon
-polygonToMvt config = F.foldr (\poly acc -> DV.cons (mkPolygon poly) acc) DV.empty
+polygonToMvt config = DL.foldl' (\acc poly -> DV.cons (mkPolygon poly) acc) DV.empty
   where
     mkPolygon poly = VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))
     ext p = DV.convert $ pointToMvt config p

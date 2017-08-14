@@ -90,7 +90,7 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | otherwise = Inside
 
 clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
-clipPolygons bb = DV.foldl addPoly DV.empty
+clipPolygons bb = DV.foldl' addPoly DV.empty
   where
     addPoly acc f =
       case clipPolygon bb f of
@@ -106,7 +106,7 @@ clipPolygon bb poly =
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
 clip bb poly = checkLength newClippedPoly
   where
-    newClippedPoly = DVU.foldl foo (VG.polyPoints poly) (createClipPoly bb)
+    newClippedPoly = DVU.foldl' foo (VG.polyPoints poly) (createClipPoly bb)
     checkLength newPoly = if DVU.null newPoly then Nothing else Just (DVU.cons (DVU.last newPoly) newPoly)
 
 createClipPoly :: (VG.Point, VG.Point) -> DVU.Vector (VG.Point, VG.Point)
@@ -115,7 +115,7 @@ createClipPoly ((x1, y1), (x2, y2)) = pointsToLines $ DVU.fromList [(x1, y1), (x
 foo :: DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
 foo polyPts bbLine = if DVU.null polyPts then DVU.empty else newPoints
   where
-    newPoints = DVU.foldl (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
+    newPoints = DVU.foldl' (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
 
 pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
 pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts

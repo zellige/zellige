@@ -39,9 +39,9 @@ createMvt config geoJson = do
         (p, l, o) = getFeatures extentsBb geoJson
         (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
         clipBb = createBoundingBoxPts buffer extent
-        cP = DV.foldl (accNewGeom (clipPoints clipBb)) DV.empty p
-        cL = DV.foldl (accNewGeom (clipLines clipBb)) DV.empty l
-        cO = DV.foldl (accNewGeom (clipPolygons clipBb)) DV.empty o
+        cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty p
+        cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty l
+        cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty o
     VT.Layer version name cP cL cO (_pixels extent)
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)
