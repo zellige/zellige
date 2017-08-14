@@ -39,16 +39,16 @@ createMvt config geoJson = do
         (p, l, o) = getFeatures extentsBb geoJson
         (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
         clipBb = createBoundingBoxPts buffer extent
-        genClip convF startGeom = convF clipBb (VT._geometries startGeom)
-        newGeom convF startGeom = startGeom { VT._geometries = genClip convF startGeom }
-        accNewGeom convF acc startGeom =
-            if DV.null (genClip convF startGeom)
-                then acc
-                else DV.cons (newGeom convF startGeom) acc
-        cP = DV.foldl (accNewGeom clipPoints) DV.empty p
-        cL = DV.foldl (accNewGeom clipLines) DV.empty l
-        cO = DV.foldl (accNewGeom clipPolygons) DV.empty o
+        cP = DV.foldl (accNewGeom (clipPoints clipBb)) DV.empty p
+        cL = DV.foldl (accNewGeom (clipLines clipBb)) DV.empty l
+        cO = DV.foldl (accNewGeom (clipPolygons clipBb)) DV.empty o
     VT.Layer version name cP cL cO (_pixels extent)
+
+accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)
+accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeom acc
+    where
+        genClip = convF (VT._geometries startGeom)
+        newGeom = startGeom { VT._geometries = genClip }
 
 getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
