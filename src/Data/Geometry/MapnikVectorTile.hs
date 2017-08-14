@@ -33,18 +33,21 @@ readLayer filePath config = do
     geoJson <- liftIO $ readGeoJson filePath
     pure $ createMvt config geoJson
 
--- 22/3787055/2575631
--- 15/29585/20121
 createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
 createMvt config geoJson = do
     let extentsBb = (_extents config, boundingBox $ _gtc config)
         (p, l, o) = getFeatures extentsBb geoJson
         (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
         clipBb = createBoundingBoxPts buffer extent
-        cG convF startGeom = startGeom { VT._geometries = convF clipBb (VT._geometries startGeom) }
-        cP = DV.map (cG clipPoints) p
-        cL = DV.map (cG clipLines) l
-        cO = DV.map (cG clipPolygons) o
+        genClip convF startGeom = convF clipBb (VT._geometries startGeom)
+        newGeom convF startGeom = startGeom { VT._geometries = genClip convF startGeom }
+        accNewGeom convF acc startGeom =
+            if DV.null (genClip convF startGeom)
+                then acc
+                else DV.cons (newGeom convF startGeom) acc
+        cP = DV.foldl (accNewGeom clipPoints) DV.empty p
+        cL = DV.foldl (accNewGeom clipLines) DV.empty l
+        cO = DV.foldl (accNewGeom clipPolygons) DV.empty o
     VT.Layer version name cP cL cO (_pixels extent)
 
 getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))

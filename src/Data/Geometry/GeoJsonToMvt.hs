@@ -60,7 +60,7 @@ convertProps _ = DMZ.empty
 
 convertId :: Maybe A.Value -> Int
 convertId (Just (A.Number n)) = (round . sToF) n
-convertId _ = 0
+convertId _                   = 0
 
 pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
@@ -84,12 +84,12 @@ sToF = toRealFloat
 convertElems :: (t, A.Value) -> Maybe (t, VT.Val)
 convertElems (k, A.String v) = Just (k, VT.St v)
 convertElems (k, A.Number v) = Just (k, VT.Do (sToF v))
-convertElems (k, A.Bool v) = Just (k, VT.B v)
-convertElems _ = Nothing
+convertElems (k, A.Bool v)   = Just (k, VT.B v)
+convertElems _               = Nothing
 
 sciLatLongToPoints :: (Pixels, BoundingBox) -> [Scientific] -> DV.Vector VG.Point
-sciLatLongToPoints _ [] = DV.empty
-sciLatLongToPoints _ [_] = DV.empty
+sciLatLongToPoints _ []        = DV.empty
+sciLatLongToPoints _ [_]       = DV.empty
 sciLatLongToPoints (ext, bb) x = DV.map (\(lat, lon) -> latLonToXYInTile ext bb (LatLon (sToF lat) (sToF lon))) (createLines x)
 
 createLines :: [a] -> DV.Vector (a, a)
