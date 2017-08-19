@@ -42,7 +42,7 @@ spec = do
 
 testPoints :: Spec
 testPoints =
-  describe "points" $ do
+  describe "points" $
     it "Returns mapnik vector feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Int
       let feature = GJ.Feature Nothing point AT.Null (Just (AT.Number (fromIntegral x)))
@@ -63,6 +63,8 @@ testLines =
           result = (DV.empty, DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])], DV.empty)
       actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
+
+-- Add test when all points are removed from polygon.
 
 testPolygons :: Spec
 testPolygons =
