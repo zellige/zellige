@@ -2,6 +2,7 @@
 
 module Data.Geometry.GeoJsonToMvt where
 
+import qualified Control.Concurrent.STM          as CS
 import qualified Data.Aeson                      as A
 import qualified Data.Foldable                   as F (foldMap)
 import qualified Data.Geography.GeoJSON          as GJ
@@ -18,23 +19,27 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types
 
-geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [GJ.Feature] -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-geoJsonFeaturesToMvtFeatures extentsBb = F.foldMap (convertFeature extentsBb)
+geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [GJ.Feature] -> IO (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+geoJsonFeaturesToMvtFeatures extentsBb features = do
+  ops <- CS.atomically $ CS.newTVar (0 :: Int)
+  F.foldMap (convertFeature extentsBb ops) features
 
-convertFeature :: (Pixels, BoundingBox) -> GJ.Feature -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
-convertFeature config (GJ.Feature _ geom props fid) = go geom
+convertFeature :: (Pixels, BoundingBox) -> CS.TVar Int -> GJ.Feature -> IO (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+convertFeature config ops (GJ.Feature _ geom props fid) = do
+  x <- convertId fid ops
+  pure $ go x geom
   where
-      go (GJ.Point p)                  = mkPoint . convertPoint config $ p
-      go (GJ.MultiPoint mpg)           = mkPoint . convertMultiPoint config $ mpg
-      go (GJ.LineString ls)            = mkLineString . convertLineString config $ ls
-      go (GJ.MultiLineString mls)      = mkLineString . convertMultiLineString config $ mls
-      go (GJ.Polygon poly)             = mkPolygon . convertPolygon config $ poly
-      go (GJ.MultiPolygon mp)          = mkPolygon . convertMultiPolygon config $ mp
-      go (GJ.GeometryCollection geoms) = F.foldMap go geoms
-      mkPoint p       = (mkFeature p, mempty, mempty)
-      mkLineString l  = (mempty, mkFeature l, mempty)
-      mkPolygon o     = (mempty, mempty, mkFeature o)
-      mkFeature geoms = DV.singleton $ VT.Feature (convertId fid) (convertProps props) geoms
+      go x (GJ.Point p)                  = mkPoint x . convertPoint config $ p
+      go x (GJ.MultiPoint mpg)           = mkPoint x . convertMultiPoint config $ mpg
+      go x (GJ.LineString ls)            = mkLineString x . convertLineString config $ ls
+      go x (GJ.MultiLineString mls)      = mkLineString x . convertMultiLineString config $ mls
+      go x (GJ.Polygon poly)             = mkPolygon x . convertPolygon config $ poly
+      go x (GJ.MultiPolygon mp)          = mkPolygon x . convertMultiPolygon config $ mp
+      go x (GJ.GeometryCollection geoms) = F.foldMap (go x) geoms
+      mkPoint x p       = (mkFeature x p, mempty, mempty)
+      mkLineString x l  = (mempty, mkFeature x l, mempty)
+      mkPolygon x o     = (mempty, mempty, mkFeature x o)
+      mkFeature x geoms = DV.singleton $ VT.Feature x (convertProps props) geoms
 
 convertPoint :: (Pixels, BoundingBox) -> GJ.PointGeometry -> DV.Vector VG.Point
 convertPoint config = sciLatLongToPoints config . GJ.coordinates
@@ -58,9 +63,12 @@ convertProps :: A.Value -> DMZ.Map T.Text VT.Val
 convertProps (A.Object x) = DMZ.fromList . catMaybes $ Prelude.fmap convertElems (HM.toList x)
 convertProps _ = DMZ.empty
 
-convertId :: Maybe A.Value -> Int
-convertId (Just (A.Number n)) = (round . sToF) n
-convertId _                   = 0
+convertId :: Maybe A.Value -> CS.TVar Int -> IO Int
+convertId (Just (A.Number n)) _ = pure $ (round . sToF) n
+convertId _                   ops = do
+  CS.atomically $ CS.modifyTVar ops (+1)
+  x <- CS.atomically $ CS.readTVar ops
+  pure x
 
 pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)

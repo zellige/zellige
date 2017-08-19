@@ -115,18 +115,18 @@ createClipPoly ((x1, y1), (x2, y2)) = pointsToLines $ DVU.fromList [(x1, y1), (x
 foo :: DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
 foo polyPts bbLine = if DVU.null polyPts then DVU.empty else newPoints
   where
-    newPoints = DVU.foldl' (\pts polyLine -> clipEdges polyLine bbLine DVU.++ pts) DVU.empty (pointsToLines polyPts)
+    newPoints = DVU.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DVU.empty (pointsToLines polyPts)
 
 pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
 pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
 
-clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
-clipEdges polyLine@(s, e) clipLine =
+clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> DVU.Vector VG.Point -> DVU.Vector VG.Point
+clipEdges polyLine@(s, e) clipLine acc =
   case (inside e clipLine, inside s clipLine) of
-    (True, True)   -> DVU.singleton e
-    (True, False)  -> DVU.fromList [e, lineIntersectPoint clipLine polyLine]
-    (False, True)  -> DVU.singleton (lineIntersectPoint clipLine polyLine)
-    (False, False) -> DVU.empty
+    (True, True)   -> DVU.cons e acc
+    (True, False)  -> DVU.cons e $ DVU.cons (lineIntersectPoint clipLine polyLine) acc
+    (False, True)  -> DVU.cons (lineIntersectPoint clipLine polyLine) acc
+    (False, False) -> acc
 
 lineIntersectPoint :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> VG.Point
 lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =

@@ -11,6 +11,8 @@ import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VVT
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
+import qualified Test.QuickCheck.Arbitrary       as QA
+import qualified Test.QuickCheck.Gen             as GA
 
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
@@ -33,39 +35,54 @@ pt3 = GJ.PointGeometry [S.scientific 144960599 (-6), S.scientific (-37799549) (-
 
 spec :: Spec
 spec = do
-  testFeatureToPoints
-  testFeatureToLines
-  testFeatureToPolygon
+  testPoints
+  testLines
+  testPolygons
+  testCounter
 
-testFeatureToPoints :: Spec
-testFeatureToPoints =
-  describe "featureToPoints" $
-    it "Returns points from a feature" $ do
-      let feature = GJ.Feature Nothing point AT.Null Nothing
+testPoints :: Spec
+testPoints =
+  describe "points" $ do
+    it "Returns mapnik vector feature from geojson feature" $ do
+      x <- GA.generate QA.arbitrary :: IO Int
+      let feature = GJ.Feature Nothing point AT.Null (Just (AT.Number (fromIntegral x)))
           point = GJ.Point pt1
-          actual = geoJsonFeaturesToMvtFeatures extentsBb [feature]
           pts = DV.fromList [(840,2194)]
-          result = (DV.fromList [VVT.Feature 0 DMZ.empty pts], DV.empty, DV.empty)
+          result = (DV.fromList [VVT.Feature x DMZ.empty pts], DV.empty, DV.empty)
+      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
-testFeatureToLines :: Spec
-testFeatureToLines =
-  describe "featureToLine" $
-    it "Returns line from a feature" $ do
-      let feature = GJ.Feature Nothing line AT.Null Nothing
+testLines :: Spec
+testLines =
+  describe "lines" $
+    it "Returns mapnik lines feature from geojson feature" $ do
+      x <- GA.generate QA.arbitrary :: IO Int
+      let feature = GJ.Feature Nothing line AT.Null (Just (AT.Number (fromIntegral x)))
           line = GJ.LineString (GJ.LineStringGeometry [pt1, pt2])
-          actual = geoJsonFeaturesToMvtFeatures extentsBb [feature]
           pts = DVU.fromList [(840,2194),(23,2098)]
-          result = (DV.empty, DV.fromList [VVT.Feature 0 DMZ.empty (DV.fromList [VG.LineString pts])], DV.empty)
+          result = (DV.empty, DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])], DV.empty)
+      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
-testFeatureToPolygon :: Spec
-testFeatureToPolygon =
-  describe "featureToPolygon" $
-    it "Returns polygon from a feature" $ do
-      let feature = GJ.Feature Nothing polygon AT.Null Nothing
+testPolygons :: Spec
+testPolygons =
+  describe "polygons" $
+    it "Returns mapnik polygon feature from geojson feature" $ do
+      x <- GA.generate QA.arbitrary :: IO Int
+      let feature = GJ.Feature Nothing polygon AT.Null (Just (AT.Number (fromIntegral x)))
           polygon = GJ.Polygon (GJ.PolygonGeometry [pt1, pt2, pt3] [])
-          actual = geoJsonFeaturesToMvtFeatures extentsBb [feature]
           pts = DVU.fromList [(840,2194),(23,2098),(178,1162)]
-          result = (DV.empty, DV.empty, DV.fromList [VVT.Feature 0 DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
+          result = (DV.empty, DV.empty, DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
+      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
+
+testCounter :: Spec
+testCounter =
+  describe "features without id" $
+    it "Returns same twice - tests counter" $ do
+    let feature = GJ.Feature Nothing point AT.Null Nothing
+        point = GJ.Point pt1
+        pts = DV.fromList [(840,2194)]
+        result = (DV.fromList [VVT.Feature 1 DMZ.empty pts, VVT.Feature 2 DMZ.empty pts], DV.empty, DV.empty)
+    actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
+    actual `shouldBe` result

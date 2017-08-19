@@ -26,6 +26,7 @@ library
                      , containers
                      , unordered-containers
                      , handa-geodata
+                     , stm
                      , optparse-generic
                      , scientific
                      , text

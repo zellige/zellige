@@ -31,18 +31,20 @@ writeLayer lc = do
 readLayer :: FilePath -> Config -> IO VT.Layer
 readLayer filePath config = do
     geoJson <- liftIO $ readGeoJson filePath
-    pure $ createMvt config geoJson
+    createMvt config geoJson
 
-createMvt :: Config -> GJ.FeatureCollection -> VT.Layer
+createMvt :: Config -> GJ.FeatureCollection -> IO VT.Layer
 createMvt config geoJson = do
-    let extentsBb = (_extents config, boundingBox $ _gtc config)
-        (p, l, o) = getFeatures extentsBb geoJson
-        (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
-        clipBb = createBoundingBoxPts buffer extent
+    (p, l, o) <- getFeatures extentsBb geoJson
+    let
         cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty p
         cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty l
         cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty o
-    VT.Layer version name cP cL cO (_pixels extent)
+    pure $ VT.Layer version name cP cL cO (_pixels extent)
+    where
+        extentsBb = (_extents config, boundingBox $ _gtc config)
+        (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
+        clipBb = createBoundingBoxPts buffer extent
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)
 accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeom acc
@@ -50,7 +52,7 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> IO (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
