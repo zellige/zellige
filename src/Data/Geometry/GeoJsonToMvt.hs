@@ -67,8 +67,7 @@ convertId :: Maybe A.Value -> CS.TVar Int -> IO Int
 convertId (Just (A.Number n)) _ = pure $ (round . sToF) n
 convertId _                   ops = do
   CS.atomically $ CS.modifyTVar ops (+1)
-  x <- CS.atomically $ CS.readTVar ops
-  pure x
+  CS.atomically $ CS.readTVar ops
 
 pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
 pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
