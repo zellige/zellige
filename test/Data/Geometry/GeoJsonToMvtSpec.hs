@@ -2,6 +2,7 @@
 
 module Data.Geometry.GeoJsonToMvtSpec where
 
+import qualified Control.Monad.ST                as ST
 import qualified Data.Aeson.Types                as AT
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.Map.Lazy                   as DMZ
@@ -49,7 +50,7 @@ testPoints =
           point = GJ.Point pt1
           pts = DV.fromList [(840,2194)]
           result = (DV.fromList [VVT.Feature x DMZ.empty pts], DV.empty, DV.empty)
-      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
 testLines :: Spec
@@ -61,7 +62,7 @@ testLines =
           line = GJ.LineString (GJ.LineStringGeometry [pt1, pt2])
           pts = DVU.fromList [(840,2194),(23,2098)]
           result = (DV.empty, DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])], DV.empty)
-      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
 -- Add test when all points are removed from polygon.
@@ -75,7 +76,7 @@ testPolygons =
           polygon = GJ.Polygon (GJ.PolygonGeometry [pt1, pt2, pt3] [])
           pts = DVU.fromList [(840,2194),(23,2098),(178,1162)]
           result = (DV.empty, DV.empty, DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
-      actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
 testCounter :: Spec
@@ -86,5 +87,5 @@ testCounter =
         point = GJ.Point pt1
         pts = DV.fromList [(840,2194)]
         result = (DV.fromList [VVT.Feature 1 DMZ.empty pts, VVT.Feature 2 DMZ.empty pts], DV.empty, DV.empty)
-    actual <- geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
+        actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
     actual `shouldBe` result
