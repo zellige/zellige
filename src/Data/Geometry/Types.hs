@@ -8,15 +8,22 @@
 {-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.Geometry.Types where
 
+import qualified Control.Applicative          as AP
+import qualified Control.Monad.ST             as ST
 import           Data.Monoid
 import           Data.Text
 import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import           Options.Generic
 import           Prelude                      hiding (Left, Right)
+
+instance Monoid a => Monoid (ST.ST s a) where
+    mempty = pure mempty
+    mappend = AP.liftA2 mappend
 
 defaultVersion :: Int
 defaultVersion = 2
@@ -78,10 +85,10 @@ outCodeToWord8 :: OutCode -> Word8
 outCodeToWord8 c =
     case c of
       Inside -> 0
-      Left -> 1
-      Right -> 2
+      Left   -> 1
+      Right  -> 2
       Bottom -> 4
-      Top -> 8
+      Top    -> 8
 
 word8ToOutCode :: Word8 -> OutCode
 word8ToOutCode w =

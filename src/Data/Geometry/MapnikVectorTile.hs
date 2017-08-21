@@ -1,8 +1,10 @@
+{-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Data.Geometry.MapnikVectorTile where
 
 import           Control.Monad.IO.Class
+import qualified Control.Monad.ST                as ST
 import           Data.Aeson
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Lazy            as LBS (readFile)
@@ -26,7 +28,7 @@ writeLayer lc = do
     let config = configFromLayerConfig lc
     inputLayer <- readLayer (_layerInput lc) config
     let outputLayer = VT.encode . VT.untile $ VVT.VectorTile (M.fromList [(_layerName lc, inputLayer)])
-    B.writeFile (_layerOutput lc) outputLayer
+    liftIO (B.writeFile (_layerOutput lc) outputLayer)
 
 readLayer :: FilePath -> Config -> IO VT.Layer
 readLayer filePath config = do
@@ -35,8 +37,8 @@ readLayer filePath config = do
 
 createMvt :: Config -> GJ.FeatureCollection -> IO VT.Layer
 createMvt config geoJson = do
-    (p, l, o) <- getFeatures extentsBb geoJson
     let
+        (p, l, o) = ST.runST $ getFeaturesS extentsBb geoJson
         cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty p
         cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty l
         cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty o
@@ -54,6 +56,9 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
 
 getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> IO (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
 getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
+
+getFeaturesS :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> ST.ST s (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeaturesS extentsBb = geoJsonFeaturesToMvtFeaturesS extentsBb . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
 readGeoJson geoJsonFile = do
