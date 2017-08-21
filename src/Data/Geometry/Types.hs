@@ -21,6 +21,7 @@ import           Data.Word
 import           Options.Generic
 import           Prelude                      hiding (Left, Right)
 
+-- Remove me in 8.4.1 https://ghc.haskell.org/trac/ghc/ticket/14107
 instance Monoid a => Monoid (ST.ST s a) where
     mempty = pure mempty
     mappend = AP.liftA2 mappend
