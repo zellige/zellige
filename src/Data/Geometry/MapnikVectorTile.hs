@@ -1,5 +1,6 @@
 {-# LANGUAGE FlexibleContexts  #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Data.Geometry.MapnikVectorTile where
 
@@ -36,17 +37,16 @@ readLayer filePath config = do
     createMvt config geoJson
 
 createMvt :: Config -> GJ.FeatureCollection -> IO VT.Layer
-createMvt config geoJson = do
+createMvt Config{..} geoJson = do
     let
         (p, l, o) = ST.runST $ getFeatures extentsBb geoJson
         cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty p
         cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty l
         cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty o
-    pure $ VT.Layer version name cP cL cO (_pixels extent)
+    pure $ VT.Layer _version _name cP cL cO (_pixels _extents)
     where
-        extentsBb = (_extents config, boundingBox $ _gtc config)
-        (buffer, extent, version, name) = (,,,) <$> _buffer <*> _extents <*> _version <*> _name $ config
-        clipBb = createBoundingBoxPts buffer extent
+        extentsBb = (_extents, boundingBox _gtc)
+        clipBb = createBoundingBoxPts _buffer _extents
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)
 accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeom acc
