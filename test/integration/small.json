@@ -1,0 +1,50 @@
+{
+  "features": [
+    {
+      "geometry": {
+        "coordinates": [
+          [
+            [
+              138.600433,
+              -34.934298
+            ],
+            [
+              138.600509,
+              -34.935253
+            ],
+            [
+              138.600523,
+              -34.935483
+            ],
+            [
+              138.600531,
+              -34.935651
+            ]
+          ]
+        ],
+        "type": "MultiLineString"
+      },
+      "id": 357,
+      "type": "Feature",
+      "properties": {
+        "traffic_sc": 10400,
+        "class6to9": "0",
+        "load_total_24_2way": 16800,
+        "tesecn_id": 11241315,
+        "tesecn_pro": "2015",
+        "class3to5": "0",
+        "tesecn_sta": 10.1,
+        "road_no": "05610",
+        "class11": "0",
+        "cv_percent": 4,
+        "class10": "0",
+        "number_cvs": "650",
+        "tesecn_end": 10.25,
+        "tesecn_bas": "2015",
+        "shape_leng": 150.169056,
+        "rlcwy_code": "L"
+      }
+    }
+  ],
+  "type": "FeatureCollection"
+}

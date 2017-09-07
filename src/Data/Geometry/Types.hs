@@ -116,6 +116,7 @@ data LayerConfig w = LayerConfig
   , _layerExtent :: w ::: Int <?> "Layer size in pixels"
   } deriving (Generic)
 
+
 modifiers :: Modifiers
 modifiers = lispCaseModifiers
 
