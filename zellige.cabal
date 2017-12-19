@@ -80,6 +80,8 @@ benchmark vectortiles-bench
     , criterion >=1.1 && <1.3
     , microlens >=0.4 && <0.5
     , microlens-platform >=0.3 && <0.4
+    , vectortiles
+    , optparse-generic
     , zellige
   hs-source-dirs:
       bench
