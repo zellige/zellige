@@ -15,7 +15,6 @@ import           Data.Monoid                     ((<>))
 import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile            as VT
-import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VVT
 import qualified Options.Generic                 as OG
 
@@ -39,10 +38,10 @@ readLayer filePath config = do
 createMvt :: Config -> GJ.FeatureCollection -> IO VT.Layer
 createMvt Config{..} geoJson = do
     let
-        (p, l, o) = ST.runST $ getFeatures extentsBb geoJson
-        cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty p
-        cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty l
-        cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty o
+        MvtFeatures{..} = ST.runST $ getFeatures extentsBb geoJson
+        cP = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
+        cL = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
+        cO = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty mvtPolygons
     pure $ VT.Layer _version _name cP cL cO (_pixels _extents)
     where
         extentsBb = (_extents, boundingBox _gtc)
@@ -54,7 +53,7 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> ST.ST s (DV.Vector (VT.Feature VG.Point), DV.Vector (VT.Feature VG.LineString), DV.Vector (VT.Feature VG.Polygon))
+getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> ST.ST s MvtFeatures
 getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection
