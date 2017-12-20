@@ -5,8 +5,7 @@ dependencies:
     - wget https://github.com/commercialhaskell/stack/releases/download/v1.6.1/stack-1.6.1-linux-x86_64.tar.gz -O /tmp/stack.tar.gz
     - mkdir /tmp/stack/
     - tar -xvzf /tmp/stack.tar.gz -C /tmp/stack/
-    - sudo mv /tmp/stack/stack-1.6.1-linux-x86_64/stack /usr/bin/stack
-    - sudo rm /usr/local/bin/stack
+    - sudo mv /tmp/stack/stack-1.6.1-linux-x86_64/stack /usr/local/bin/stack
   override:
     - stack setup --no-terminal
     - stack build --no-system-ghc --only-configure --no-terminal
