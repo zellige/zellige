@@ -43,6 +43,8 @@ packages:
 extra-deps: 
 - handa-geodata-0.2.0.1
 - optparse-generic-1.2.2
+- git: git@github.com:sitewisely/vectortiles.git
+  commit: f11e89e1273ec8d296396ca642e3edeb6d06ec49
 
 # Override default flag values for local packages and extra-deps
 flags: {}
