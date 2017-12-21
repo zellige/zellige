@@ -13,6 +13,7 @@ import qualified Data.Map.Lazy                   as DMZ
 import qualified Data.Maybe                      as M
 import           Data.Monoid
 import qualified Data.Scientific                 as S
+import qualified Data.Sequence                   as DS
 import qualified Data.Text                       as T (Text)
 import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile.Geometry   as VG
@@ -20,9 +21,9 @@ import qualified Geography.VectorTile.VectorTile as VT
 import           Prelude                         hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
-  { mvtPoints   :: !(DV.Vector (VT.Feature VG.Point))
-  , mvtLines    :: !(DV.Vector (VT.Feature VG.LineString))
-  , mvtPolygons :: !(DV.Vector (VT.Feature VG.Polygon))
+  { mvtPoints   :: !(DS.Seq (VT.Feature VG.Point))
+  , mvtLines    :: !(DS.Seq (VT.Feature VG.LineString))
+  , mvtPolygons :: !(DS.Seq (VT.Feature VG.Polygon))
   } deriving (Show, Eq)
 
 mkPoint :: Int -> A.Value -> DV.Vector VG.Point -> MvtFeatures
@@ -34,8 +35,8 @@ mkLineString x props l = MvtFeatures mempty (mkFeature x props l) mempty
 mkPolygon :: Int -> A.Value -> DV.Vector VG.Polygon -> MvtFeatures
 mkPolygon x props o = MvtFeatures mempty mempty (mkFeature x props o)
 
-mkFeature :: Int -> A.Value -> DV.Vector g -> DV.Vector (VT.Feature g)
-mkFeature x props geoms = DV.singleton $ VT.Feature x (convertProps props) geoms
+mkFeature :: Int -> A.Value -> DV.Vector g -> DS.Seq (VT.Feature g)
+mkFeature x props geoms = DS.singleton $ VT.Feature x (convertProps props) geoms
 
 convertProps :: A.Value -> DMZ.Map T.Text VT.Val
 convertProps (A.Object x) = DMZ.fromList . M.catMaybes $ Prelude.fmap convertElems (HM.toList x)
@@ -52,5 +53,4 @@ sToF = S.toRealFloat
 
 instance Monoid MvtFeatures where
   mempty = MvtFeatures mempty mempty mempty
-  mappend a b = MvtFeatures ((mvtPoints a) DV.++ (mvtPoints b)) ((mvtLines a) DV.++ (mvtLines b)) ((mvtPolygons a) DV.++ (mvtPolygons b))
-
+  mappend a b = MvtFeatures ((mvtPoints a) <> (mvtPoints b)) ((mvtLines a) <> (mvtLines b)) ((mvtPolygons a) <> (mvtPolygons b))

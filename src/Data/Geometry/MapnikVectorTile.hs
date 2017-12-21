@@ -9,6 +9,7 @@ import           Data.Aeson
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Char8           as BS
 import qualified Data.ByteString.Lazy            as LBS
+import qualified Data.Foldable                   as DF
 import qualified Data.Geography.GeoJSON          as GJ
 import           Data.Map                        as M
 import           Data.Monoid                     ((<>))
@@ -31,7 +32,17 @@ writeLayer lc = do
     mvt <- geoJsonFileToMvt (_layerInput lc) (configFromLayerConfig lc)
     B.writeFile (_layerOutput lc) (encodeMvt mvt)
 
--- File lib
+-- createMvt :: Config -> GJ.FeatureCollection -> IO VT.Layer
+-- createMvt Config{..} geoJson = do
+--     let
+--         MvtFeatures{..} = ST.runST $ getFeatures extentsBb geoJson
+--         cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
+--         cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
+--         cO = DF.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty mvtPolygons
+--     pure $ VT.Layer _version _name cP cL cO (_pixels _extents)
+--     where
+--         extentsBb = (_extents, boundingBox _gtc)
+--         clipBb = createBoundingBoxPts _buffer _extents
 
 geoJsonFileToMvt :: FilePath -> Config -> IO VT.VectorTile
 geoJsonFileToMvt filePath config = do
@@ -64,9 +75,9 @@ createMvt Config{..} geoJson = do
     let extentsBb       = (_extents, boundingBox _gtc)
         clipBb          = createBoundingBoxPts _buffer _extents
         MvtFeatures{..} = ST.runST $ getFeatures extentsBb geoJson
-        cP              = DV.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
-        cL              = DV.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
-        cO              = DV.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty mvtPolygons
+        cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
+        cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
+        cO = DF.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty mvtPolygons
         layer           = VT.Layer _version _name cP cL cO (_pixels _extents)
     pure . VT.VectorTile $ M.fromList [(_name, layer)]
 
