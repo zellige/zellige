@@ -25,6 +25,7 @@ library
                      , aeson
                      , bytestring
                      , containers
+                     , geojson
                      , unordered-containers
                      , handa-geodata
                      , stm
