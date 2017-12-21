@@ -26,14 +26,14 @@ library
                      , bytestring
                      , containers
                      , geojson
-                     , unordered-containers
                      , handa-geodata
-                     , stm
                      , optparse-generic
                      , scientific
+                     , stm
                      , text
                      , trifecta
                      , utf8-string
+                     , unordered-containers
                      , vector
                      , vector-th-unbox
                      , vectortiles
@@ -56,8 +56,8 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
-                     , hspec
                      , handa-geodata
+                     , hspec
                      , lens
                      , QuickCheck
                      , scientific
