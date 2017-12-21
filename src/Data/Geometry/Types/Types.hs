@@ -32,7 +32,9 @@ defaultVersion = 2
 defaultBuffer :: Pixels
 defaultBuffer = Pixels 128
 
-newtype Pixels = Pixels {_pixels :: Int} deriving (Show, Eq, Num)
+newtype Pixels = Pixels
+  { _pixels :: Int
+  } deriving (Show, Eq, Num)
 
 mkConfig :: Text -> Integer -> (Integer, Integer) -> Pixels -> Pixels -> Config
 mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
