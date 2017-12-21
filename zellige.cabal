@@ -26,7 +26,6 @@ library
                      , bytestring
                      , containers
                      , geojson
-                     , handa-geodata
                      , optparse-generic
                      , scientific
                      , stm
@@ -56,7 +55,6 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
-                     , handa-geodata
                      , hspec
                      , lens
                      , QuickCheck

@@ -5,10 +5,12 @@ module Data.Geometry.GeoJsonToMvt where
 import qualified Control.Monad.ST                as ST
 import qualified Data.Aeson                      as A
 import qualified Data.Foldable                   as F (foldMap)
-import qualified Data.Geography.GeoJSON          as GJ
+import qualified Data.Geospatial                 as GJ
+import qualified Data.LinearRing                 as GJ
+import qualified Data.LineString                 as GJ
 import qualified Data.List                       as DL
-import qualified Data.Scientific                 as S
 import qualified Data.STRef                      as ST
+import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile.Geometry   as VG
 
@@ -16,69 +18,97 @@ import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Types
 
-geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [GJ.Feature] -> ST.ST s MvtFeatures
+-- Lib
+
+geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [GJ.GeoFeature A.Value] -> ST.ST s MvtFeatures
 geoJsonFeaturesToMvtFeatures extentsBb features = do
   ops <- ST.newSTRef 0
   F.foldMap (convertFeature extentsBb ops) features
 
-convertFeature :: (Pixels, BoundingBox) -> ST.STRef s Int -> GJ.Feature -> ST.ST s MvtFeatures
-convertFeature config ops (GJ.Feature _ geom props fid) = do
-  x <- convertId fid ops
-  pure $ go x geom
+-- Feature
+
+convertFeature :: (Pixels, BoundingBox) -> ST.STRef s Int -> GJ.GeoFeature A.Value -> ST.ST s MvtFeatures
+convertFeature config ops (GJ.GeoFeature _ geom props mfid) = do
+  fid <- convertId mfid ops
+  pure $ convertGeometry config fid props geom
+
+-- Geometry
+
+convertGeometry :: (Pixels, BoundingBox) -> Int -> A.Value -> GJ.GeospatialGeometry -> MvtFeatures
+convertGeometry config fid props geom =
+  case geom of
+    GJ.NoGeometry     -> mempty
+    GJ.Point g        -> mkPoint fid props . convertPoint config $ g
+    GJ.MultiPoint g   -> mkPoint fid props . convertMultiPoint config $ g
+    GJ.Line g         -> mkLineString fid props . convertLineString config $ g
+    GJ.MultiLine g    -> mkLineString fid props . convertMultiLineString config $ g
+    GJ.Polygon g      -> mkPolygon fid props . convertPolygon config $ g
+    GJ.MultiPolygon g -> mkPolygon fid props . convertMultiPolygon config $ g
+    GJ.Collection gs  -> F.foldMap (convertGeometry config fid props) gs
+
+-- FeatureID
+
+readFeatureID :: Maybe GJ.FeatureID -> Maybe Int
+readFeatureID mfid = do
+  fid <- mfid
+  case reads (T.unpack fid) of
+    [(val, "")] -> Just val
+    _           -> Nothing
+
+convertId :: Maybe GJ.FeatureID -> ST.STRef s Int -> ST.ST s Int
+convertId mfid ops =
+  case readFeatureID mfid of
+    Just val -> pure val
+    Nothing  -> do
+      ST.modifySTRef ops (+1)
+      ST.readSTRef ops
+
+-- Points
+
+convertPoint :: (Pixels, BoundingBox) -> GJ.GeoPoint -> DV.Vector VG.Point
+convertPoint config = coordsToPoints config . GJ._unGeoPoint
+
+convertMultiPoint :: (Pixels, BoundingBox) -> GJ.GeoMultiPoint -> DV.Vector VG.Point
+convertMultiPoint config = F.foldMap (convertPoint config) . GJ.splitGeoMultiPoint
+
+-- Lines
+
+convertLineString :: (Pixels, BoundingBox) -> GJ.GeoLine -> DV.Vector VG.LineString
+convertLineString config =
+    DV.singleton .
+    VG.LineString .
+    DV.convert .
+    F.foldMap (coordsToPoints config) .
+    GJ.fromLineString .
+    GJ._unGeoLine
+
+convertMultiLineString :: (Pixels, BoundingBox) -> GJ.GeoMultiLine -> DV.Vector VG.LineString
+convertMultiLineString config = F.foldMap (convertLineString config) . GJ.splitGeoMultiLine
+
+-- Polygons
+
+convertPolygon :: (Pixels, BoundingBox) -> GJ.GeoPolygon -> DV.Vector VG.Polygon
+convertPolygon config poly = DV.singleton $
+  case GJ._unGeoPolygon poly of
+    []    -> VG.Polygon mempty mempty
+    (h:t) ->
+      case t of
+        []   -> mkPoly h
+        rest -> VG.Polygon (mkPolyPoints h) (mkPolys rest)
   where
-      go x (GJ.Point p)                  = mkPoint x props . convertPoint config $ p
-      go x (GJ.MultiPoint mpg)           = mkPoint x props . convertMultiPoint config $ mpg
-      go x (GJ.LineString ls)            = mkLineString x props . convertLineString config $ ls
-      go x (GJ.MultiLineString mls)      = mkLineString x props . convertMultiLineString config $ mls
-      go x (GJ.Polygon poly)             = mkPolygon x props . convertPolygon config $ poly
-      go x (GJ.MultiPolygon mp)          = mkPolygon x props . convertMultiPolygon config $ mp
-      go x (GJ.GeometryCollection geoms) = F.foldMap (go x) geoms
+    mkPolyPoints = DV.convert . F.foldMap (coordsToPoints config) . GJ.fromLinearRing
+    mkPoly lring = VG.Polygon (mkPolyPoints lring) mempty
+    mkPolys      = DL.foldl' (\acc lring -> DV.cons (mkPoly lring) acc) mempty
 
+convertMultiPolygon :: (Pixels, BoundingBox) -> GJ.GeoMultiPolygon -> DV.Vector VG.Polygon
+convertMultiPolygon config = F.foldMap (convertPolygon config) . GJ.splitGeoMultiPolygon
 
-convertPoint :: (Pixels, BoundingBox) -> GJ.PointGeometry -> DV.Vector VG.Point
-convertPoint config = sciLatLongToPoints config . GJ.coordinates
-
-convertMultiPoint :: (Pixels, BoundingBox) -> GJ.MultiPointGeometry -> DV.Vector VG.Point
-convertMultiPoint config = pointToMvt config . GJ.points
-
-convertLineString :: (Pixels, BoundingBox) -> GJ.LineStringGeometry -> DV.Vector VG.LineString
-convertLineString config = lineToMvt config . pure
-
-convertMultiLineString :: (Pixels, BoundingBox) -> GJ.MultiLineStringGeometry -> DV.Vector VG.LineString
-convertMultiLineString config (GJ.MultiLineStringGeometry mls) = lineToMvt config mls
-
-convertPolygon :: (Pixels, BoundingBox) -> GJ.PolygonGeometry -> DV.Vector VG.Polygon
-convertPolygon config = polygonToMvt config . pure
-
-convertMultiPolygon :: (Pixels, BoundingBox) -> GJ.MultiPolygonGeometry -> DV.Vector VG.Polygon
-convertMultiPolygon config (GJ.MultiPolygonGeometry polys) = polygonToMvt config polys
-
-convertId :: Maybe A.Value -> ST.STRef s Int -> ST.ST s Int
-convertId (Just (A.Number n)) _ = pure $ (round . sToF) n
-convertId _                   ops = do
-  ST.modifySTRef ops (+1)
-  ST.readSTRef ops
-
-pointToMvt :: (Pixels, BoundingBox) -> [GJ.PointGeometry] -> DV.Vector VG.Point
-pointToMvt config = F.foldMap (sciLatLongToPoints config . GJ.coordinates)
-
-lineToMvt :: (Pixels, BoundingBox) -> [GJ.LineStringGeometry] -> DV.Vector VG.LineString
-lineToMvt config = DL.foldl' (\acc lsg -> DV.cons (createLineString lsg) acc) DV.empty
-    where
-      createLineString lsg = VG.LineString (getPoints lsg)
-      getPoints lsg = DV.convert $ pointToMvt config $ GJ.lineString lsg
-
-polygonToMvt :: (Pixels, BoundingBox) -> [GJ.PolygonGeometry] -> DV.Vector VG.Polygon
-polygonToMvt config = DL.foldl' (\acc poly -> DV.cons (mkNewPolygon poly) acc) DV.empty
-  where
-    mkNewPolygon poly = VG.Polygon (ext (GJ.exterior poly)) (int (GJ.holes poly))
-    ext p = DV.convert $ pointToMvt config p
-    int p = polygonToMvt config $ fmap (\x -> GJ.PolygonGeometry x []) p
-
-sciLatLongToPoints :: (Pixels, BoundingBox) -> [S.Scientific] -> DV.Vector VG.Point
-sciLatLongToPoints _ []        = DV.empty
-sciLatLongToPoints _ [_]       = DV.empty
-sciLatLongToPoints (ext, bb) x = DV.map (\(lat, lon) -> latLonToXYInTile ext bb (LatLon (sToF lat) (sToF lon))) (createLines x)
+-- Helpers
 
 createLines :: [a] -> DV.Vector (a, a)
-createLines a = DV.fromList $ (zip <*> tail) a
+createLines = DV.fromList . (zip <*> tail)
+
+coordsToPoints :: (Pixels, BoundingBox) -> [Double] -> DV.Vector VG.Point
+coordsToPoints _ []        = mempty
+coordsToPoints _ [_]       = mempty
+coordsToPoints (ext, bb) x = fmap (latLonToXYInTile ext bb . uncurry LatLon) (createLines x)

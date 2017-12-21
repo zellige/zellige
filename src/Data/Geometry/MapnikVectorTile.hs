@@ -5,12 +5,12 @@
 module Data.Geometry.MapnikVectorTile where
 
 import qualified Control.Monad.ST                as ST
-import           Data.Aeson
+import qualified Data.Aeson                      as A
 import qualified Data.ByteString                 as B
 import qualified Data.ByteString.Char8           as BS
 import qualified Data.ByteString.Lazy            as LBS
 import qualified Data.Foldable                   as DF
-import qualified Data.Geography.GeoJSON          as GJ
+import qualified Data.Geospatial                 as GJ
 import           Data.Map                        as M
 import           Data.Monoid                     ((<>))
 import qualified Data.Text                       as T
@@ -37,10 +37,10 @@ geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
 
-readGeoJson :: FilePath -> IO GJ.FeatureCollection
+readGeoJson :: FilePath -> IO (GJ.GeoFeatureCollection A.Value)
 readGeoJson geoJsonFile = do
     bs <- LBS.readFile geoJsonFile
-    let ebs         = eitherDecode' bs :: Either String GJ.FeatureCollection
+    let ebs         = A.eitherDecode' bs :: Either String (GJ.GeoFeatureCollection A.Value)
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
@@ -58,7 +58,7 @@ readMvt filePath = do
 encodeMvt :: VT.VectorTile -> BS.ByteString
 encodeMvt = VT.encode . VT.untile
 
-createMvt :: Config -> GJ.FeatureCollection -> IO VT.VectorTile
+createMvt :: Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
 createMvt Config{..} geoJson = do
     let extentsBb       = (_extents, boundingBox _gtc)
         clipBb          = createBoundingBoxPts _buffer _extents
@@ -75,5 +75,5 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: (Pixels, BoundingBox) -> GJ.FeatureCollection -> ST.ST s MvtFeatures
-getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
+getFeatures :: (Pixels, BoundingBox) -> GJ.GeoFeatureCollection A.Value -> ST.ST s MvtFeatures
+getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ._geofeatures

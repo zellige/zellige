@@ -48,7 +48,6 @@ packages:
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
 extra-deps: 
-- handa-geodata-0.2.0.1
 - optparse-generic-1.2.2
 - validation-0.5.5
 

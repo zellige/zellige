@@ -53,4 +53,4 @@ sToF = S.toRealFloat
 
 instance Monoid MvtFeatures where
   mempty = MvtFeatures mempty mempty mempty
-  mappend a b = MvtFeatures ((mvtPoints a) <> (mvtPoints b)) ((mvtLines a) <> (mvtLines b)) ((mvtPolygons a) <> (mvtPolygons b))
+  mappend a b = MvtFeatures (mvtPoints a <> mvtPoints b) (mvtLines a <> mvtLines b) (mvtPolygons a <> mvtPolygons b)
