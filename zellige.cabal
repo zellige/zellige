@@ -90,10 +90,6 @@ benchmark zellige-bench
   default-language: Haskell2010
   ghc-options: -fwarn-unused-imports -fwarn-unused-binds -threaded -O
 
-
-
-
-
 source-repository head
   type:     git
   location: https://github.com/githubuser/zellige
