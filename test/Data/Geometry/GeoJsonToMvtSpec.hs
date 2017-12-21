@@ -7,6 +7,7 @@ import qualified Data.Aeson.Types                as AT
 import qualified Data.Geography.GeoJSON          as GJ
 import qualified Data.Map.Lazy                   as DMZ
 import qualified Data.Scientific                 as S
+import qualified Data.Sequence                   as DS
 import qualified Data.Vector                     as DV
 import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
@@ -50,7 +51,7 @@ testPoints =
       let feature = GJ.Feature Nothing point AT.Null (Just (AT.Number (fromIntegral x)))
           point = GJ.Point pt1
           pts = DV.fromList [(840,2194)]
-          result = MvtFeatures (DV.singleton $ VVT.Feature x DMZ.empty pts) mempty mempty
+          result = MvtFeatures (DS.singleton $ VVT.Feature x DMZ.empty pts) mempty mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -62,7 +63,7 @@ testLines =
       let feature = GJ.Feature Nothing line AT.Null (Just (AT.Number (fromIntegral x)))
           line = GJ.LineString (GJ.LineStringGeometry [pt1, pt2])
           pts = DVU.fromList [(840,2194),(23,2098)]
-          result = MvtFeatures mempty (DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])]) mempty
+          result = MvtFeatures mempty (DS.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])]) mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -76,7 +77,7 @@ testPolygons =
       let feature = GJ.Feature Nothing polygon AT.Null (Just (AT.Number (fromIntegral x)))
           polygon = GJ.Polygon (GJ.PolygonGeometry [pt1, pt2, pt3] [])
           pts = DVU.fromList [(840,2194),(23,2098),(178,1162)]
-          result = MvtFeatures mempty mempty (DV.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
+          result = MvtFeatures mempty mempty (DS.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -87,6 +88,6 @@ testCounter =
     let feature = GJ.Feature Nothing point AT.Null Nothing
         point = GJ.Point pt1
         pts = DV.fromList [(840,2194)]
-        result = MvtFeatures (DV.fromList [VVT.Feature 1 DMZ.empty pts, VVT.Feature 2 DMZ.empty pts]) mempty mempty
+        result = MvtFeatures (DS.fromList [VVT.Feature 1 DMZ.empty pts, VVT.Feature 2 DMZ.empty pts]) mempty mempty
         actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
     actual `shouldBe` result
