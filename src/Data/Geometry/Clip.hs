@@ -9,7 +9,7 @@ import qualified Data.Vector.Unboxed           as DVU
 import qualified Geography.VectorTile.Geometry as VG
 import           Prelude                       hiding (Left, Right, lines)
 
-import           Data.Geometry.Types
+import           Data.Geometry.Types.Types
 
 createBoundingBoxPts :: Pixels -> Pixels -> (VG.Point, VG.Point)
 createBoundingBoxPts (Pixels buffer) (Pixels extent) = ((-buffer, -buffer), (extent+buffer, extent+buffer))

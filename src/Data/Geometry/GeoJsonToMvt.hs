@@ -13,7 +13,8 @@ import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile.Geometry   as VG
 
 import           Data.Geometry.SphericalMercator
-import           Data.Geometry.Types
+import           Data.Geometry.Types.MvtFeatures
+import           Data.Geometry.Types.Types
 
 geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [GJ.Feature] -> ST.ST s MvtFeatures
 geoJsonFeaturesToMvtFeatures extentsBb features = do

@@ -21,7 +21,8 @@ import qualified Options.Generic                 as OG
 import           Data.Geometry.Clip
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
-import           Data.Geometry.Types
+import           Data.Geometry.Types.MvtFeatures
+import           Data.Geometry.Types.Types
 
 writeLayer :: LayerConfig OG.Unwrapped -> IO ()
 writeLayer lc = do
@@ -53,7 +54,7 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: (Pixels, Data.Geometry.Types.BoundingBox) -> GJ.FeatureCollection -> ST.ST s MvtFeatures
+getFeatures :: (Pixels, BoundingBox) -> GJ.FeatureCollection -> ST.ST s MvtFeatures
 getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ.features
 
 readGeoJson :: FilePath -> IO GJ.FeatureCollection

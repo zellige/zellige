@@ -5,7 +5,7 @@ import           Criterion.Main
 
 import           Data.Geometry.Clip
 import           Data.Geometry.MapnikVectorTile
-import           Data.Geometry.Types
+import           Data.Geometry.Types.Types
 import           Data.Text
 import qualified Data.Vector                    as DV
 import qualified Data.Vector.Unboxed            as DVU

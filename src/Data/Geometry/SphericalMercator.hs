@@ -1,6 +1,6 @@
 module Data.Geometry.SphericalMercator where
 
-import           Data.Geometry.Types
+import           Data.Geometry.Types.Types
 
 wgs84MajorRadius :: Double
 wgs84MajorRadius = 6378137.0

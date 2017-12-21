@@ -17,7 +17,8 @@ import qualified Test.QuickCheck.Gen             as GA
 
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
-import           Data.Geometry.Types
+import           Data.Geometry.Types.MvtFeatures
+import           Data.Geometry.Types.Types
 
 config :: Config
 config = mkConfig "foo" 18 (236629,160842) 128 2048

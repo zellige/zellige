@@ -19,7 +19,8 @@ library
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.SphericalMercator
-                     , Data.Geometry.Types                     
+                     , Data.Geometry.Types.Types
+                     , Data.Geometry.Types.MvtFeatures
   build-depends:       base >= 4.7 && < 5
                      , aeson
                      , bytestring
