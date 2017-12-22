@@ -38,8 +38,8 @@ resolver: lts-10.0
 packages:
 - '.'
 - location:
-    git: git@github.com:sitewisely/vectortiles.git
-    commit: f11e89e1273ec8d296396ca642e3edeb6d06ec49
+    git: https://github.com/sitewisely/vectortiles.git
+    commit: master
 - location:
     git: https://github.com/sitewisely/hs-geojson.git
     commit: master
