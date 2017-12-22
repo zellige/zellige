@@ -9,7 +9,6 @@ import qualified Data.LinearRing                 as GJ
 import qualified Data.LineString                 as GJ
 import qualified Data.Map.Lazy                   as DMZ
 import qualified Data.Sequence                   as DS
-import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
@@ -40,7 +39,7 @@ pt3 :: GJ.GeoPoint
 pt3 = GJ.GeoPoint [144.960599, -37.799549]
 
 mkFeatureID :: Int -> Maybe GJ.FeatureID
-mkFeatureID = Just . T.pack . show
+mkFeatureID = Just . GJ.FeatureIDNumber
 
 spec :: Spec
 spec = do
