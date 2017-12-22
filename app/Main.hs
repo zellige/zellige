@@ -10,6 +10,3 @@ main :: IO ()
 main = do
   x <- unwrapRecord "Zellige - GeoJSON to MVT"
   MVT.writeLayer x
-
-
-

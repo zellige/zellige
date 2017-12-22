@@ -55,10 +55,12 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
+                     , geojson
                      , hspec
                      , lens
                      , QuickCheck
                      , scientific
+                     , text
                      , vector
                      , vectortiles
                      , zellige

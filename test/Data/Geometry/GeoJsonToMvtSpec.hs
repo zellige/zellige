@@ -4,14 +4,17 @@ module Data.Geometry.GeoJsonToMvtSpec where
 
 import qualified Control.Monad.ST                as ST
 import qualified Data.Aeson.Types                as AT
-import qualified Data.Geography.GeoJSON          as GJ
+import qualified Data.Geospatial                 as GJ
+import qualified Data.LinearRing                 as GJ
+import qualified Data.LineString                 as GJ
 import qualified Data.Map.Lazy                   as DMZ
-import qualified Data.Scientific                 as S
 import qualified Data.Sequence                   as DS
+import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile.Geometry   as VG
 import qualified Geography.VectorTile.VectorTile as VVT
+
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
 import qualified Test.QuickCheck.Arbitrary       as QA
 import qualified Test.QuickCheck.Gen             as GA
@@ -27,14 +30,17 @@ config = mkConfig "foo" 18 (236629,160842) 128 2048
 extentsBb :: (Pixels, BoundingBox)
 extentsBb = (_extents config, boundingBox $ _gtc config)
 
-pt1 :: GJ.PointGeometry
-pt1 = GJ.PointGeometry [S.scientific 144961043 (-6), S.scientific (-37800096) (-6)]
+pt1 :: GJ.GeoPoint
+pt1 = GJ.GeoPoint [144.961043, -37.800096]
 
-pt2 :: GJ.PointGeometry
-pt2 = GJ.PointGeometry [S.scientific 144960495 (-6), S.scientific (-37800045) (-6)]
+pt2 :: GJ.GeoPoint
+pt2 = GJ.GeoPoint [144.960495, -37.800045]
 
-pt3 :: GJ.PointGeometry
-pt3 = GJ.PointGeometry [S.scientific 144960599 (-6), S.scientific (-37799549) (-6)]
+pt3 :: GJ.GeoPoint
+pt3 = GJ.GeoPoint [144.960599, -37.799549]
+
+mkFeatureID :: Int -> Maybe GJ.FeatureID
+mkFeatureID = Just . T.pack . show
 
 spec :: Spec
 spec = do
@@ -48,7 +54,7 @@ testPoints =
   describe "points" $
     it "Returns mapnik vector feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Int
-      let feature = GJ.Feature Nothing point AT.Null (Just (AT.Number (fromIntegral x)))
+      let feature = GJ.GeoFeature Nothing point AT.Null (mkFeatureID x)
           point = GJ.Point pt1
           pts = DV.fromList [(840,2194)]
           result = MvtFeatures (DS.singleton $ VVT.Feature x DMZ.empty pts) mempty mempty
@@ -60,8 +66,8 @@ testLines =
   describe "lines" $
     it "Returns mapnik lines feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Int
-      let feature = GJ.Feature Nothing line AT.Null (Just (AT.Number (fromIntegral x)))
-          line = GJ.LineString (GJ.LineStringGeometry [pt1, pt2])
+      let feature = GJ.GeoFeature Nothing line AT.Null (mkFeatureID x)
+          line = GJ.Line . GJ.GeoLine $ GJ.makeLineString (GJ._unGeoPoint pt1) (GJ._unGeoPoint pt2) []
           pts = DVU.fromList [(840,2194),(23,2098)]
           result = MvtFeatures mempty (DS.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.LineString pts])]) mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
@@ -74,9 +80,9 @@ testPolygons =
   describe "polygons" $
     it "Returns mapnik polygon feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Int
-      let feature = GJ.Feature Nothing polygon AT.Null (Just (AT.Number (fromIntegral x)))
-          polygon = GJ.Polygon (GJ.PolygonGeometry [pt1, pt2, pt3] [])
-          pts = DVU.fromList [(840,2194),(23,2098),(178,1162)]
+      let feature = GJ.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
+          polygon = GJ.Polygon . GJ.GeoPolygon $ [GJ.makeLinearRing (GJ._unGeoPoint pt1) (GJ._unGeoPoint pt2) (GJ._unGeoPoint pt3) []]
+          pts = DVU.fromList [(840,2194), (23,2098), (178,1162), (840,2194)]
           result = MvtFeatures mempty mempty (DS.fromList [VVT.Feature x DMZ.empty (DV.fromList [VG.Polygon pts DV.empty])])
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
@@ -85,7 +91,7 @@ testCounter :: Spec
 testCounter =
   describe "features without id" $
     it "Returns same twice - tests counter" $ do
-    let feature = GJ.Feature Nothing point AT.Null Nothing
+    let feature = GJ.GeoFeature Nothing point AT.Null Nothing
         point = GJ.Point pt1
         pts = DV.fromList [(840,2194)]
         result = MvtFeatures (DS.fromList [VVT.Feature 1 DMZ.empty pts, VVT.Feature 2 DMZ.empty pts]) mempty mempty
