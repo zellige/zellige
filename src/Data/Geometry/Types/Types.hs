@@ -3,23 +3,20 @@
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE StandaloneDeriving         #-}
-{-# LANGUAGE TemplateHaskell            #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.Geometry.Types.Types where
 
-import qualified Control.Applicative          as AP
-import qualified Control.Monad.ST             as ST
+import qualified Control.Applicative as AP
+import qualified Control.Monad.ST    as ST
 import           Data.Monoid
 import           Data.Text
-import           Data.Vector.Unboxed.Deriving
 import           Data.Word
 import           Options.Generic
-import           Prelude                      hiding (Left, Right)
+import           Prelude             hiding (Left, Right)
 
 -- Remove me in 8.4.1 https://ghc.haskell.org/trac/ghc/ticket/14107
 instance Monoid a => Monoid (ST.ST s a) where
@@ -101,11 +98,6 @@ word8ToOutCode w =
       2 -> Right
       4 -> Bottom
       _ -> Top
-
-derivingUnbox "OutCode"
-  [t| OutCode -> Word8 |]
-  [| outCodeToWord8 |]
-  [| word8ToOutCode |]
 
 data LayerConfig w = LayerConfig
   { _layerInput  :: w ::: FilePath <?> "Input GeoJSON file"
