@@ -9,9 +9,6 @@ import           Test.Hspec                    (Spec, describe, it, shouldBe)
 
 import           Data.Geometry.Clip
 
-poly :: VG.Polygon
-poly = VG.Polygon (DVU.fromList polyPts) mempty
-
 brokenPoly :: VG.Polygon
 brokenPoly = VG.Polygon (DVU.fromList brokenPolyPts) mempty
 
@@ -21,6 +18,15 @@ giantPoly = VG.Polygon (DVU.fromList giantPolyPts) mempty
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150), (200, 50), (350,150), (350,300), (250,300),
              (200,250), (150,350), (100,250), (100,200)]
+
+poly :: VG.Polygon
+poly = VG.Polygon (DVU.fromList polyPts) mempty
+
+resultPolyPts :: [(Int, Int)]
+resultPolyPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
+
+resultPoly :: VG.Polygon
+resultPoly = VG.Polygon (DVU.fromList resultPolyPts) mempty
 
 brokenPolyPts :: [(Int, Int)]
 brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
@@ -69,10 +75,7 @@ testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Returns clipped polygon" $ do
-      let actual = clipPolygon polyClipPts poly
-          resultPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
-          result = VG.Polygon (DVU.fromList resultPts) mempty
-      actual `shouldBe` Just result
+      clipPolygon polyClipPts poly `shouldBe` Just resultPoly
     it "Negative polygon" $ do
       let actual = clipPolygon brokenClipPts brokenPoly
       actual `shouldBe` Nothing
