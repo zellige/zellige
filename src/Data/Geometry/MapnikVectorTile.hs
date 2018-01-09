@@ -65,8 +65,8 @@ createMvt Config{..} geoJson = do
         MvtFeatures{..} = ST.runST $ getFeatures extentsBb geoJson
         cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
         cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
-        cO = DF.foldl' (accNewGeom (clipPolygons clipBb)) DV.empty mvtPolygons
-        layer           = VT.Layer _version _name cP cL cO (_pixels _extents)
+        cO = DF.foldl' (accNewGeom (simplifyPolygons . clipPolygons clipBb)) DV.empty mvtPolygons
+        layer = VT.Layer _version _name cP cL cO (_pixels _extents)
     pure . VT.VectorTile $ M.fromList [(_name, layer)]
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)

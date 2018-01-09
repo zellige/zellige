@@ -89,6 +89,20 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x < minX  = Left
   | otherwise = Inside
 
+simplifyPolygons :: DV.Vector VG.Polygon -> DV.Vector VG.Polygon
+simplifyPolygons = DV.map simplifyPolygon
+
+simplifyPolygon :: VG.Polygon -> VG.Polygon
+simplifyPolygon poly = VG.Polygon (DVU.map quantize (VG.polyPoints poly)) DV.empty
+
+quantize :: VG.Point -> VG.Point
+quantize (x, y) =
+  let
+    n = 2 :: Int
+    newX = round ((fromIntegral x / 10 ^ n) :: Double) * 10 ^ n
+    newY = round ((fromIntegral y / 10 ^ n) :: Double) * 10 ^ n
+  in (newX, newY)
+
 clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
 clipPolygons bb = DV.foldl' addPoly DV.empty
   where
