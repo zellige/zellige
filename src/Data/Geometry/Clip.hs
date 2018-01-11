@@ -98,9 +98,9 @@ simplifyPolygon poly = VG.Polygon (DVU.map quantize (VG.polyPoints poly)) DV.emp
 quantize :: VG.Point -> VG.Point
 quantize (x, y) =
   let
-    n = 2 :: Int
-    newX = round ((fromIntegral x / 10 ^ n) :: Double) * 10 ^ n
-    newY = round ((fromIntegral y / 10 ^ n) :: Double) * 10 ^ n
+    n = 1 :: Int
+    newX = ceiling ((fromIntegral x / (10 ^ n)) :: Double) * (10 ^ n)
+    newY = ceiling ((fromIntegral y / (10 ^ n)) :: Double) * (10 ^ n)
   in (newX, newY)
 
 clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
@@ -109,7 +109,7 @@ clipPolygons bb = DV.foldl' addPoly DV.empty
     addPoly acc f =
       case clipPolygon bb f of
         Nothing -> acc
-        Just x  -> DV.cons x acc
+        Just x  -> DV.cons (simplifyPolygon x) acc
 
 clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
 clipPolygon bb poly =
