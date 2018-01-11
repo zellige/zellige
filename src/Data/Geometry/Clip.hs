@@ -89,9 +89,6 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x < minX  = Left
   | otherwise = Inside
 
-simplifyPolygons :: DV.Vector VG.Polygon -> DV.Vector VG.Polygon
-simplifyPolygons = DV.map simplifyPolygon
-
 simplifyPolygon :: VG.Polygon -> VG.Polygon
 simplifyPolygon poly = VG.Polygon (DVU.map quantize (VG.polyPoints poly)) DV.empty
 
