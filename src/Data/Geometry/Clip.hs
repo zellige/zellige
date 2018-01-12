@@ -118,7 +118,7 @@ clipPolygon bb poly =
     Just x  -> Just (VG.Polygon x DV.empty)
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
-clip bb poly = checkLength (DVU.uniq (quantizePoints 5 newClippedPoly))
+clip bb poly = checkLength (DVU.uniq newClippedPoly)
   where
     newClippedPoly = DVU.foldl' foo (VG.polyPoints poly) (createClipPoly bb)
     checkLength newPoly = if DVU.null newPoly then Nothing else Just (DVU.cons (DVU.last newPoly) newPoly)
