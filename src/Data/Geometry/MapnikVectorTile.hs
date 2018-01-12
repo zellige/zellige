@@ -60,9 +60,9 @@ encodeMvt = VT.encode . VT.untile
 
 createMvt :: Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
 createMvt Config{..} geoJson = do
-    let extentsBb       = (_extents, boundingBox _gtc)
+    let extentsQBb       = (_extents, _quantizePixels, boundingBox _gtc)
         clipBb          = createBoundingBoxPts _buffer _extents
-        MvtFeatures{..} = ST.runST $ getFeatures extentsBb geoJson
+        MvtFeatures{..} = ST.runST $ getFeatures extentsQBb geoJson
         cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
         cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
         cO = DF.foldl' (accNewGeom (clipPolygons clipBb )) DV.empty mvtPolygons
@@ -75,5 +75,5 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: (Pixels, BoundingBox) -> GJ.GeoFeatureCollection A.Value -> ST.ST s MvtFeatures
-getFeatures extentsBb = geoJsonFeaturesToMvtFeatures extentsBb . GJ._geofeatures
+getFeatures :: (Pixels, Pixels, BoundingBox) -> GJ.GeoFeatureCollection A.Value -> ST.ST s MvtFeatures
+getFeatures extentsQBb = geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures

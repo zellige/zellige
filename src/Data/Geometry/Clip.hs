@@ -91,13 +91,13 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
 
 simplifyPolygon :: VG.Polygon -> VG.Polygon
 simplifyPolygon poly =
-  VG.Polygon (DVU.uniq (quantizePoints (VG.polyPoints poly))) DV.empty
+  VG.Polygon (DVU.uniq (quantizePoints 5 (VG.polyPoints poly))) DV.empty
 
 quantizePoints :: Int -> DVU.Vector VG.Point -> DVU.Vector VG.Point
-quantizePoints pixels = DVU.map (quantize pixels)
+quantizePoints pixels = DVU.map (quantizePoint pixels)
 
-quantize :: Int -> VG.Point -> VG.Point
-quantize pixels (x, y) =
+quantizePoint :: Int -> VG.Point -> VG.Point
+quantizePoint pixels (x, y) =
   let
     newX = (x `quot` pixels) * pixels
     newY = (y `quot` pixels) * pixels

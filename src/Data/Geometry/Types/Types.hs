@@ -38,11 +38,12 @@ mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Confi
 mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
 
 data Config = Config
-  { _name    :: Text
-  , _gtc     :: GoogleTileCoords
-  , _buffer  :: Pixels
-  , _extents :: Pixels
-  , _version :: Int
+  { _name           :: Text
+  , _gtc            :: GoogleTileCoords
+  , _buffer         :: Pixels
+  , _extents        :: Pixels
+  , _quantizePixels :: Pixels
+  , _version        :: Int
   } deriving (Show, Eq)
 
 data BoundingBox = BoundingBox
@@ -114,6 +115,7 @@ data LayerConfig w = LayerConfig
   , _layerY      :: w ::: Integer <?> "Latitude of layer"
   , _layerBuffer :: w ::: Int <?> "Buffer in pixels"
   , _layerExtent :: w ::: Int <?> "Layer size in pixels"
+  , _layerQuantizePixels :: w ::: Int <?> "Smallest pixel unit of layer"
   } deriving (Generic)
 
 
@@ -126,4 +128,4 @@ instance ParseRecord (LayerConfig Wrapped) where
 deriving instance Show (LayerConfig Unwrapped)
 
 configFromLayerConfig :: LayerConfig Unwrapped -> Config
-configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc)
+configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc) (Pixels $ _layerQuantizePixels lc)

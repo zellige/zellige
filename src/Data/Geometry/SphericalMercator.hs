@@ -11,14 +11,18 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Pixels -> BoundingBox -> LatLon -> (Int, Int)
-latLonToXYInTile (Pixels extents) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (x, y)
+latLonToXYInTile :: Pixels -> Pixels -> BoundingBox -> LatLon -> (Int, Int)
+latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (q x, q y)
     where
+      q = if quantizePixels > 1 then quantize quantizePixels else (* 1)
       x = round ((lonToX lat - minX) * dExtents / spanX)
       y = round ((latToY lon - minY) * dExtents / spanY)
       dExtents = fromIntegral extents
       spanX = maxX - minX
       spanY = maxY - minY
+
+quantize :: Int -> Int -> Int
+quantize pixels i = (i `quot` pixels) * pixels
 
 -- Longitude 4326 to 3857 X
 lonToX :: Double -> Double
