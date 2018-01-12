@@ -5,15 +5,13 @@ module Data.Geometry.Simplify.DouglasPeucker
     , douglasPeucker
     ) where
 
-import qualified Data.Geospatial as DG
-import qualified Data.LineString as DL
-import qualified Data.Vector     as DV
+import qualified Data.Vector as DV
 
 type Point = (Double,Double)
 type LineSegment = (Point,Point)
 
 distance :: Point -> Point -> Double
-distance (x1,y1) (x2,y2) = sqrt(((x1 - x2) ^ 2) + ((y1 - y2) ^ 2))
+distance (x1,y1) (x2,y2) = sqrt(((x1 - x2) ** 2) + ((y1 - y2) ** 2))
 
 -- http://paulbourke.net/geometry/pointlineplane/DistancePoint.java
 perpendicularDistance :: Point -> LineSegment -> Double
@@ -38,7 +36,7 @@ douglasPeucker epsilon points
 
 splitAtMaxDistance :: DV.Vector Point -> (Double, Int)
 splitAtMaxDistance points =
-    DV.ifoldl' (\(max, index) ni a -> if cp a ls > max then (cp a ls, ni + 1) else (max, index)) (0.0, DV.length points) points
+    DV.ifoldl' (\(accMax, index) ni a -> if cp a ls > accMax then (cp a ls, ni + 1) else (accMax, index)) (0.0, DV.length points) points
     where
         ls = (DV.head points, DV.last points)
         cp = perpendicularDistance
