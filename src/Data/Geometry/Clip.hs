@@ -93,8 +93,8 @@ simplifyPolygon :: VG.Polygon -> VG.Polygon
 simplifyPolygon poly =
   VG.Polygon (DVU.uniq (quantizePoints (VG.polyPoints poly))) DV.empty
 
-quantizePoints :: DVU.Vector VG.Point -> DVU.Vector VG.Point
-quantizePoints = DVU.map (quantize 5)
+quantizePoints :: Int -> DVU.Vector VG.Point -> DVU.Vector VG.Point
+quantizePoints pixels = DVU.map (quantize pixels)
 
 quantize :: Int -> VG.Point -> VG.Point
 quantize pixels (x, y) =
@@ -118,7 +118,7 @@ clipPolygon bb poly =
     Just x  -> Just (VG.Polygon x DV.empty)
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
-clip bb poly = checkLength (DVU.uniq (quantizePoints newClippedPoly))
+clip bb poly = checkLength (DVU.uniq (quantizePoints 5 newClippedPoly))
   where
     newClippedPoly = DVU.foldl' foo (VG.polyPoints poly) (createClipPoly bb)
     checkLength newPoly = if DVU.null newPoly then Nothing else Just (DVU.cons (DVU.last newPoly) newPoly)
