@@ -12,9 +12,9 @@ degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
 latLonToXYInTile :: Pixels -> Pixels -> BoundingBox -> LatLon -> (Int, Int)
-latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = (q x, q y)
+latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = xy
     where
-      q = if quantizePixels > 1 then quantize quantizePixels else (* 1)
+      xy = if quantizePixels > 1 then (quantize quantizePixels x, quantize quantizePixels y) else (x, y)
       x = round ((lonToX lat - minX) * dExtents / spanX)
       y = round ((latToY lon - minY) * dExtents / spanY)
       dExtents = fromIntegral extents
