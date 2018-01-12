@@ -34,7 +34,7 @@ newtype Pixels = Pixels
   { _pixels :: Int
   } deriving (Show, Eq, Num)
 
-mkConfig :: Text -> Natural -> (Integer, Integer) -> Pixels -> Pixels -> Config
+mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Config
 mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
 
 data Config = Config
@@ -56,10 +56,15 @@ data LatLon = LatLon
   { _llLat :: Double
   , _llLon :: Double }
 
+type ZoomLevel = Natural
+
 data GoogleTileCoords = GoogleTileCoords
-  { _gtcZoom   :: Natural
+  { _gtcZoom   :: ZoomLevel
   , _gtcCoords :: Coords
   } deriving (Eq, Show)
+
+mkGoogleTileCoords :: ZoomLevel -> Integer -> Integer -> GoogleTileCoords
+mkGoogleTileCoords z x y = GoogleTileCoords z (Coords x y)
 
 data Coords = Coords
   { _coordsX :: Integer
@@ -104,7 +109,7 @@ data LayerConfig w = LayerConfig
   { _layerInput  :: w ::: FilePath <?> "Input GeoJSON file"
   , _layerOutput :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
   , _layerName   :: w ::: Text <?> "Name of layer"
-  , _layerZoom   :: w ::: Natural <?> "Zoom level of layer"
+  , _layerZoom   :: w ::: ZoomLevel <?> "Zoom level of layer"
   , _layerX      :: w ::: Integer <?> "Longitude of layer"
   , _layerY      :: w ::: Integer <?> "Latitude of layer"
   , _layerBuffer :: w ::: Int <?> "Buffer in pixels"
@@ -122,4 +127,3 @@ deriving instance Show (LayerConfig Unwrapped)
 
 configFromLayerConfig :: LayerConfig Unwrapped -> Config
 configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc)
-
