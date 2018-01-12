@@ -21,6 +21,8 @@ library
                      , Data.Geometry.SphericalMercator
                      , Data.Geometry.Types.Types
                      , Data.Geometry.Types.MvtFeatures
+                     , Data.Geometry.Simplify.DouglasPeucker
+
   build-depends:       base >= 4.8 && < 5
                      , aeson
                      , bytestring
