@@ -107,14 +107,14 @@ word8ToOutCode w =
       _ -> Top
 
 data LayerConfig w = LayerConfig
-  { _layerInput  :: w ::: FilePath <?> "Input GeoJSON file"
-  , _layerOutput :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
-  , _layerName   :: w ::: Text <?> "Name of layer"
-  , _layerZoom   :: w ::: ZoomLevel <?> "Zoom level of layer"
-  , _layerX      :: w ::: Integer <?> "Longitude of layer"
-  , _layerY      :: w ::: Integer <?> "Latitude of layer"
-  , _layerBuffer :: w ::: Int <?> "Buffer in pixels"
-  , _layerExtent :: w ::: Int <?> "Layer size in pixels"
+  { _layerInput          :: w ::: FilePath <?> "Input GeoJSON file"
+  , _layerOutput         :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
+  , _layerName           :: w ::: Text <?> "Name of layer"
+  , _layerZoom           :: w ::: ZoomLevel <?> "Zoom level of layer"
+  , _layerX              :: w ::: Integer <?> "Longitude of layer"
+  , _layerY              :: w ::: Integer <?> "Latitude of layer"
+  , _layerBuffer         :: w ::: Int <?> "Buffer in pixels"
+  , _layerExtent         :: w ::: Int <?> "Layer size in pixels"
   , _layerQuantizePixels :: w ::: Int <?> "Smallest pixel unit of layer"
   } deriving (Generic)
 
