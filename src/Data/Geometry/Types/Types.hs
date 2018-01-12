@@ -34,8 +34,8 @@ newtype Pixels = Pixels
   { _pixels :: Int
   } deriving (Show, Eq, Num)
 
-mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Config
-mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
+mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Pixels -> Config
+mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents quantizePixels defaultVersion
 
 data Config = Config
   { _name           :: Text
