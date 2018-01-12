@@ -21,12 +21,12 @@ library
                      , Data.Geometry.SphericalMercator
                      , Data.Geometry.Types.Types
                      , Data.Geometry.Types.MvtFeatures
-  build-depends:       base >= 4.7 && < 5
+  build-depends:       base >= 4.8 && < 5
                      , aeson
                      , bytestring
                      , containers
                      , geojson
-                     , optparse-generic
+                     , optparse-generic >= 1.2.3
                      , scientific
                      , stm
                      , text
@@ -43,7 +43,7 @@ executable zellige
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
   build-depends:       base
-                     , optparse-generic
+                     , optparse-generic >= 1.2.3
                      , zellige                     
   default-language:    Haskell2010
 
@@ -72,7 +72,7 @@ test-suite zellige-test
 benchmark zellige-bench
   type: exitcode-stdio-1.0
   build-depends:
-      base >= 4.7 && < 5
+      base >= 4.8 && < 5
     , bytestring
     , cereal >=0.5 && <0.6
     , containers
@@ -83,7 +83,7 @@ benchmark zellige-bench
     , microlens >=0.4 && <0.5
     , microlens-platform >=0.3 && <0.4
     , vectortiles
-    , optparse-generic
+    , optparse-generic >= 1.2.3
     , zellige
   hs-source-dirs:
       bench

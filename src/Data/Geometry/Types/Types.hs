@@ -15,6 +15,7 @@ import qualified Control.Monad.ST    as ST
 import           Data.Monoid
 import           Data.Text
 import           Data.Word
+import           Numeric.Natural     (Natural)
 import           Options.Generic
 import           Prelude             hiding (Left, Right)
 
@@ -33,7 +34,7 @@ newtype Pixels = Pixels
   { _pixels :: Int
   } deriving (Show, Eq, Num)
 
-mkConfig :: Text -> Integer -> (Integer, Integer) -> Pixels -> Pixels -> Config
+mkConfig :: Text -> Natural -> (Integer, Integer) -> Pixels -> Pixels -> Config
 mkConfig name z (x, y) buffer extents = Config name (GoogleTileCoords z (Coords x y)) buffer extents defaultVersion
 
 data Config = Config
@@ -56,7 +57,7 @@ data LatLon = LatLon
   , _llLon :: Double }
 
 data GoogleTileCoords = GoogleTileCoords
-  { _gtcZoom   :: Integer
+  { _gtcZoom   :: Natural
   , _gtcCoords :: Coords
   } deriving (Eq, Show)
 
@@ -103,7 +104,7 @@ data LayerConfig w = LayerConfig
   { _layerInput  :: w ::: FilePath <?> "Input GeoJSON file"
   , _layerOutput :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
   , _layerName   :: w ::: Text <?> "Name of layer"
-  , _layerZoom   :: w ::: Integer <?> "Zoom level of layer"
+  , _layerZoom   :: w ::: Natural <?> "Zoom level of layer"
   , _layerX      :: w ::: Integer <?> "Longitude of layer"
   , _layerY      :: w ::: Integer <?> "Latitude of layer"
   , _layerBuffer :: w ::: Int <?> "Buffer in pixels"
