@@ -24,10 +24,10 @@ import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Types
 
 config :: Config
-config = mkConfig "foo" 18 (236629,160842) 128 2048
+config = mkConfig "foo" 18 (236629,160842) 128 2048 1
 
-extentsBb :: (Pixels, BoundingBox)
-extentsBb = (_extents config, boundingBox $ _gtc config)
+extentsBb :: (Pixels, Pixels, BoundingBox)
+extentsBb = (_extents config, _quantizePixels config, boundingBox $ _gtc config)
 
 pt1 :: GJ.GeoPoint
 pt1 = GJ.GeoPoint [144.961043, -37.800096]
