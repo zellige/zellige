@@ -89,6 +89,20 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x < minX  = Left
   | otherwise = Inside
 
+simplifyPolygon :: VG.Polygon -> VG.Polygon
+simplifyPolygon poly =
+  VG.Polygon (DVU.uniq (quantizePoints 5 (VG.polyPoints poly))) DV.empty
+
+quantizePoints :: Int -> DVU.Vector VG.Point -> DVU.Vector VG.Point
+quantizePoints pixels = DVU.map (quantizePoint pixels)
+
+quantizePoint :: Int -> VG.Point -> VG.Point
+quantizePoint pixels (x, y) =
+  let
+    newX = (x `quot` pixels) * pixels
+    newY = (y `quot` pixels) * pixels
+  in (newX, newY)
+
 clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
 clipPolygons bb = DV.foldl' addPoly DV.empty
   where
@@ -104,7 +118,7 @@ clipPolygon bb poly =
     Just x  -> Just (VG.Polygon x DV.empty)
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
-clip bb poly = checkLength newClippedPoly
+clip bb poly = checkLength (DVU.uniq newClippedPoly)
   where
     newClippedPoly = DVU.foldl' foo (VG.polyPoints poly) (createClipPoly bb)
     checkLength newPoly = if DVU.null newPoly then Nothing else Just (DVU.cons (DVU.last newPoly) newPoly)

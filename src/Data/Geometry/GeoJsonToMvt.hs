@@ -19,21 +19,21 @@ import           Data.Geometry.Types.Types
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: (Pixels, BoundingBox) -> [DG.GeoFeature A.Value] -> ST.ST s MvtFeatures
+geoJsonFeaturesToMvtFeatures :: (Pixels, Pixels, BoundingBox) -> [DG.GeoFeature A.Value] -> ST.ST s MvtFeatures
 geoJsonFeaturesToMvtFeatures extentsBb features = do
   ops <- ST.newSTRef 0
   F.foldMap (convertFeature extentsBb ops) features
 
 -- Feature
 
-convertFeature :: (Pixels, BoundingBox) -> ST.STRef s Int -> DG.GeoFeature A.Value -> ST.ST s MvtFeatures
+convertFeature :: (Pixels, Pixels, BoundingBox) -> ST.STRef s Int -> DG.GeoFeature A.Value -> ST.ST s MvtFeatures
 convertFeature config ops (DG.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
   pure $ convertGeometry config fid props geom
 
 -- Geometry
 
-convertGeometry :: (Pixels, BoundingBox) -> Int -> A.Value -> DG.GeospatialGeometry -> MvtFeatures
+convertGeometry :: (Pixels, Pixels, BoundingBox) -> Int -> A.Value -> DG.GeospatialGeometry -> MvtFeatures
 convertGeometry config fid props geom =
   case geom of
     DG.NoGeometry     -> mempty
@@ -63,15 +63,15 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: (Pixels, BoundingBox) -> DG.GeoPoint -> DV.Vector VG.Point
+convertPoint :: (Pixels, Pixels, BoundingBox) -> DG.GeoPoint -> DV.Vector VG.Point
 convertPoint config = coordsToPoints config . DG._unGeoPoint
 
-convertMultiPoint :: (Pixels, BoundingBox) -> DG.GeoMultiPoint -> DV.Vector VG.Point
+convertMultiPoint :: (Pixels, Pixels, BoundingBox) -> DG.GeoMultiPoint -> DV.Vector VG.Point
 convertMultiPoint config = F.foldMap (convertPoint config) . DG.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: (Pixels, BoundingBox) -> DG.GeoLine -> DV.Vector VG.LineString
+convertLineString :: (Pixels, Pixels, BoundingBox) -> DG.GeoLine -> DV.Vector VG.LineString
 convertLineString config =
     DV.singleton .
     VG.LineString .
@@ -80,12 +80,12 @@ convertLineString config =
     DG.fromLineString .
     DG._unGeoLine
 
-convertMultiLineString :: (Pixels, BoundingBox) -> DG.GeoMultiLine -> DV.Vector VG.LineString
+convertMultiLineString :: (Pixels, Pixels, BoundingBox) -> DG.GeoMultiLine -> DV.Vector VG.LineString
 convertMultiLineString config = F.foldMap (convertLineString config) . DG.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: (Pixels, BoundingBox) -> DG.GeoPolygon -> DV.Vector VG.Polygon
+convertPolygon :: (Pixels, Pixels, BoundingBox) -> DG.GeoPolygon -> DV.Vector VG.Polygon
 convertPolygon config poly = DV.singleton $
   case DG._unGeoPolygon poly of
     []    -> VG.Polygon mempty mempty
@@ -98,7 +98,7 @@ convertPolygon config poly = DV.singleton $
     mkPoly lring = VG.Polygon (mkPolyPoints lring) mempty
     mkPolys      = DL.foldl' (\acc lring -> DV.cons (mkPoly lring) acc) mempty
 
-convertMultiPolygon :: (Pixels, BoundingBox) -> DG.GeoMultiPolygon -> DV.Vector VG.Polygon
+convertMultiPolygon :: (Pixels, Pixels, BoundingBox) -> DG.GeoMultiPolygon -> DV.Vector VG.Polygon
 convertMultiPolygon config = F.foldMap (convertPolygon config) . DG.splitGeoMultiPolygon
 
 -- Helpers
@@ -106,7 +106,7 @@ convertMultiPolygon config = F.foldMap (convertPolygon config) . DG.splitGeoMult
 createLines :: [a] -> DV.Vector (a, a)
 createLines = DV.fromList . (zip <*> tail)
 
-coordsToPoints :: (Pixels, BoundingBox) -> [Double] -> DV.Vector VG.Point
+coordsToPoints :: (Pixels, Pixels, BoundingBox) -> [Double] -> DV.Vector VG.Point
 coordsToPoints _ []        = mempty
 coordsToPoints _ [_]       = mempty
-coordsToPoints (ext, bb) x = fmap (latLonToXYInTile ext bb . uncurry LatLon) (createLines x)
+coordsToPoints (ext, q, bb) x = fmap (latLonToXYInTile ext q bb . uncurry LatLon) (createLines x)
