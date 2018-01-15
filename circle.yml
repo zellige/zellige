@@ -18,8 +18,8 @@ dependencies:
 
 compile:
   override:
-    - stack build --no-terminal
+    - stack build -j2 --no-terminal
 
 test:
   override:
-    - stack test --no-terminal
+    - stack test -j2 --no-terminal
