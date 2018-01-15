@@ -17,7 +17,6 @@ import qualified Data.Text                       as T
 import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile            as VT
 import qualified Geography.VectorTile.VectorTile as VVT
-import qualified Options.Generic                 as OG
 
 import           Data.Geometry.Clip              as DGC
 import           Data.Geometry.GeoJsonToMvt      as DGG
@@ -28,12 +27,12 @@ import           Data.Geometry.Types.Types       as DGTT
 
 -- Command line
 
-writeLayer :: LayerConfig OG.Unwrapped -> IO ()
+writeLayer :: LayerConfig -> IO ()
 writeLayer lc = do
     mvt <- geoJsonFileToMvt (_layerInput lc) (configFromLayerConfig lc)
     B.writeFile (_layerOutput lc) (encodeMvt mvt)
 
-configFromLayerConfig :: LayerConfig OG.Unwrapped -> Config
+configFromLayerConfig :: LayerConfig -> Config
 configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc) (Pixels $ _layerQuantizePixels lc)
 
 geoJsonFileToMvt :: FilePath -> Config -> IO VT.VectorTile

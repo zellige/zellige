@@ -1,11 +1,14 @@
 module Main where
 
-import qualified Data.Text                      as DT
-import qualified Options.Generic                as OG
+import           Data.Semigroup                  ((<>))
+import qualified Options.Applicative             as OA
 
-import qualified Data.Geometry.MapnikVectorTile as MVT
+import qualified Data.Geometry.MapnikVectorTile  as MVT
+import qualified Data.Geometry.Types.LayerConfig as DGTL
 
 main :: IO ()
 main = do
-  x <- OG.unwrapRecord (DT.pack "Zellige - GeoJSON to MVT")
+  x <- OA.execParser opts
   MVT.writeLayer x
+  where
+    opts = OA.info (DGTL.layerConfig OA.<**> OA.helper) (OA.fullDesc <> OA.header "Zellige - GeoJSON to MVT")

@@ -29,7 +29,7 @@ library
                      , bytestring
                      , containers
                      , geojson
-                     , optparse-generic >= 1.2.3
+                     , optparse-applicative
                      , scientific
                      , stm
                      , text
@@ -46,7 +46,7 @@ executable zellige
   main-is:             Main.hs
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
   build-depends:       base
-                     , optparse-generic
+                     , optparse-applicative
                      , text
                      , zellige                     
   default-language:    Haskell2010
