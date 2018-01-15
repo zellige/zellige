@@ -1,5 +1,7 @@
 module Data.Geometry.SphericalMercator where
 
+import           Numeric.Natural           (Natural)
+
 import           Data.Geometry.Types.Types
 
 wgs84MajorRadius :: Double
@@ -21,8 +23,8 @@ latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY
       spanX = maxX - minX
       spanY = maxY - minY
 
-quantize :: Int -> Int -> Int
-quantize pixels i = (i `quot` pixels) * pixels
+quantize :: Natural -> Int -> Int
+quantize pixels i = (i `quot` ((fromIntegral . toInteger) pixels)) * ((fromIntegral . toInteger) pixels)
 
 -- Longitude 4326 to 3857 X
 lonToX :: Double -> Double

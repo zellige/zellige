@@ -19,12 +19,12 @@ import qualified Geography.VectorTile            as VT
 import qualified Geography.VectorTile.VectorTile as VVT
 import qualified Options.Generic                 as OG
 
-import           Data.Geometry.Clip
-import           Data.Geometry.GeoJsonToMvt
-import           Data.Geometry.SphericalMercator
-import           Data.Geometry.Types.LayerConfig
-import           Data.Geometry.Types.MvtFeatures
-import           Data.Geometry.Types.Types
+import           Data.Geometry.Clip              as DGC
+import           Data.Geometry.GeoJsonToMvt      as DGG
+import           Data.Geometry.SphericalMercator as DGS
+import           Data.Geometry.Types.LayerConfig as DGTL
+import           Data.Geometry.Types.MvtFeatures as DGMF
+import           Data.Geometry.Types.Types       as DGTT
 
 -- Command line
 
@@ -32,6 +32,9 @@ writeLayer :: LayerConfig OG.Unwrapped -> IO ()
 writeLayer lc = do
     mvt <- geoJsonFileToMvt (_layerInput lc) (configFromLayerConfig lc)
     B.writeFile (_layerOutput lc) (encodeMvt mvt)
+
+configFromLayerConfig :: LayerConfig OG.Unwrapped -> Config
+configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc) (Pixels $ _layerQuantizePixels lc)
 
 geoJsonFileToMvt :: FilePath -> Config -> IO VT.VectorTile
 geoJsonFileToMvt filePath config = do
@@ -67,7 +70,8 @@ createMvt Config{..} geoJson = do
         cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
         cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
         cO = DF.foldl' (accNewGeom (clipPolygons clipBb )) DV.empty mvtPolygons
-        layer = VT.Layer _version _name cP cL cO (_pixels _extents)
+        iExtents = (fromIntegral . toInteger . _pixels) _extents
+        layer = VT.Layer _version _name cP cL cO iExtents
     pure . VT.VectorTile $ M.fromList [(_name, layer)]
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)

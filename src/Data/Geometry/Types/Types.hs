@@ -27,7 +27,7 @@ defaultVersion = 2
 -- Pixels
 
 newtype Pixels = Pixels
-  { _pixels :: Int
+  { _pixels :: Natural
   } deriving (Show, Eq, Num)
 
 defaultBuffer :: Pixels
