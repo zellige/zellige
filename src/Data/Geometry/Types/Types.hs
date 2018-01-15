@@ -1,9 +1,7 @@
 {-# LANGUAGE DataKinds                  #-}
-{-# LANGUAGE DeriveGeneric              #-}
 {-# LANGUAGE FlexibleInstances          #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE StandaloneDeriving         #-}
 {-# LANGUAGE TypeFamilies               #-}
 {-# LANGUAGE TypeOperators              #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
@@ -16,7 +14,6 @@ import           Data.Monoid
 import           Data.Text
 import           Data.Word
 import           Numeric.Natural     (Natural)
-import           Options.Generic
 import           Prelude             hiding (Left, Right)
 
 -- Remove me in 8.4.1 https://ghc.haskell.org/trac/ghc/ticket/14107
@@ -105,27 +102,3 @@ word8ToOutCode w =
       2 -> Right
       4 -> Bottom
       _ -> Top
-
-data LayerConfig w = LayerConfig
-  { _layerInput          :: w ::: FilePath <?> "Input GeoJSON file"
-  , _layerOutput         :: w ::: FilePath <?> "Output Mapnik Vector Tile file"
-  , _layerName           :: w ::: Text <?> "Name of layer"
-  , _layerZoom           :: w ::: ZoomLevel <?> "Zoom level of layer"
-  , _layerX              :: w ::: Integer <?> "Longitude of layer"
-  , _layerY              :: w ::: Integer <?> "Latitude of layer"
-  , _layerBuffer         :: w ::: Int <?> "Buffer in pixels"
-  , _layerExtent         :: w ::: Int <?> "Layer size in pixels"
-  , _layerQuantizePixels :: w ::: Int <?> "Smallest pixel unit of layer"
-  } deriving (Generic)
-
-
-modifiers :: Modifiers
-modifiers = lispCaseModifiers
-
-instance ParseRecord (LayerConfig Wrapped) where
-  parseRecord = parseRecordWithModifiers modifiers
-
-deriving instance Show (LayerConfig Unwrapped)
-
-configFromLayerConfig :: LayerConfig Unwrapped -> Config
-configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc) (Pixels $ _layerQuantizePixels lc)

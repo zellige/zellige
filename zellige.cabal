@@ -20,6 +20,7 @@ library
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.SphericalMercator
                      , Data.Geometry.Types.Types
+                     , Data.Geometry.Types.LayerConfig
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Simplify.DouglasPeucker
 
@@ -46,6 +47,7 @@ executable zellige
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
   build-depends:       base
                      , optparse-generic >= 1.2.3
+                     , text
                      , zellige                     
   default-language:    Haskell2010
 

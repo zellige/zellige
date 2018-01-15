@@ -22,6 +22,7 @@ import qualified Options.Generic                 as OG
 import           Data.Geometry.Clip
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
+import           Data.Geometry.Types.LayerConfig
 import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Types
 
