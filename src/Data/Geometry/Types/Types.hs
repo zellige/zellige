@@ -24,15 +24,25 @@ instance Monoid a => Monoid (ST.ST s a) where
 defaultVersion :: Int
 defaultVersion = 2
 
-defaultBuffer :: Pixels
-defaultBuffer = Pixels 128
+-- Pixels
 
 newtype Pixels = Pixels
   { _pixels :: Int
   } deriving (Show, Eq, Num)
 
-mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Pixels -> Config
-mkConfig name z (x, y) buffer extents quantizePixels = Config name (GoogleTileCoords z (Coords x y)) buffer extents quantizePixels defaultVersion
+defaultBuffer :: Pixels
+defaultBuffer = Pixels 128
+
+-- BoundingBox
+
+data BoundingBox = BoundingBox
+  { _bbMinX :: Double
+  , _bbMinY :: Double
+  , _bbMaxX :: Double
+  , _bbMaxY :: Double
+  } deriving (Show, Eq)
+
+-- Config
 
 data Config = Config
   { _name           :: Text
@@ -43,16 +53,27 @@ data Config = Config
   , _version        :: Int
   } deriving (Show, Eq)
 
-data BoundingBox = BoundingBox
-  { _bbMinX :: Double
-  , _bbMinY :: Double
-  , _bbMaxX :: Double
-  , _bbMaxY :: Double
-  } deriving (Show, Eq)
+mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Pixels -> Config
+mkConfig name z (x, y) buffer extents quantizePixels = Config name (mkGoogleTileCoords z x y) buffer extents quantizePixels defaultVersion
+
+-- Zoom Config
+
+data ZoomConfig = ZoomConfig
+  { _zcExtents  :: Pixels
+  , _zcQuantize :: Pixels
+  , _zcBBox     :: BoundingBox
+  } deriving (Eq, Show)
+
+-- Coords types
 
 data LatLon = LatLon
   { _llLat :: Double
   , _llLon :: Double }
+
+data Coords = Coords
+  { _coordsX :: Integer
+  , _coordsY :: Integer
+  } deriving (Eq, Show)
 
 type ZoomLevel = Natural
 
@@ -64,10 +85,7 @@ data GoogleTileCoords = GoogleTileCoords
 mkGoogleTileCoords :: ZoomLevel -> Integer -> Integer -> GoogleTileCoords
 mkGoogleTileCoords z x y = GoogleTileCoords z (Coords x y)
 
-data Coords = Coords
-  { _coordsX :: Integer
-  , _coordsY :: Integer
-  } deriving (Eq, Show)
+-- Options
 
 data Options = Options
   { oVersion :: Last Int
@@ -83,7 +101,14 @@ instance Monoid Options where
     , oExtent  = oExtent  x <> oExtent  y
     }
 
-data OutCode = Inside | Left | Right | Bottom | Top deriving (Eq, Ord, Enum, Bounded, Read, Show)
+-- Outcode
+
+data OutCode = Inside
+  | Left
+  | Right
+  | Bottom
+  | Top
+  deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
 outCodeToWord8 :: OutCode -> Word8
 outCodeToWord8 c =
