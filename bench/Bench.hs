@@ -3,21 +3,22 @@ module Main where
 import           Criterion.Main
 
 
+import           Data.Text
+import qualified Data.Vector                     as DV
+import qualified Data.Vector.Unboxed             as DVU
+import qualified Geography.VectorTile.Geometry   as VG
+
 import           Data.Geometry.Clip
 import           Data.Geometry.MapnikVectorTile
+import           Data.Geometry.Types.LayerConfig
 import           Data.Geometry.Types.Types
-import           Data.Text
-import qualified Data.Vector                    as DV
-import qualified Data.Vector.Unboxed            as DVU
-import qualified Geography.VectorTile.Geometry  as VG
-import           Options.Generic
 
 main :: IO ()
 main = do
-    let tenPoly = simplePoly 50 10
-        oneHundredPoly = simplePoly 50 100
-        oneThousandPoly = simplePoly 50 1000
-        tenThousandPoly = simplePoly 50 10000
+    let tenPoly = simplePoly (50 :: Double) (10 :: Double)
+        oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
+        oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
+        tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
         multiTenPoly = DV.fromList(generateArrayPoly 1 tenPoly [])
         multiOneHundredPoly = DV.fromList(generateArrayPoly 1 oneHundredPoly [])
         multiOneThousandPoly = DV.fromList(generateArrayPoly 1 oneThousandPoly [])
@@ -120,10 +121,10 @@ boundBox :: ((Int, Int), (Int, Int))
 boundBox = ((0,0),(1,1))
 
 testConf :: Config
-testConf = mkConfig (pack "demo") 15 (28999,19781) 128 2048
+testConf = mkConfig (pack "demo") 15 (28999,19781) 128 2048 1
 
-smallFC :: LayerConfig Unwrapped
-smallFC = LayerConfig "./test/integration/small.json" "./dump/small.mvt" (pack "demo") 15 28999 19781 128 2048
+smallFC :: LayerConfig
+smallFC = LayerConfig "./test/integration/small.json" "./dump/small.mvt" (pack "demo") 15 28999 19781 128 2048 1
 
 testMain :: IO ()
 testMain = writeLayer smallFC
