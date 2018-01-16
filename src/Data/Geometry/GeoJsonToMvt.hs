@@ -20,30 +20,30 @@ import           Data.Geometry.Types.Types
 -- Lib
 
 geoJsonFeaturesToMvtFeatures :: ZoomConfig -> [DG.GeoFeature A.Value] -> ST.ST s MvtFeatures
-geoJsonFeaturesToMvtFeatures zconfig features = do
+geoJsonFeaturesToMvtFeatures zConfig features = do
   ops <- ST.newSTRef 0
-  F.foldMap (convertFeature zconfig ops) features
+  F.foldMap (convertFeature zConfig ops) features
 
 -- Feature
 
 convertFeature :: ZoomConfig -> ST.STRef s Int -> DG.GeoFeature A.Value -> ST.ST s MvtFeatures
-convertFeature zconfig ops (DG.GeoFeature _ geom props mfid) = do
+convertFeature zConfig ops (DG.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
-  pure $ convertGeometry zconfig fid props geom
+  pure $ convertGeometry zConfig fid props geom
 
 -- Geometry
 
 convertGeometry :: ZoomConfig -> Int -> A.Value -> DG.GeospatialGeometry -> MvtFeatures
-convertGeometry zconfig fid props geom =
+convertGeometry zConfig fid props geom =
   case geom of
     DG.NoGeometry     -> mempty
-    DG.Point g        -> mkPoint fid props . convertPoint zconfig $ g
-    DG.MultiPoint g   -> mkPoint fid props . convertMultiPoint zconfig $ g
-    DG.Line g         -> mkLineString fid props . convertLineString zconfig $ g
-    DG.MultiLine g    -> mkLineString fid props . convertMultiLineString zconfig $ g
-    DG.Polygon g      -> mkPolygon fid props . convertPolygon zconfig $ g
-    DG.MultiPolygon g -> mkPolygon fid props . convertMultiPolygon zconfig $ g
-    DG.Collection gs  -> F.foldMap (convertGeometry zconfig fid props) gs
+    DG.Point g        -> mkPoint fid props . convertPoint zConfig $ g
+    DG.MultiPoint g   -> mkPoint fid props . convertMultiPoint zConfig $ g
+    DG.Line g         -> mkLineString fid props . convertLineString zConfig $ g
+    DG.MultiLine g    -> mkLineString fid props . convertMultiLineString zConfig $ g
+    DG.Polygon g      -> mkPolygon fid props . convertPolygon zConfig $ g
+    DG.MultiPolygon g -> mkPolygon fid props . convertMultiPolygon zConfig $ g
+    DG.Collection gs  -> F.foldMap (convertGeometry zConfig fid props) gs
 
 -- FeatureID
 
@@ -64,29 +64,29 @@ convertId mfid ops =
 -- Points
 
 convertPoint :: ZoomConfig -> DG.GeoPoint -> DV.Vector VG.Point
-convertPoint zconfig = coordsToPoints zconfig . DG._unGeoPoint
+convertPoint zConfig = coordsToPoints zConfig . DG._unGeoPoint
 
 convertMultiPoint :: ZoomConfig -> DG.GeoMultiPoint -> DV.Vector VG.Point
-convertMultiPoint zconfig = F.foldMap (convertPoint zconfig) . DG.splitGeoMultiPoint
+convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiPoint
 
 -- Lines
 
 convertLineString :: ZoomConfig -> DG.GeoLine -> DV.Vector VG.LineString
-convertLineString zconfig =
+convertLineString zConfig =
     DV.singleton .
     VG.LineString .
     DV.convert .
-    F.foldMap (coordsToPoints zconfig) .
+    F.foldMap (coordsToPoints zConfig) .
     DG.fromLineString .
     DG._unGeoLine
 
 convertMultiLineString :: ZoomConfig -> DG.GeoMultiLine -> DV.Vector VG.LineString
-convertMultiLineString zconfig = F.foldMap (convertLineString zconfig) . DG.splitGeoMultiLine
+convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
 
 -- Polygons
 
 convertPolygon :: ZoomConfig -> DG.GeoPolygon -> DV.Vector VG.Polygon
-convertPolygon zconfig poly = DV.singleton $
+convertPolygon zConfig poly = DV.singleton $
   case DG._unGeoPolygon poly of
     []    -> VG.Polygon mempty mempty
     (h:t) ->
@@ -94,12 +94,12 @@ convertPolygon zconfig poly = DV.singleton $
         []   -> mkPoly h
         rest -> VG.Polygon (mkPolyPoints h) (mkPolys rest)
   where
-    mkPolyPoints = DV.convert . F.foldMap (coordsToPoints zconfig) . DG.fromLinearRing
+    mkPolyPoints = DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
     mkPoly lring = VG.Polygon (mkPolyPoints lring) mempty
     mkPolys      = DL.foldl' (\acc lring -> DV.cons (mkPoly lring) acc) mempty
 
 convertMultiPolygon :: ZoomConfig -> DG.GeoMultiPolygon -> DV.Vector VG.Polygon
-convertMultiPolygon zconfig = F.foldMap (convertPolygon zconfig) . DG.splitGeoMultiPolygon
+convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon
 
 -- Helpers
 

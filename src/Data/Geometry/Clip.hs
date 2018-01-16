@@ -115,10 +115,10 @@ clipPolygons bb = DV.foldl' addPoly DV.empty
         Just x  -> DV.cons x acc
 
 clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
-clipPolygon bb poly =
+clipPolygon bb poly@(VG.Polygon _ interiors) =
   case clip bb poly of
     Nothing -> Nothing
-    Just x  -> Just (VG.Polygon x DV.empty)
+    Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
 clip bb poly = checkLength (DVU.uniq newClippedPoly)

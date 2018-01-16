@@ -19,14 +19,26 @@ polyPts :: [(Int, Int)]
 polyPts = [ (50,150), (200, 50), (350,150), (350,300), (250,300),
              (200,250), (150,350), (100,250), (100,200)]
 
+innerPolyPts :: [(Int, Int)]
+innerPolyPts = [(75,200),(250,250),(250,150),(75,150)]
+
 poly :: VG.Polygon
 poly = VG.Polygon (DVU.fromList polyPts) mempty
 
 resultPolyPts :: [(Int, Int)]
 resultPolyPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
 
+innerPolyResultPts :: [(Int, Int)]
+innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
+
 resultPoly :: VG.Polygon
 resultPoly = VG.Polygon (DVU.fromList resultPolyPts) mempty
+
+polyWithInner :: VG.Polygon
+polyWithInner = VG.Polygon (DVU.fromList polyPts) (DV.fromList [VG.Polygon (DVU.fromList innerPolyPts) mempty])
+
+resultPolyWithInner :: VG.Polygon
+resultPolyWithInner = VG.Polygon (DVU.fromList resultPolyPts) (DV.fromList [VG.Polygon (DVU.fromList innerPolyResultPts) mempty])
 
 brokenPolyPts :: [(Int, Int)]
 brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
@@ -57,6 +69,7 @@ spec :: Spec
 spec = do
   testClipLine
   testClipPolygon
+  testClipPolygonWithInterior
 
 testClipLine :: Spec
 testClipLine =
@@ -74,7 +87,7 @@ testClipLine =
 testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
-    it "Returns clipped polygon" $ do
+    it "Returns clipped polygon" $
       clipPolygon polyClipPts poly `shouldBe` Just resultPoly
     it "Negative polygon" $ do
       let actual = clipPolygon brokenClipPts brokenPoly
@@ -85,3 +98,8 @@ testClipPolygon =
           result = VG.Polygon (DVU.fromList resultPts) mempty
       actual `shouldBe` Just result
 
+testClipPolygonWithInterior :: Spec
+testClipPolygonWithInterior =
+  describe "simple polygon with inner test" $
+    it "Returns clipped polygon and inner polygon" $
+      clipPolygon polyClipPts polyWithInner `shouldBe` Just resultPolyWithInner
