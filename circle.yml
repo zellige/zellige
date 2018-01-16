@@ -23,3 +23,9 @@ compile:
 test:
   override:
     - stack test -j2 --no-terminal
+
+deployment:
+  staging:
+    branch: master
+    commands:
+       - curl -X POST https://circleci.com/api/v1.1/project/github/sitewisely/zellige/tree/master?circle-token=59c361b65e16a7bc4ad499798ea564555ae096b9    
