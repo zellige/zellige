@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- TODO Work out how to create instance of Unboxed Vector
+-- TODO Change to linear ring.
 
 module Data.Geometry.Clip where
 
