@@ -12,11 +12,8 @@ import           Prelude                       hiding (Left, Right, lines)
 
 import           Data.Geometry.Types.Types
 
-createBoundingBoxPts :: Pixels -> Pixels -> (VG.Point, VG.Point)
-createBoundingBoxPts (Pixels buffer) (Pixels extent) = ((-iBuffer, -iBuffer), (iExtent+iBuffer, iExtent+iBuffer))
-  where
-    iBuffer = (fromIntegral . toInteger) buffer
-    iExtent = (fromIntegral . toInteger) extent
+createBoundingBoxPts :: Int -> Int -> (VG.Point, VG.Point)
+createBoundingBoxPts buffer extent = ((-buffer, -buffer), (extent+buffer, extent+buffer))
 
 clipPoints :: (VG.Point, VG.Point) -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent
