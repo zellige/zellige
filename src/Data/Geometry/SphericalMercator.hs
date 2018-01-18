@@ -1,7 +1,5 @@
 module Data.Geometry.SphericalMercator where
 
-import           Numeric.Natural           (Natural)
-
 import           Data.Geometry.Types.Types
 
 wgs84MajorRadius :: Double
@@ -13,8 +11,8 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Pixels -> Pixels -> BoundingBox -> LatLon -> (Int, Int)
-latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY maxX maxY) (LatLon lat lon) = xy
+latLonToXYInTile :: Int -> Int -> BoundingBox -> LatLon -> (Int, Int)
+latLonToXYInTile extents quantizePixels (BoundingBox minX minY maxX maxY) (LatLon lat lon) = xy
     where
       xy = if quantizePixels > 1 then (quantize quantizePixels x, quantize quantizePixels y) else (x, y)
       x = round ((lonToX lat - minX) * dExtents / spanX)
@@ -23,8 +21,8 @@ latLonToXYInTile (Pixels extents) (Pixels quantizePixels) (BoundingBox minX minY
       spanX = maxX - minX
       spanY = maxY - minY
 
-quantize :: Natural -> Int -> Int
-quantize pixels i = (i `quot` ((fromIntegral . toInteger) pixels)) * ((fromIntegral . toInteger) pixels)
+quantize :: Int -> Int -> Int
+quantize pixels i = (i `quot` pixels) * pixels
 
 -- Longitude 4326 to 3857 X
 lonToX :: Double -> Double
@@ -41,8 +39,8 @@ latToY y = checkY tmpY
         checkY y' = if y' < -maxExtents then -maxExtents else y'
 
 -- Bounding box in 3857 based on x y zoom.
-boundingBox :: GoogleTileCoords -> BoundingBox
-boundingBox (GoogleTileCoords zoom (Coords x y)) = BoundingBox minX minY maxX maxY
+boundingBox :: GoogleTileCoordsInt -> BoundingBox
+boundingBox (GoogleTileCoordsInt zoom (CoordsInt x y)) = BoundingBox minX minY maxX maxY
     where
       minX = -maxExtents + fromIntegral x * resolution
       minY = maxExtents - fromIntegral y * resolution

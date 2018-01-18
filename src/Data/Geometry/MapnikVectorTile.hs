@@ -32,10 +32,8 @@ writeLayer lc = do
     mvt <- geoJsonFileToMvt (DGTL._layerInput lc) (configFromLayerConfig lc)
     B.writeFile (DGTL._layerOutput lc) (encodeMvt mvt)
 
---    mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Pixels -> Config
-
 configFromLayerConfig :: DGTL.LayerConfig -> DGTT.Config
-configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) (DGTT.Pixels $ _layerBuffer) (DGTT.Pixels $ _layerExtent) (DGTT.Pixels $ _layerQuantizePixels)
+configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels
 
 geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VT.VectorTile
 geoJsonFileToMvt filePath config = do
@@ -71,8 +69,7 @@ createMvt DGTT.Config{..} geoJson = do
         cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) DV.empty mvtPoints
         cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) DV.empty mvtLines
         cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) DV.empty mvtPolygons
-        iExtents = (fromIntegral . toInteger . DGTT._pixels) _extents
-        layer = VT.Layer _version _name cP cL cO iExtents
+        layer = VT.Layer _version _name cP cL cO _extents
     pure . VT.VectorTile $ M.fromList [(_name, layer)]
 
 accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)

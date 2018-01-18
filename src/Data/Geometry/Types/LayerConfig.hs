@@ -6,7 +6,6 @@ module Data.Geometry.Types.LayerConfig where
 
 import           Data.Semigroup            ((<>))
 import qualified Data.Text                 as DT
-import           Numeric.Natural           (Natural)
 import qualified Options.Applicative       as OA
 
 import qualified Data.Geometry.Types.Types as DGT
@@ -15,12 +14,12 @@ data LayerConfig = LayerConfig
   { _layerInput          :: FilePath
   , _layerOutput         :: FilePath
   , _layerName           :: DT.Text
-  , _layerZoom           :: DGT.ZoomLevel
-  , _layerX              :: Integer
-  , _layerY              :: Integer
-  , _layerBuffer         :: Natural
-  , _layerExtent         :: Natural
-  , _layerQuantizePixels :: Natural
+  , _layerZoom           :: DGT.Pixels
+  , _layerX              :: DGT.Pixels
+  , _layerY              :: DGT.Pixels
+  , _layerBuffer         :: DGT.Pixels
+  , _layerExtent         :: DGT.Pixels
+  , _layerQuantizePixels :: DGT.Pixels
   } deriving (Show, Eq)
 
 layerConfig :: OA.Parser LayerConfig
