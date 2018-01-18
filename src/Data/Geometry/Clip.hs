@@ -21,14 +21,22 @@ createBoundingBoxPts (Pixels buffer) (Pixels extent) = ((-iBuffer, -iBuffer), (i
 clipPoints :: (VG.Point, VG.Point) -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent
 
-pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
-pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
-
 clipLines :: (VG.Point, VG.Point) -> DV.Vector VG.LineString -> DV.Vector VG.LineString
 clipLines bb lines = DV.map (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
   where
     createLineString x = VG.LineString (segmentToLine x)
     outCodes = findOutCode bb lines
+
+clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
+clipPolygons bb = DV.foldl' addPoly DV.empty
+  where
+    addPoly acc f =
+      case clipPolygon bb f of
+        Nothing -> acc
+        Just x  -> DV.cons x acc
+
+pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
+pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
 findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
 findOutCode bb lines = DV.filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
@@ -103,14 +111,6 @@ quantizePoint pixels (x, y) =
     newY = (y `quot` pixels) * pixels
   in (newX, newY)
 
-clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
-clipPolygons bb = DV.foldl' addPoly DV.empty
-  where
-    addPoly acc f =
-      case clipPolygon bb f of
-        Nothing -> acc
-        Just x  -> DV.cons x acc
-
 clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
 clipPolygon bb poly@(VG.Polygon _ interiors) =
   case clip bb poly of
@@ -127,7 +127,7 @@ createClipPoly :: (VG.Point, VG.Point) -> DVU.Vector (VG.Point, VG.Point)
 createClipPoly ((x1, y1), (x2, y2)) = pointsToLines $ DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
 
 foo :: DVU.Vector VG.Point -> (VG.Point, VG.Point) -> DVU.Vector VG.Point
-foo polyPts bbLine = if DVU.null polyPts then DVU.empty else newPoints
+foo polyPts bbLine = if DVU.length polyPts <= 2 then DVU.empty else newPoints
   where
     newPoints = DVU.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DVU.empty (pointsToLines polyPts)
 

@@ -18,24 +18,26 @@ import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile            as VT
 import qualified Geography.VectorTile.VectorTile as VVT
 
-import           Data.Geometry.Clip              as DGC
-import           Data.Geometry.GeoJsonToMvt      as DGG
-import           Data.Geometry.SphericalMercator as DGS
-import           Data.Geometry.Types.LayerConfig as DGTL
-import           Data.Geometry.Types.MvtFeatures as DGMF
-import           Data.Geometry.Types.Types       as DGTT
+import qualified Data.Geometry.Clip              as DGC
+import qualified Data.Geometry.GeoJsonToMvt      as DGG
+import qualified Data.Geometry.SphericalMercator as DGS
+import qualified Data.Geometry.Types.LayerConfig as DGTL
+import qualified Data.Geometry.Types.MvtFeatures as DGMF
+import qualified Data.Geometry.Types.Types       as DGTT
 
 -- Command line
 
-writeLayer :: LayerConfig -> IO ()
+writeLayer :: DGTL.LayerConfig -> IO ()
 writeLayer lc = do
-    mvt <- geoJsonFileToMvt (_layerInput lc) (configFromLayerConfig lc)
-    B.writeFile (_layerOutput lc) (encodeMvt mvt)
+    mvt <- geoJsonFileToMvt (DGTL._layerInput lc) (configFromLayerConfig lc)
+    B.writeFile (DGTL._layerOutput lc) (encodeMvt mvt)
 
-configFromLayerConfig :: LayerConfig -> Config
-configFromLayerConfig lc = mkConfig (_layerName lc) (_layerZoom lc) (_layerX lc, _layerY lc) (Pixels $ _layerBuffer lc) (Pixels $ _layerExtent lc) (Pixels $ _layerQuantizePixels lc)
+--    mkConfig :: Text -> ZoomLevel -> (Integer, Integer) -> Pixels -> Pixels -> Pixels -> Config
 
-geoJsonFileToMvt :: FilePath -> Config -> IO VT.VectorTile
+configFromLayerConfig :: DGTL.LayerConfig -> DGTT.Config
+configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) (DGTT.Pixels $ _layerBuffer) (DGTT.Pixels $ _layerExtent) (DGTT.Pixels $ _layerQuantizePixels)
+
+geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VT.VectorTile
 geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
@@ -61,15 +63,15 @@ readMvt filePath = do
 encodeMvt :: VT.VectorTile -> BS.ByteString
 encodeMvt = VT.encode . VT.untile
 
-createMvt :: Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
-createMvt Config{..} geoJson = do
-    let zconfig         = ZoomConfig _extents _quantizePixels (boundingBox _gtc)
-        clipBb          = createBoundingBoxPts _buffer _extents
-        MvtFeatures{..} = ST.runST $ getFeatures zconfig geoJson
-        cP = DF.foldl' (accNewGeom (clipPoints clipBb)) DV.empty mvtPoints
-        cL = DF.foldl' (accNewGeom (clipLines clipBb)) DV.empty mvtLines
-        cO = DF.foldl' (accNewGeom (clipPolygons clipBb )) DV.empty mvtPolygons
-        iExtents = (fromIntegral . toInteger . _pixels) _extents
+createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
+createMvt DGTT.Config{..} geoJson = do
+    let zconfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc)
+        clipBb          = DGC.createBoundingBoxPts _buffer _extents
+        DGMF.MvtFeatures{..} = ST.runST $ getFeatures zconfig geoJson
+        cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) DV.empty mvtPoints
+        cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) DV.empty mvtLines
+        cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) DV.empty mvtPolygons
+        iExtents = (fromIntegral . toInteger . DGTT._pixels) _extents
         layer = VT.Layer _version _name cP cL cO iExtents
     pure . VT.VectorTile $ M.fromList [(_name, layer)]
 
@@ -79,5 +81,5 @@ accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeo
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
 
-getFeatures :: ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s MvtFeatures
-getFeatures extentsQBb = geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures
+getFeatures :: DGTT.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DGMF.MvtFeatures
+getFeatures extentsQBb = DGG.geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures
