@@ -53,7 +53,7 @@ mkConfig :: Text -> Pixels -> (Pixels, Pixels) -> Pixels -> Pixels -> Pixels -> 
 mkConfig name z (x, y) buffer extents quantizePixels = Config name (mkGoogleTileCoordsInt z x y) (toInt buffer) (toInt extents) (toInt quantizePixels) defaultVersion
 
 toInt :: Natural -> Int
-toInt = fromIntegral . toInt
+toInt x = (fromIntegral x :: Int)
 
 -- Zoom Config
 
