@@ -5,10 +5,10 @@ version:             0.1.0.0
 homepage:            https://github.com/githubuser/zellige#readme
 license:             Apache-2.0
 license-file:        LICENSE
-author:              Author name here
-maintainer:          example@example.com
-copyright:           2017 Author name here
-category:            Web
+author:              Andrew Newman
+maintainer:          andrewfnewman@gmail.com
+copyright:           2017-2018
+category:            Web, Geospatial
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
@@ -44,11 +44,11 @@ library
 executable zellige
   hs-source-dirs:      app
   main-is:             Main.hs
-  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
   build-depends:       base
                      , optparse-applicative
                      , text
                      , zellige                     
+  ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
   default-language:    Haskell2010
 
 test-suite zellige-test
@@ -70,7 +70,6 @@ test-suite zellige-test
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
-
   default-language:    Haskell2010
 
 benchmark zellige-bench
