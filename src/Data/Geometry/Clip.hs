@@ -4,7 +4,13 @@
 -- TODO Change to linear ring for polygons.
 -- TODO Change to valid segment (non empty vector?) for lines.
 
-module Data.Geometry.Clip where
+module Data.Geometry.Clip (
+  createBoundingBoxPts
+, clipPoints
+, clipLines
+, clipPolygon
+, clipPolygons
+) where
 
 import qualified Data.Vector                   as DV
 import qualified Data.Vector.Unboxed           as DVU
@@ -31,6 +37,12 @@ clipPolygons bb = DV.foldl' addPoly DV.empty
       case clipPolygon bb f of
         Nothing -> acc
         Just x  -> DV.cons x acc
+
+clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
+clipPolygon bb poly@(VG.Polygon _ interiors) =
+  case clip bb poly of
+    Nothing -> Nothing
+    Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
 
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
@@ -106,22 +118,6 @@ computeOutCode ((minX, minY), (maxX, maxY)) (x,y)
   | x > maxX  = Right
   | x < minX  = Left
   | otherwise = Inside
-
-quantizePoints :: Int -> DVU.Vector VG.Point -> DVU.Vector VG.Point
-quantizePoints pixels = DVU.map (quantizePoint pixels)
-
-quantizePoint :: Int -> VG.Point -> VG.Point
-quantizePoint pixels (x, y) =
-  let
-    newX = (x `quot` pixels) * pixels
-    newY = (y `quot` pixels) * pixels
-  in (newX, newY)
-
-clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
-clipPolygon bb poly@(VG.Polygon _ interiors) =
-  case clip bb poly of
-    Nothing -> Nothing
-    Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
 
 clip :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe (DVU.Vector VG.Point)
 clip bb poly = checkLength (DVU.uniq newClippedPoly)
