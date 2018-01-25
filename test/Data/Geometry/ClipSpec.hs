@@ -77,10 +77,9 @@ testClipLine =
     it "Returns clipped line" $ do
       let actual = clipLines lineClipPts linesTst
           resultLines = DV.fromList
-            [ VG.LineString (DVU.fromList [(11, 11), (59, 59)])
-            , VG.LineString (DVU.fromList [])
+            [ VG.LineString (DVU.fromList [(10, 10), (60, 60)])
             , VG.LineString (DVU.fromList [(10, 11), (45, 50), (50, 60)])
-            , VG.LineString (DVU.fromList [(10, 10), (60, 60)])
+            , VG.LineString (DVU.fromList [(11, 11), (59, 59)])
             ]
       actual `shouldBe` resultLines
 

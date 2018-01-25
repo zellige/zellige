@@ -1,7 +1,8 @@
 {-# LANGUAGE FlexibleContexts #-}
 
 -- TODO Work out how to create instance of Unboxed Vector
--- TODO Change to linear ring.
+-- TODO Change to linear ring for polygons.
+-- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip where
 
@@ -19,9 +20,8 @@ clipPoints :: (VG.Point, VG.Point) -> DV.Vector VG.Point -> DV.Vector VG.Point
 clipPoints = DV.filter . pointInsideExtent
 
 clipLines :: (VG.Point, VG.Point) -> DV.Vector VG.LineString -> DV.Vector VG.LineString
-clipLines bb lines = DV.map (createLineString . foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) outCodes
+clipLines bb lines = DV.foldl' maybeAddLine DV.empty outCodes
   where
-    createLineString x = VG.LineString (segmentToLine x)
     outCodes = findOutCode bb lines
 
 clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
@@ -34,6 +34,15 @@ clipPolygons bb = DV.foldl' addPoly DV.empty
 
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
+
+maybeAddLine :: DV.Vector VG.LineString -> DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)) -> DV.Vector VG.LineString
+maybeAddLine acc pp =
+  case ((checkValidLineString . foldPointsToLine) pp) of
+    Just res -> DV.cons res acc
+    Nothing  -> acc
+  where
+    foldPointsToLine = foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])
+    checkValidLineString pts = if DVU.length (segmentToLine pts) >= 2 then Just (VG.LineString (segmentToLine pts)) else Nothing
 
 findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
 findOutCode bb lines = DV.filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
