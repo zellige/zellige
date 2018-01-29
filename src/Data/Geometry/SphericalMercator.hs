@@ -11,7 +11,7 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Int -> Int -> BoundingBox -> LatLon -> (Int, Int)
+latLonToXYInTile :: Word -> Int -> BoundingBox -> LatLon -> (Int, Int)
 latLonToXYInTile extents quantizePixels (BoundingBox minX minY maxX maxY) (LatLon lat lon) = xy
     where
       xy = if quantizePixels > 1 then (quantize quantizePixels x, quantize quantizePixels y) else (x, y)

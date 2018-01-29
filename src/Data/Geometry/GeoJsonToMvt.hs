@@ -9,9 +9,10 @@ import qualified Data.Geospatial                 as DG
 import qualified Data.LinearRing                 as DG
 import qualified Data.LineString                 as DG
 import qualified Data.List                       as DL
+import qualified Data.Sequence                   as DS
 import qualified Data.STRef                      as ST
 import qualified Data.Vector                     as DV
-import qualified Geography.VectorTile.Geometry   as VG
+import qualified Geography.VectorTile            as VG
 
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.MvtFeatures
@@ -26,14 +27,14 @@ geoJsonFeaturesToMvtFeatures zConfig features = do
 
 -- Feature
 
-convertFeature :: ZoomConfig -> ST.STRef s Int -> DG.GeoFeature A.Value -> ST.ST s MvtFeatures
+convertFeature :: ZoomConfig -> ST.STRef s Word -> DG.GeoFeature A.Value -> ST.ST s MvtFeatures
 convertFeature zConfig ops (DG.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
   pure $ convertGeometry zConfig fid props geom
 
 -- Geometry
 
-convertGeometry :: ZoomConfig -> Int -> A.Value -> DG.GeospatialGeometry -> MvtFeatures
+convertGeometry :: ZoomConfig -> Word -> A.Value -> DG.GeospatialGeometry -> MvtFeatures
 convertGeometry zConfig fid props geom =
   case geom of
     DG.NoGeometry     -> mempty
@@ -47,13 +48,13 @@ convertGeometry zConfig fid props geom =
 
 -- FeatureID
 
-readFeatureID :: Maybe DG.FeatureID -> Maybe Int
+readFeatureID :: Maybe DG.FeatureID -> Maybe Word
 readFeatureID mfid =
   case mfid of
-    Just (DG.FeatureIDNumber x) -> Just x
+    Just (DG.FeatureIDNumber x) -> Just (fromIntegral x)
     _                           -> Nothing
 
-convertId :: Maybe DG.FeatureID -> ST.STRef s Int -> ST.ST s Int
+convertId :: Maybe DG.FeatureID -> ST.STRef s Word -> ST.ST s Word
 convertId mfid ops =
   case readFeatureID mfid of
     Just val -> pure val
@@ -63,30 +64,30 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: ZoomConfig -> DG.GeoPoint -> DV.Vector VG.Point
-convertPoint zConfig = coordsToPoints zConfig . DG._unGeoPoint
+convertPoint :: ZoomConfig -> DG.GeoPoint -> DS.Seq VG.Point
+convertPoint zConfig = coordsToPoints' zConfig . DG._unGeoPoint
 
-convertMultiPoint :: ZoomConfig -> DG.GeoMultiPoint -> DV.Vector VG.Point
+convertMultiPoint :: ZoomConfig -> DG.GeoMultiPoint -> DS.Seq VG.Point
 convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: ZoomConfig -> DG.GeoLine -> DV.Vector VG.LineString
+convertLineString :: ZoomConfig -> DG.GeoLine -> DS.Seq VG.LineString
 convertLineString zConfig =
-    DV.singleton .
+    DS.singleton .
     VG.LineString .
     DV.convert .
     F.foldMap (coordsToPoints zConfig) .
     DG.fromLineString .
     DG._unGeoLine
 
-convertMultiLineString :: ZoomConfig -> DG.GeoMultiLine -> DV.Vector VG.LineString
+convertMultiLineString :: ZoomConfig -> DG.GeoMultiLine -> DS.Seq VG.LineString
 convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: ZoomConfig -> DG.GeoPolygon -> DV.Vector VG.Polygon
-convertPolygon zConfig poly = DV.singleton $
+convertPolygon :: ZoomConfig -> DG.GeoPolygon -> DS.Seq VG.Polygon
+convertPolygon zConfig poly = DS.singleton $
   case DG._unGeoPolygon poly of
     []    -> VG.Polygon mempty mempty
     (h:t) ->
@@ -96,9 +97,9 @@ convertPolygon zConfig poly = DV.singleton $
   where
     mkPolyPoints = DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
     mkPoly lring = VG.Polygon (mkPolyPoints lring) mempty
-    mkPolys      = DL.foldl' (\acc lring -> DV.cons (mkPoly lring) acc) mempty
+    mkPolys      = DL.foldl' (\acc lring -> (mkPoly lring DS.<| acc)) DS.empty
 
-convertMultiPolygon :: ZoomConfig -> DG.GeoMultiPolygon -> DV.Vector VG.Polygon
+convertMultiPolygon :: ZoomConfig -> DG.GeoMultiPolygon -> DS.Seq VG.Polygon
 convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon
 
 -- Helpers
@@ -106,7 +107,15 @@ convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMu
 createLines :: [a] -> DV.Vector (a, a)
 createLines = DV.fromList . (zip <*> tail)
 
+createLines' :: [a] -> DS.Seq (a, a)
+createLines' = DS.fromList . (zip <*> tail)
+
 coordsToPoints :: ZoomConfig -> [Double] -> DV.Vector VG.Point
 coordsToPoints _ []        = mempty
 coordsToPoints _ [_]       = mempty
 coordsToPoints (ZoomConfig ext q bb) x = fmap (latLonToXYInTile ext q bb . uncurry LatLon) (createLines x)
+
+coordsToPoints' :: ZoomConfig -> [Double] -> DS.Seq VG.Point
+coordsToPoints' _ []        = mempty
+coordsToPoints' _ [_]       = mempty
+coordsToPoints' (ZoomConfig ext q bb) x = fmap (latLonToXYInTile ext q bb . uncurry LatLon) (createLines' x)

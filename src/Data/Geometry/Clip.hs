@@ -12,31 +12,41 @@ module Data.Geometry.Clip (
 , clipPolygons
 ) where
 
-import qualified Data.Vector                   as DV
-import qualified Data.Vector.Unboxed           as DVU
-import qualified Geography.VectorTile.Geometry as VG
-import           Prelude                       hiding (Left, Right, lines)
+import qualified Data.Foldable             as DF
+import qualified Data.Sequence             as DS
+import qualified Data.Vector.Unboxed       as DVU
+import qualified Geography.VectorTile      as VG
+import           Prelude                   hiding (Left, Right, lines)
 
 import           Data.Geometry.Types.Types
 
-createBoundingBoxPts :: Int -> Int -> (VG.Point, VG.Point)
-createBoundingBoxPts buffer extent = ((-buffer, -buffer), (extent+buffer, extent+buffer))
+createBoundingBoxPts :: Word -> Word -> (VG.Point, VG.Point)
+createBoundingBoxPts buffer extent = ((-iBuffer, -iBuffer), (iExtent+iBuffer, iExtent+iBuffer))
+  where
+    iBuffer = (fromIntegral buffer)
+    iExtent = (fromIntegral extent)
 
-clipPoints :: (VG.Point, VG.Point) -> DV.Vector VG.Point -> DV.Vector VG.Point
-clipPoints = DV.filter . pointInsideExtent
+clipPoints :: (VG.Point, VG.Point) -> DS.Seq VG.Point -> DS.Seq VG.Point
+clipPoints = DS.filter . pointInsideExtent
 
-clipLines :: (VG.Point, VG.Point) -> DV.Vector VG.LineString -> DV.Vector VG.LineString
-clipLines bb lines = DV.foldl' maybeAddLine DV.empty outCodes
+clipLines :: (VG.Point, VG.Point) -> DS.Seq VG.LineString -> DS.Seq VG.LineString
+clipLines bb lines = DF.foldl' maybeAddLine mempty outCodes
   where
     outCodes = findOutCode bb lines
 
-clipPolygons :: (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> DV.Vector VG.Polygon
-clipPolygons bb = DV.foldl' addPoly DV.empty
+clipPolygons :: (VG.Point, VG.Point) -> DS.Seq VG.Polygon -> DS.Seq VG.Polygon
+clipPolygons bb = DF.foldl' addPoly mempty
   where
     addPoly acc f =
       case clipPolygon bb f of
         Nothing -> acc
-        Just x  -> DV.cons x acc
+        Just x  -> x DS.<| acc
+
+clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
+clipPolygon bb poly@(VG.Polygon _ interiors) =
+  case clip bb poly of
+    Nothing -> Nothing
+    Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
 
 clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
 clipPolygon bb poly@(VG.Polygon _ interiors) =
@@ -47,17 +57,17 @@ clipPolygon bb poly@(VG.Polygon _ interiors) =
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
-maybeAddLine :: DV.Vector VG.LineString -> DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)) -> DV.Vector VG.LineString
+maybeAddLine :: DS.Seq VG.LineString -> DVU.Vector ((OutCode, VG.Point), (OutCode, VG.Point)) -> DS.Seq VG.LineString
 maybeAddLine acc pp =
   case ((checkValidLineString . foldPointsToLine) pp) of
-    Just res -> DV.cons res acc
+    Just res -> res DS.<| acc
     Nothing  -> acc
   where
-    foldPointsToLine = foldMap (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])
+    foldPointsToLine = DVU.foldr (mappend . (\((_,p1),(_,p2)) -> DVU.fromList [p1, p2])) mempty
     checkValidLineString pts = if DVU.length (segmentToLine pts) >= 2 then Just (VG.LineString (segmentToLine pts)) else Nothing
 
-findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
-findOutCode bb lines = DV.filter isSame . fmap (evalDiffKeepSame bb) <$> outCodeForLineStrings bb lines
+findOutCode :: Functor f => (VG.Point, VG.Point) -> f VG.LineString -> f (DVU.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
+findOutCode bb lines = fmap (DVU.filter isSame . DVU.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
 segmentToLine :: DVU.Vector VG.Point -> DVU.Vector VG.Point
@@ -95,15 +105,15 @@ clipPoint outCode ((minx, miny), (maxx, maxy)) (x1, y1) (x2, y2) =
     Top    -> (x1 + (x2 - x1) * (maxy - y1) `div` (y2 - y1), maxy)
     _      -> undefined
 
-outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DV.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
-outCodeForLineStrings bb = fmap $ fmap out . getLines
+outCodeForLineStrings :: (Functor f) => (VG.Point, VG.Point) -> f VG.LineString -> f (DVU.Vector ((OutCode, VG.Point), (OutCode, VG.Point)))
+outCodeForLineStrings bb = fmap $ DVU.map out . getLines
   where
     out = uncurry (outCodeForLine bb)
     getLines line = linesFromPoints $ VG.lsPoints line
 
 -- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
-linesFromPoints :: DVU.Vector VG.Point -> DV.Vector (VG.Point, VG.Point)
-linesFromPoints x = (DV.zip <*> DV.tail) (DV.convert x)
+linesFromPoints :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
+linesFromPoints x = (DVU.zip <*> DVU.tail) (DVU.convert x)
 
 outCodeForLine :: (Ord a, Ord b) => ((a, b), (a, b)) -> (a, b) -> (a, b) -> ((OutCode, (a, b)), (OutCode, (a, b)))
 outCodeForLine bb p1 p2 = (toP1, toP2)

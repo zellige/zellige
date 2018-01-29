@@ -3,12 +3,12 @@ module Main where
 import           Criterion.Main
 
 
+import qualified Data.Sequence                   as DS
 import           Data.Text
-import qualified Data.Vector                     as DV
 import qualified Data.Vector.Unboxed             as DVU
-import qualified Geography.VectorTile.Geometry   as VG
+import qualified Geography.VectorTile            as VG
 
-import           Data.Geometry.Clip
+import           Data.Geometry.Clip              as C
 import           Data.Geometry.MapnikVectorTile
 import           Data.Geometry.Types.LayerConfig
 import           Data.Geometry.Types.Types
@@ -19,10 +19,10 @@ main = do
         oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
         oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
         tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
-        multiTenPoly = DV.fromList(generateArrayPoly 1 tenPoly [])
-        multiOneHundredPoly = DV.fromList(generateArrayPoly 1 oneHundredPoly [])
-        multiOneThousandPoly = DV.fromList(generateArrayPoly 1 oneThousandPoly [])
-        multiTenThousandPoly = DV.fromList(generateArrayPoly 1 tenThousandPoly [])
+        multiTenPoly = DS.fromList(generateArrayPoly 1 tenPoly [])
+        multiOneHundredPoly = DS.fromList(generateArrayPoly 1 oneHundredPoly [])
+        multiOneThousandPoly = DS.fromList(generateArrayPoly 1 oneThousandPoly [])
+        multiTenThousandPoly = DS.fromList(generateArrayPoly 1 tenThousandPoly [])
     defaultMain [
                 bgroup "writeFiles" [
                      bench "10 Points" $ nf (testPoly 10 boundBox tenPoly) [Nothing]
@@ -84,12 +84,12 @@ main = do
 
 testPoly :: Integer -> (VG.Point, VG.Point) -> VG.Polygon -> [Maybe VG.Polygon] -> [Maybe VG.Polygon]
 testPoly 0 _ _ d = d
-testPoly a b c d = d ++ testPoly (a - 1) b c [clipPolygon b c]
+testPoly a b c d = d ++ testPoly (a - 1) b c [C.clipPolygon b c]
 
 
-testPolys :: Integer -> (VG.Point, VG.Point) -> DV.Vector VG.Polygon -> [DV.Vector VG.Polygon] -> [DV.Vector VG.Polygon]
+testPolys :: Integer -> (VG.Point, VG.Point) -> DS.Seq VG.Polygon -> [DS.Seq VG.Polygon] -> [DS.Seq VG.Polygon]
 testPolys 0 _ _ d = d
-testPolys a b c d = d ++ testPolys (a - 1) b c [clipPolygons b c]
+testPolys a b c d = d ++ testPolys (a - 1) b c [C.clipPolygons b c]
 
 
 generateArrayPoly :: Integer -> VG.Polygon -> [VG.Polygon] -> [VG.Polygon]
@@ -97,7 +97,7 @@ generateArrayPoly 0 _ c = c
 generateArrayPoly a b c = c ++ generateArrayPoly (a - 1) b [b]
 
 simplePoly :: (Floating a, RealFrac a) => a -> a -> VG.Polygon
-simplePoly radius total = VG.Polygon (DVU.fromList (getPoints radius total)) (DV.fromList [])
+simplePoly radius total = VG.Polygon (DVU.fromList (getPoints radius total)) (DS.fromList [])
 
 getPoints :: (RealFrac a, Floating a) => a -> a -> [VG.Point]
 getPoints radius total = getPoints' radius total total []
