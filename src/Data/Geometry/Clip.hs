@@ -48,12 +48,6 @@ clipPolygon bb poly@(VG.Polygon _ interiors) =
     Nothing -> Nothing
     Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
 
-clipPolygon :: (VG.Point, VG.Point) -> VG.Polygon -> Maybe VG.Polygon
-clipPolygon bb poly@(VG.Polygon _ interiors) =
-  case clip bb poly of
-    Nothing -> Nothing
-    Just x  -> Just (VG.Polygon x (clipPolygons bb interiors))
-
 pointInsideExtent :: (VG.Point, VG.Point) -> VG.Point -> Bool
 pointInsideExtent ((minX, minY), (maxX, maxY)) (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 
