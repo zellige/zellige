@@ -142,11 +142,11 @@ pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
 
 clipEdges :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> DVU.Vector VG.Point -> DVU.Vector VG.Point
 clipEdges polyLine@(s, e) clipLine acc =
-  case (inside e clipLine, inside s clipLine) of
-    (True, True)   -> DVU.cons e acc
-    (True, False)  -> DVU.cons e $ DVU.cons (lineIntersectPoint clipLine polyLine) acc
-    (False, True)  -> DVU.cons (lineIntersectPoint clipLine polyLine) acc
-    (False, False) -> acc
+  case (inside e clipLine, inside s clipLine, lineIntersectPoint clipLine polyLine) of
+    (True, True, _)      -> DVU.cons e acc
+    (False, False, _)    -> acc
+    (True, False, newPt) -> DVU.cons e $ DVU.cons newPt acc
+    (False, True, newPt) -> DVU.cons newPt acc
 
 lineIntersectPoint :: (VG.Point, VG.Point) -> (VG.Point, VG.Point) -> VG.Point
 lineIntersectPoint ((x1, y1), (x2, y2)) ((x1', y1'), (x2', y2')) =
