@@ -2,10 +2,10 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Vector                   as DV
-import qualified Data.Vector.Unboxed           as DVU
-import qualified Geography.VectorTile.Geometry as VG
-import           Test.Hspec                    (Spec, describe, it, shouldBe)
+import qualified Data.Sequence        as DS
+import qualified Data.Vector.Unboxed  as DVU
+import qualified Geography.VectorTile as VG
+import           Test.Hspec           (Spec, describe, it, shouldBe)
 
 import           Data.Geometry.Clip
 
@@ -35,10 +35,10 @@ resultPoly :: VG.Polygon
 resultPoly = VG.Polygon (DVU.fromList resultPolyPts) mempty
 
 polyWithInner :: VG.Polygon
-polyWithInner = VG.Polygon (DVU.fromList polyPts) (DV.fromList [VG.Polygon (DVU.fromList innerPolyPts) mempty])
+polyWithInner = VG.Polygon (DVU.fromList polyPts) (DS.fromList [VG.Polygon (DVU.fromList innerPolyPts) mempty])
 
 resultPolyWithInner :: VG.Polygon
-resultPolyWithInner = VG.Polygon (DVU.fromList resultPolyPts) (DV.fromList [VG.Polygon (DVU.fromList innerPolyResultPts) mempty])
+resultPolyWithInner = VG.Polygon (DVU.fromList resultPolyPts) (DS.fromList [VG.Polygon (DVU.fromList innerPolyResultPts) mempty])
 
 brokenPolyPts :: [(Int, Int)]
 brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
@@ -55,8 +55,8 @@ brokenClipPts = ((-128,-128),(2176,2176))
 giantClipPts :: ((Int, Int), (Int, Int))
 giantClipPts = ((-128,-128),(2176,2176))
 
-linesTst :: DV.Vector VG.LineString
-linesTst = DV.fromList
+linesTst :: DS.Seq VG.LineString
+linesTst = DS.fromList
   [ VG.LineString (DVU.fromList [(11, 11), (59, 59)])
   , VG.LineString (DVU.fromList [(0, 0), (0, 100)])
   , VG.LineString (DVU.fromList [(5, 5), (45, 50), (90, 140)])
@@ -76,11 +76,10 @@ testClipLine =
   describe "simple line test" $
     it "Returns clipped line" $ do
       let actual = clipLines lineClipPts linesTst
-          resultLines = DV.fromList
-            [ VG.LineString (DVU.fromList [(11, 11), (59, 59)])
-            , VG.LineString (DVU.fromList [])
+          resultLines = DS.fromList
+            [ VG.LineString (DVU.fromList [(10, 10), (60, 60)])
             , VG.LineString (DVU.fromList [(10, 11), (45, 50), (50, 60)])
-            , VG.LineString (DVU.fromList [(10, 10), (60, 60)])
+            , VG.LineString (DVU.fromList [(11, 11), (59, 59)])
             ]
       actual `shouldBe` resultLines
 

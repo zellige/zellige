@@ -11,12 +11,11 @@ import qualified Data.ByteString.Char8           as BS
 import qualified Data.ByteString.Lazy            as LBS
 import qualified Data.Foldable                   as DF
 import qualified Data.Geospatial                 as GJ
-import           Data.Map                        as M
+import qualified Data.HashMap.Lazy               as HM
 import           Data.Monoid                     ((<>))
+import qualified Data.Sequence                   as DS
 import qualified Data.Text                       as T
-import qualified Data.Vector                     as DV
 import qualified Geography.VectorTile            as VT
-import qualified Geography.VectorTile.VectorTile as VVT
 
 import qualified Data.Geometry.Clip              as DGC
 import qualified Data.Geometry.GeoJsonToMvt      as DGG
@@ -47,33 +46,31 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO VVT.VectorTile
+readMvt :: FilePath -> IO VT.VectorTile
 readMvt filePath = do
     b <- B.readFile filePath
-    let db               = VT.decode b
-        rawDecodeError a = error (("Unable to read " <> filePath <> ": ") <> T.unpack a)
-        x                = either rawDecodeError id db
-        t                = VT.tile x
+    let t = VT.tile b
+        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> T.unpack a)
     pure (either rawDecodeError id t)
 
 -- Lib
 
 encodeMvt :: VT.VectorTile -> BS.ByteString
-encodeMvt = VT.encode . VT.untile
+encodeMvt = VT.untile
 
 createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
 createMvt DGTT.Config{..} geoJson = do
     let zconfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc)
         clipBb          = DGC.createBoundingBoxPts _buffer _extents
         DGMF.MvtFeatures{..} = ST.runST $ getFeatures zconfig geoJson
-        cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) DV.empty mvtPoints
-        cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) DV.empty mvtLines
-        cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) DV.empty mvtPolygons
-        layer = VT.Layer _version _name cP cL cO _extents
-    pure . VT.VectorTile $ M.fromList [(_name, layer)]
+        cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) mempty mvtPoints
+        cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) mempty mvtLines
+        cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) mempty mvtPolygons
+        layer = VT.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
+    pure . VT.VectorTile $ HM.fromList [(_name, layer)]
 
-accNewGeom :: (DV.Vector a -> DV.Vector a) -> DV.Vector (VVT.Feature a) -> VVT.Feature a -> DV.Vector (VVT.Feature a)
-accNewGeom convF acc startGeom = if DV.null genClip then acc else DV.cons newGeom acc
+accNewGeom :: (DS.Seq a -> DS.Seq a) -> DS.Seq (VT.Feature a) -> VT.Feature a -> DS.Seq (VT.Feature a)
+accNewGeom convF acc startGeom = if DS.null genClip then acc else newGeom DS.<| acc
     where
         genClip = convF (VT._geometries startGeom)
         newGeom = startGeom { VT._geometries = genClip }
