@@ -1,9 +1,3 @@
-{-# LANGUAGE FlexibleContexts #-}
-
--- TODO Work out how to create instance of Unboxed Vector
--- TODO Change to linear ring for polygons.
--- TODO Change to valid segment (non empty vector?) for lines.
-
 module Data.Geometry.Clip.Internal.Point (
  clipPoints
 ) where
