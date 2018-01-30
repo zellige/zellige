@@ -2,19 +2,20 @@
 
 module Data.Geometry.GeoJsonToMvt where
 
-import qualified Control.Monad.ST                as ST
-import qualified Data.Aeson                      as A
-import qualified Data.Foldable                   as F (foldMap)
-import qualified Data.Geospatial                 as DG
-import qualified Data.LinearRing                 as DG
-import qualified Data.LineString                 as DG
-import qualified Data.List                       as DL
-import qualified Data.Sequence                   as DS
-import qualified Data.STRef                      as ST
-import qualified Data.Vector                     as DV
-import qualified Data.Vector.Unboxed             as DVU
-import qualified Geography.VectorTile            as VG
+import qualified Control.Monad.ST                      as ST
+import qualified Data.Aeson                            as A
+import qualified Data.Foldable                         as F (foldMap)
+import qualified Data.Geospatial                       as DG
+import qualified Data.LinearRing                       as DG
+import qualified Data.LineString                       as DG
+import qualified Data.List                             as DL
+import qualified Data.Sequence                         as DS
+import qualified Data.STRef                            as ST
+import qualified Data.Vector                           as DV
+import qualified Data.Vector.Unboxed                   as DVU
+import qualified Geography.VectorTile                  as VG
 
+import           Data.Geometry.Simplify.DouglasPeucker
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Types
@@ -75,12 +76,8 @@ convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiP
 
 convertLineString :: ZoomConfig -> DG.GeoLine -> DS.Seq VG.LineString
 convertLineString zConfig =
-    DS.singleton .
-    VG.LineString .
-    DV.convert .
-    F.foldMap (coordsToPoints zConfig) .
-    DG.fromLineString .
-    DG._unGeoLine
+    DS.singleton . VG.LineString .
+    ((douglasPeucker 1.0) . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLineString . DG._unGeoLine)
 
 convertMultiLineString :: ZoomConfig -> DG.GeoMultiLine -> DS.Seq VG.LineString
 convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
@@ -103,7 +100,7 @@ mkPoly :: ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
 mkPoly zConfig lring = VG.Polygon (mkPolyPoints zConfig lring) mempty
 
 mkPolyPoints :: ZoomConfig -> DG.LinearRing [Double] -> DVU.Vector VG.Point
-mkPolyPoints zConfig = DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
+mkPolyPoints zConfig = (douglasPeucker 1.0) . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
 
 convertMultiPolygon :: ZoomConfig -> DG.GeoMultiPolygon -> DS.Seq VG.Polygon
 convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon

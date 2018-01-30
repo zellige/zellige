@@ -6,7 +6,7 @@ module Data.Geometry.Simplify.DouglasPeucker
     , douglasPeucker
     ) where
 
-import qualified Data.Vector          as DV
+import qualified Data.Vector.Unboxed  as DVU
 import qualified Geography.VectorTile as VG
 
 distance :: (Double,Double) -> (Double,Double) -> Double
@@ -24,23 +24,23 @@ shortestDistance p@(pX, pY) (a@(aX, aY), b@(bX, bY))
         u = ((pX - aX) * deltaX + (pY - aY) * deltaY) / (deltaX * deltaX + deltaY * deltaY)
 
 -- https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
-douglasPeucker :: Double -> DV.Vector VG.Point -> DV.Vector VG.Point
+douglasPeucker :: Double -> DVU.Vector VG.Point -> DVU.Vector VG.Point
 douglasPeucker epsilon points
-  | points == DV.empty = DV.empty
-  | dmax > epsilon = (douglasPeucker epsilon left) DV.++ (DV.tail (douglasPeucker epsilon right))
-  | otherwise = (DV.snoc (DV.snoc DV.empty (DV.head points)) (DV.last points))
+  | points == DVU.empty = DVU.empty
+  | dmax > epsilon = (douglasPeucker epsilon left) DVU.++ (DVU.tail (douglasPeucker epsilon right))
+  | otherwise = (DVU.snoc (DVU.snoc DVU.empty (DVU.head points)) (DVU.last points))
   where
-      (left, right) = (DV.take index points, DV.drop (index - 1) points)
+      (left, right) = (DVU.take index points, DVU.drop (index - 1) points)
       (dmax, index) = splitAtMaxDistance points
 
-splitAtMaxDistance :: DV.Vector VG.Point -> (Double, Int)
+splitAtMaxDistance :: DVU.Vector VG.Point -> (Double, Int)
 splitAtMaxDistance points =
-    DV.ifoldl' (\(accMax, index) ni a ->
+    DVU.ifoldl' (\(accMax, index) ni a ->
         if cp (intTupleToDouble a) ls > accMax
             then (cp (intTupleToDouble a) ls, ni + 1)
-             else (accMax, index)) (0.0, DV.length points) points
+             else (accMax, index)) (0.0, DVU.length points) points
     where
-        ls = (intTupleToDouble $ DV.head points, intTupleToDouble $DV.last points)
+        ls = (intTupleToDouble $ DVU.head points, intTupleToDouble $DVU.last points)
         cp = shortestDistance
 
 intTupleToDouble :: (Num b, Integral a2, Integral a1) => (a1, a2) -> (Double, b)
