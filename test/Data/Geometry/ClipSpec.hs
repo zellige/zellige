@@ -2,12 +2,13 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Sequence        as DS
-import qualified Data.Vector.Unboxed  as DVU
-import qualified Geography.VectorTile as VG
-import           Test.Hspec           (Spec, describe, it, shouldBe)
+import qualified Data.Sequence             as DS
+import qualified Data.Vector.Unboxed       as DVU
+import qualified Geography.VectorTile      as VG
+import           Test.Hspec                (Spec, describe, it, shouldBe)
 
-import           Data.Geometry.Clip
+import           Data.Geometry.Clip        as DGC
+import           Data.Geometry.Types.Types as DGT
 
 brokenPoly :: VG.Polygon
 brokenPoly = VG.Polygon (DVU.fromList brokenPolyPts) mempty
@@ -46,14 +47,14 @@ brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
 giantPolyPts :: [(Int, Int)]
 giantPolyPts = [(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
 
-polyClipPts :: ((Int, Int), (Int, Int))
-polyClipPts = ((100, 100), (300, 300))
+polyClipPts :: BoundingBoxPts
+polyClipPts = BoundingBoxPts (100, 100) (300, 300)
 
-brokenClipPts :: ((Int, Int), (Int, Int))
-brokenClipPts = ((-128,-128),(2176,2176))
+brokenClipPts :: BoundingBoxPts
+brokenClipPts = BoundingBoxPts (-128,-128) (2176,2176)
 
-giantClipPts :: ((Int, Int), (Int, Int))
-giantClipPts = ((-128,-128),(2176,2176))
+giantClipPts :: BoundingBoxPts
+giantClipPts = BoundingBoxPts (-128,-128) (2176,2176)
 
 linesTst :: DS.Seq VG.LineString
 linesTst = DS.fromList
@@ -62,8 +63,8 @@ linesTst = DS.fromList
   , VG.LineString (DVU.fromList [(5, 5), (45, 50), (90, 140)])
   , VG.LineString (DVU.fromList [(0, 0), (60, 60)])]
 
-lineClipPts :: ((Int, Int), (Int, Int))
-lineClipPts = ((10,10),(60,60))
+lineClipPts :: BoundingBoxPts
+lineClipPts = BoundingBoxPts (10,10) (60,60)
 
 spec :: Spec
 spec = do

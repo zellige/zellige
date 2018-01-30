@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
@@ -14,8 +15,10 @@ import qualified Data.ByteString.Lazy         as LBS
 import qualified Data.Monoid                  as M
 import qualified Data.Text                    as DT
 import qualified Data.Text.Encoding           as DTE
+import qualified Data.Vector.Unboxed          as DVU
 import           Data.Vector.Unboxed.Deriving
 import qualified Data.Word                    as DW
+import qualified Geography.VectorTile         as VG
 import           Numeric.Natural              (Natural)
 import           Prelude                      hiding (Left, Right)
 
@@ -41,6 +44,18 @@ data BoundingBox = BoundingBox
   , _bbMaxX :: Double
   , _bbMaxY :: Double
   } deriving (Show, Eq)
+
+data BoundingBoxPts = BoundingBoxPts
+  {
+    _bbMinPts :: VG.Point
+  , _bbMaxPts :: VG.Point
+  } deriving (Show, Eq)
+
+mkBBoxPoly :: BoundingBoxPts -> DVU.Vector (VG.Point, VG.Point)
+mkBBoxPoly BoundingBoxPts{_bbMinPts = (x1, y1), _bbMaxPts = (x2, y2)} = pointsToLines $ DVU.fromList [(x1, y1), (x2, y1), (x2, y2), (x1, y2)]
+
+pointsToLines :: DVU.Vector VG.Point -> DVU.Vector (VG.Point, VG.Point)
+pointsToLines pts = (DVU.zip <*> DVU.tail) $ DVU.cons (DVU.last pts) pts
 
 -- Config
 
