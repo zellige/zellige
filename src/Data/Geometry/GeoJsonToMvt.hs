@@ -12,6 +12,7 @@ import qualified Data.List                       as DL
 import qualified Data.Sequence                   as DS
 import qualified Data.STRef                      as ST
 import qualified Data.Vector                     as DV
+import qualified Data.Vector.Unboxed             as DVU
 import qualified Geography.VectorTile            as VG
 
 import           Data.Geometry.SphericalMercator
@@ -92,12 +93,17 @@ convertPolygon zConfig poly = DS.singleton $
     []    -> VG.Polygon mempty mempty
     (h:t) ->
       case t of
-        []   -> mkPoly h
-        rest -> VG.Polygon (mkPolyPoints h) (mkPolys rest)
-  where
-    mkPolyPoints = DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
-    mkPoly lring = VG.Polygon (mkPolyPoints lring) mempty
-    mkPolys      = DL.foldl' (\acc lring -> (mkPoly lring DS.<| acc)) DS.empty
+        []   -> mkPoly zConfig h
+        rest -> VG.Polygon (mkPolyPoints zConfig h) (mkPolys zConfig rest)
+
+mkPolys :: Foldable t => ZoomConfig -> t (DG.LinearRing [Double]) -> DS.Seq VG.Polygon
+mkPolys zConfig = DL.foldl' (\acc lring -> (mkPoly zConfig lring DS.<| acc)) DS.empty
+
+mkPoly :: ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
+mkPoly zConfig lring = VG.Polygon (mkPolyPoints zConfig lring) mempty
+
+mkPolyPoints :: ZoomConfig -> DG.LinearRing [Double] -> DVU.Vector VG.Point
+mkPolyPoints zConfig = DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
 
 convertMultiPolygon :: ZoomConfig -> DG.GeoMultiPolygon -> DS.Seq VG.Polygon
 convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon
