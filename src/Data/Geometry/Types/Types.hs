@@ -88,6 +88,8 @@ data LatLon = LatLon
   { _llLat :: Double
   , _llLon :: Double }
 
+type ZoomLevel = Natural
+
 type ZoomLevelInt = Int
 
 data CoordsInt = CoordsInt

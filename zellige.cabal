@@ -25,6 +25,7 @@ library
                      , Data.Geometry.Types.Types
                      , Data.Geometry.Types.LayerConfig
                      , Data.Geometry.Types.MvtFeatures
+                     , Data.Geometry.Types.Simplify
                      , Data.Geometry.Simplify.DouglasPeucker
 
   build-depends:       base >= 4.8 && < 5
