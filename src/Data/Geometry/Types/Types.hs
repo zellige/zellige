@@ -22,6 +22,8 @@ import qualified Geography.VectorTile         as VG
 import           Numeric.Natural              (Natural)
 import           Prelude                      hiding (Left, Right)
 
+import qualified Data.Geometry.Types.Simplify as DGTS
+
 -- Remove me in 8.4.1 https://ghc.haskell.org/trac/ghc/ticket/14107
 instance Monoid a => Monoid (ST.ST s a) where
     mempty = pure mempty
@@ -65,11 +67,12 @@ data Config = Config
   , _buffer         :: DW.Word
   , _extents        :: DW.Word
   , _quantizePixels :: Int
+  , _simplify       :: DGTS.SimplificationAlgorithm
   , _version        :: DW.Word
   } deriving (Show, Eq)
 
-mkConfig :: DT.Text -> Pixels -> (Pixels, Pixels) -> Pixels -> Pixels -> Pixels -> Config
-mkConfig name z (x, y) buffer extents quantizePixels = Config ((LBS.fromStrict . DTE.encodeUtf8) name) (mkGoogleTileCoordsInt z x y) (fromIntegral buffer) (fromIntegral extents) (toInt quantizePixels) defaultVersion
+mkConfig :: DT.Text -> Pixels -> (Pixels, Pixels) -> Pixels -> Pixels -> Pixels -> DGTS.SimplificationAlgorithm -> Config
+mkConfig name z (x, y) buffer extents quantizePixels simplify = Config ((LBS.fromStrict . DTE.encodeUtf8) name) (mkGoogleTileCoordsInt z x y) (fromIntegral buffer) (fromIntegral extents) (toInt quantizePixels) simplify defaultVersion
 
 toInt :: Natural -> Int
 toInt x = (fromIntegral x :: Int)
@@ -80,6 +83,7 @@ data ZoomConfig = ZoomConfig
   { _zcExtents  :: DW.Word
   , _zcQuantize :: Int
   , _zcBBox     :: BoundingBox
+  , _zcSimplify :: DGTS.SimplificationAlgorithm
   } deriving (Eq, Show)
 
 -- Coords types

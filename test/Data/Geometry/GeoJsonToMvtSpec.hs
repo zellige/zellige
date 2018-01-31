@@ -19,13 +19,14 @@ import qualified Test.QuickCheck.Gen             as GA
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.MvtFeatures
+import           Data.Geometry.Types.Simplify
 import           Data.Geometry.Types.Types
 
 config :: Config
-config = mkConfig "foo" 18 (236629,160842) 128 2048 1
+config = mkConfig "foo" 18 (236629,160842) 128 2048 1 NoAlgorithm
 
 extentsBb :: ZoomConfig
-extentsBb = ZoomConfig (_extents config) (_quantizePixels config) (boundingBox $ _gtc config)
+extentsBb = ZoomConfig (_extents config) (_quantizePixels config) (boundingBox $ _gtc config) NoAlgorithm
 
 pt1 :: GJ.GeoPoint
 pt1 = GJ.GeoPoint [144.961043, -37.800096]

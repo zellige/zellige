@@ -11,21 +11,41 @@
 
 module Data.Geometry.Types.Simplify where
 
-import           Data.Aeson as A
+import qualified Data.Aeson                            as A
+import qualified Data.Char                             as DC
+import qualified Data.String                           as DS
+import qualified Data.Vector.Unboxed                   as DVU
+import qualified Geography.VectorTile                  as VG
+
+import qualified Data.Geometry.Simplify.DouglasPeucker as DP
 
 data SimplificationAlgorithm = NoAlgorithm
   | Visvalingam
   | DouglasPeucker
   deriving (Eq, Show)
 
-instance ToJSON SimplificationAlgorithm where
-  toJSON algo = String $ case algo of
-    NoAlgorithm    -> "none"
-    Visvalingam    -> "visvalingam"
-    DouglasPeucker -> "douglas-peucker"
+instance DS.IsString SimplificationAlgorithm where
+    fromString s =
+        case (DC.toLower <$> s) of
+            "visvalingam"     -> Visvalingam
+            "douglas-peucker" -> DouglasPeucker
+            _                 -> NoAlgorithm
 
-instance FromJSON SimplificationAlgorithm where
-  parseJSON = withText "SimplificationAlgorithm" $ \t -> case t of
+
+simplifUsing :: SimplificationAlgorithm -> DVU.Vector VG.Point -> DVU.Vector VG.Point
+simplifUsing NoAlgorithm    = id
+simplifUsing DouglasPeucker = DP.douglasPeucker 1.0
+simplifUsing Visvalingam    = id
+
+instance A.ToJSON SimplificationAlgorithm where
+  toJSON algo =
+    A.String $ case algo of
+        NoAlgorithm    -> "none"
+        Visvalingam    -> "visvalingam"
+        DouglasPeucker -> "douglas-peucker"
+
+instance A.FromJSON SimplificationAlgorithm where
+  parseJSON = A.withText "SimplificationAlgorithm" $ \t -> case t of
     "none"            -> pure NoAlgorithm
     "visvalingam"     -> pure Visvalingam
     "douglas-peucker" -> pure DouglasPeucker

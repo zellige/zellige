@@ -4,22 +4,24 @@
 
 module Data.Geometry.Types.LayerConfig where
 
-import           Data.Semigroup            ((<>))
-import qualified Data.Text                 as DT
-import qualified Options.Applicative       as OA
+import           Data.Semigroup               ((<>))
+import qualified Data.Text                    as DT
+import qualified Options.Applicative          as OA
 
-import qualified Data.Geometry.Types.Types as DGT
+import qualified Data.Geometry.Types.Simplify as DGTS
+import qualified Data.Geometry.Types.Types    as DGTT
 
 data LayerConfig = LayerConfig
   { _layerInput          :: FilePath
   , _layerOutput         :: FilePath
   , _layerName           :: DT.Text
-  , _layerZoom           :: DGT.Pixels
-  , _layerX              :: DGT.Pixels
-  , _layerY              :: DGT.Pixels
-  , _layerBuffer         :: DGT.Pixels
-  , _layerExtent         :: DGT.Pixels
-  , _layerQuantizePixels :: DGT.Pixels
+  , _layerZoom           :: DGTT.Pixels
+  , _layerX              :: DGTT.Pixels
+  , _layerY              :: DGTT.Pixels
+  , _layerBuffer         :: DGTT.Pixels
+  , _layerExtent         :: DGTT.Pixels
+  , _layerQuantizePixels :: DGTT.Pixels
+  , _layerSimplification :: DGTS.SimplificationAlgorithm
   } deriving (Show, Eq)
 
 layerConfig :: OA.Parser LayerConfig
@@ -60,3 +62,7 @@ layerConfig = LayerConfig
     ( OA.long "layer-quantize-pixels"
     <> OA.help "Smallest pixel unit of layer"
     <> OA.metavar "INT" )
+  <*> OA.strOption
+    ( OA.long "layer-simplification"
+    <> OA.help "Simplification algorithm: none, visvalingam or douglas-peucker"
+  )

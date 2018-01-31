@@ -32,7 +32,7 @@ writeLayer lc = do
     B.writeFile (DGTL._layerOutput lc) (encodeMvt mvt)
 
 configFromLayerConfig :: DGTL.LayerConfig -> DGTT.Config
-configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels
+configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
 
 geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VT.VectorTile
 geoJsonFileToMvt filePath config = do
@@ -60,9 +60,9 @@ encodeMvt = VT.untile
 
 createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
 createMvt DGTT.Config{..} geoJson = do
-    let zconfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc)
+    let zConfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc) _simplify
         clipBb          = DGC.createBoundingBoxPts _buffer _extents
-        DGMF.MvtFeatures{..} = ST.runST $ getFeatures zconfig geoJson
+        DGMF.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
         cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) mempty mvtPoints
         cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) mempty mvtLines
         cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) mempty mvtPolygons
