@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleContexts          #-}
 {-# LANGUAGE FlexibleInstances         #-}
+{-# LANGUAGE LambdaCase                #-}
 {-# LANGUAGE MultiParamTypeClasses     #-}
 {-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE OverloadedStrings         #-}
@@ -26,7 +27,7 @@ data SimplificationAlgorithm = NoAlgorithm
 
 instance DS.IsString SimplificationAlgorithm where
     fromString s =
-        case (DC.toLower <$> s) of
+        case DC.toLower <$> s of
             "visvalingam"     -> Visvalingam
             "douglas-peucker" -> DouglasPeucker
             _                 -> NoAlgorithm
@@ -45,7 +46,7 @@ instance A.ToJSON SimplificationAlgorithm where
         DouglasPeucker -> "douglas-peucker"
 
 instance A.FromJSON SimplificationAlgorithm where
-  parseJSON = A.withText "SimplificationAlgorithm" $ \t -> case t of
+  parseJSON = A.withText "SimplificationAlgorithm" $ \case
     "none"            -> pure NoAlgorithm
     "visvalingam"     -> pure Visvalingam
     "douglas-peucker" -> pure DouglasPeucker

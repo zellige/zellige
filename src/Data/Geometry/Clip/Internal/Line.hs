@@ -23,7 +23,7 @@ clipLines bb lines = DF.foldl' maybeAddLine mempty outCodes
 
 maybeAddLine :: DS.Seq VG.LineString -> DVU.Vector ((OutCode, VG.Point), (OutCode, VG.Point)) -> DS.Seq VG.LineString
 maybeAddLine acc pp =
-  case ((checkValidLineString . foldPointsToLine) pp) of
+  case (checkValidLineString . foldPointsToLine) pp of
     Just res -> res DS.<| acc
     Nothing  -> acc
   where

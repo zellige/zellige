@@ -78,7 +78,7 @@ convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiP
 convertLineString :: DGTT.ZoomConfig -> DG.GeoLine -> DS.Seq VG.LineString
 convertLineString zConfig@DGTT.ZoomConfig{..} =
     DS.singleton . VG.LineString .
-    ((DGTS.simplifUsing _zcSimplify) . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLineString . DG._unGeoLine)
+    DGTS.simplifUsing _zcSimplify . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLineString . DG._unGeoLine
 
 convertMultiLineString :: DGTT.ZoomConfig -> DG.GeoMultiLine -> DS.Seq VG.LineString
 convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
@@ -101,7 +101,7 @@ mkPoly :: DGTT.ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
 mkPoly zConfig lring = VG.Polygon (mkPolyPoints zConfig lring) mempty
 
 mkPolyPoints :: DGTT.ZoomConfig -> DG.LinearRing [Double] -> DVU.Vector VG.Point
-mkPolyPoints zConfig@DGTT.ZoomConfig{..} = (DGTS.simplifUsing _zcSimplify) . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
+mkPolyPoints zConfig@DGTT.ZoomConfig{..} = DGTS.simplifUsing _zcSimplify . DV.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
 
 convertMultiPolygon :: DGTT.ZoomConfig -> DG.GeoMultiPolygon -> DS.Seq VG.Polygon
 convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon

@@ -27,8 +27,8 @@ shortestDistance p@(pX, pY) (a@(aX, aY), b@(bX, bY))
 douglasPeucker :: Double -> DVU.Vector VG.Point -> DVU.Vector VG.Point
 douglasPeucker epsilon points
   | points == DVU.empty = DVU.empty
-  | dmax > epsilon = (douglasPeucker epsilon left) DVU.++ (DVU.tail (douglasPeucker epsilon right))
-  | otherwise = (DVU.snoc (DVU.snoc DVU.empty (DVU.head points)) (DVU.last points))
+  | dmax > epsilon = douglasPeucker epsilon left DVU.++ DVU.tail (douglasPeucker epsilon right)
+  | otherwise = DVU.snoc (DVU.snoc DVU.empty (DVU.head points)) (DVU.last points)
   where
       (left, right) = (DVU.take index points, DVU.drop (index - 1) points)
       (dmax, index) = splitAtMaxDistance points

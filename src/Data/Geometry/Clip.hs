@@ -20,6 +20,6 @@ import           Data.Geometry.Types.Types
 createBoundingBoxPts :: Word -> Word -> BoundingBoxPts
 createBoundingBoxPts buffer extent = BoundingBoxPts (-iBuffer, -iBuffer) (iExtent+iBuffer, iExtent+iBuffer)
   where
-    iBuffer = (fromIntegral buffer)
-    iExtent = (fromIntegral extent)
+    iBuffer = fromIntegral buffer
+    iExtent = fromIntegral extent
 

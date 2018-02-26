@@ -75,7 +75,7 @@ mkConfig :: DT.Text -> Pixels -> (Pixels, Pixels) -> Pixels -> Pixels -> Pixels 
 mkConfig name z (x, y) buffer extents quantizePixels simplify = Config ((LBS.fromStrict . DTE.encodeUtf8) name) (mkGoogleTileCoordsInt z x y) (fromIntegral buffer) (fromIntegral extents) (toInt quantizePixels) simplify defaultVersion
 
 toInt :: Natural -> Int
-toInt x = (fromIntegral x :: Int)
+toInt x = fromIntegral x :: Int
 
 -- Zoom Config
 
