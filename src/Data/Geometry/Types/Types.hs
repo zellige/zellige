@@ -9,8 +9,6 @@
 
 module Data.Geometry.Types.Types where
 
-import qualified Control.Applicative          as AP
-import qualified Control.Monad.ST             as ST
 import qualified Data.ByteString.Lazy         as LBS
 import qualified Data.Monoid                  as M
 import qualified Data.Text                    as DT
@@ -23,11 +21,6 @@ import           Numeric.Natural              (Natural)
 import           Prelude                      hiding (Left, Right)
 
 import qualified Data.Geometry.Types.Simplify as DGTS
-
--- Remove me in 8.4.1 https://ghc.haskell.org/trac/ghc/ticket/14107
-instance Monoid a => Monoid (ST.ST s a) where
-    mempty = pure mempty
-    mappend = AP.liftA2 mappend
 
 defaultVersion :: DW.Word
 defaultVersion = 2
