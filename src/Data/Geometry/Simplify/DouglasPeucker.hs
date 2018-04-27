@@ -40,7 +40,7 @@ splitAtMaxDistance points =
             then (cp (intTupleToDouble a) ls, ni + 1)
              else (accMax, index)) (0.0, DVU.length points) points
     where
-        ls = (intTupleToDouble $ DVU.head points, intTupleToDouble $DVU.last points)
+        ls = (intTupleToDouble $ DVU.head points, intTupleToDouble $ DVU.last points)
         cp = shortestDistance
 
 intTupleToDouble :: (Num b, Integral a2, Integral a1) => (a1, a2) -> (Double, b)
