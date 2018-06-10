@@ -10,10 +10,8 @@ jobs:
       - checkout
       - restore-cache:
           keys:
-            - stack--{{ checksum "stack.yaml" }}
-      - restore-cache:
-          keys:
-            - stack--{{checksum "stack.yaml"}}--{{checksum "zellige.cabal"}}
+            - stack{{checksum "stack.yaml"}}
+            - stack{{checksum "zellige.cabal"}}{{checksum "stack.yaml"}}
       - run:
           name: Install deps
           command: |
@@ -43,10 +41,10 @@ jobs:
           command: |
             stack test  --stack-yaml stack.yaml --no-terminal -j2
       - save-cache:
-          key: stack--{{ checksum "stack.yaml" }}
+          key: stack{{checksum "stack.yaml"}}
           paths:
             - "~/.stack"
       - save-cache:
-          key: stack--{{checksum "stack.yaml"}}--{{checksum "zellige.cabal"}}
+          key: stack{{checksum "zellige.cabal"}}{{checksum "stack.yaml"}}
           paths:
             - "~/zellige/.stack-work"
