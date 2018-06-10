@@ -1,7 +1,7 @@
 version: 2
 jobs:
   build:
-    working_directory: ~/hastile
+    working_directory: ~/zellige
     docker:
       - image: circleci/ruby:2.4.4
     environment:
