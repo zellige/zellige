@@ -49,4 +49,4 @@ jobs:
       - save-cache:
           key: stack-{{checksum "stack.yaml"}}-{{checksum "zellige.cabal"}}
           paths:
-            - "~/trestle/.stack-work"
+            - "~/zellige/.stack-work"
