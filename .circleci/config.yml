@@ -43,6 +43,6 @@ jobs:
           paths:
             - “~/.stack”
       - save-cache:
-          key: stack-{{checksum "stack.yaml"}}-{{checksum "hastile.cabal"}}
+          key: stack-{{checksum "stack.yaml"}}-{{checksum "zellige.cabal"}}
           paths:
             - "~/trestle/.stack-work"
