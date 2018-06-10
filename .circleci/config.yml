@@ -43,7 +43,7 @@ jobs:
           command: |
             stack test  --stack-yaml stack.yaml --no-terminal -j2
       - save-cache:
-          key: stack-{{ checksum "stack.yaml" }}
+          key: stack--{{ checksum "stack.yaml" }}
           paths:
             - "~/.stack"
       - save-cache:
