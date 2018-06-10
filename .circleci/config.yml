@@ -15,6 +15,10 @@ jobs:
           keys:
             - stack-{{checksum "stack.yaml"}}-{{checksum "zellige.cabal"}}
       - run:
+          name: Install deps
+          command: |
+            sudo apt-get install -y libgmp-dev
+      - run:
           name: install
           command: |
             rm -rf ~/trestle/.stack-work/downloaded
