@@ -11,6 +11,8 @@ jobs:
       - restore-cache:
           keys:
             - stack{{checksum "stack.yaml"}}
+      - restore-cache:
+          keys:
             - stack{{checksum "zellige.cabal"}}{{checksum "stack.yaml"}}
       - run:
           name: Install deps
