@@ -45,7 +45,7 @@ jobs:
       - save-cache:
           key: stack-{{ checksum "stack.yaml" }}
           paths:
-            - “~/.stack”
+            - "~/.stack"
       - save-cache:
           key: stack-{{checksum "stack.yaml"}}-{{checksum "zellige.cabal"}}
           paths:
