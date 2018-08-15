@@ -8,8 +8,7 @@ import qualified Data.Geospatial                 as GJ
 import qualified Data.HashMap.Strict             as HM
 import qualified Data.LinearRing                 as GJ
 import qualified Data.LineString                 as GJ
-import qualified Data.Sequence                   as DS
-import qualified Data.Vector.Unboxed             as DVU
+import qualified Data.Vector                     as Vector
 import qualified Geography.VectorTile            as VG
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
@@ -21,6 +20,8 @@ import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Simplify
 import           Data.Geometry.Types.Types
+
+import           Data.Geometry.SpecHelper
 
 config :: Config
 config = mkConfig "foo" 18 (236629,160842) 128 2048 1 NoAlgorithm
@@ -54,8 +55,8 @@ testPoints =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = GJ.GeoFeature Nothing point AT.Null (mkFeatureID x)
           point = GJ.Point pt1
-          pts = DS.fromList [(840,2194)]
-          result = MvtFeatures (DS.singleton $ VG.Feature x HM.empty pts) mempty mempty
+          pts = tupleToPts [(840,2194)]
+          result = MvtFeatures (Vector.singleton $ VG.Feature x HM.empty pts) mempty mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -66,8 +67,8 @@ testLines =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = GJ.GeoFeature Nothing line AT.Null (mkFeatureID x)
           line = GJ.Line . GJ.GeoLine $ GJ.makeLineString (GJ._unGeoPoint pt1) (GJ._unGeoPoint pt2) []
-          pts = DVU.fromList [(840,2194),(23,2098)]
-          result = MvtFeatures mempty (DS.fromList [VG.Feature x HM.empty (DS.fromList [VG.LineString pts])]) mempty
+          pts = tupleToPts [(840,2194),(23,2098)]
+          result = MvtFeatures mempty (Vector.fromList [VG.Feature x HM.empty (Vector.fromList [VG.LineString pts])]) mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -80,8 +81,8 @@ testPolygons =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = GJ.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
           polygon = GJ.Polygon . GJ.GeoPolygon $ [GJ.makeLinearRing (GJ._unGeoPoint pt1) (GJ._unGeoPoint pt2) (GJ._unGeoPoint pt3) []]
-          pts = DVU.fromList [(840,2194), (23,2098), (178,1162), (840,2194)]
-          result = MvtFeatures mempty mempty (DS.fromList [VG.Feature x HM.empty (DS.fromList [VG.Polygon pts DS.empty])])
+          pts = tupleToPts [(840,2194), (23,2098), (178,1162), (840,2194)]
+          result = MvtFeatures mempty mempty (Vector.fromList [VG.Feature x HM.empty (Vector.fromList [VG.Polygon pts mempty])])
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
       actual `shouldBe` result
 
@@ -91,7 +92,7 @@ testCounter =
     it "Returns same twice - tests counter" $ do
     let feature = GJ.GeoFeature Nothing point AT.Null Nothing
         point = GJ.Point pt1
-        pts = DS.fromList [(840,2194)]
-        result = MvtFeatures (DS.fromList [VG.Feature 1 HM.empty pts, VG.Feature 2 HM.empty pts]) mempty mempty
+        pts = tupleToPts [(840,2194)]
+        result = MvtFeatures (Vector.fromList [VG.Feature 1 HM.empty pts, VG.Feature 2 HM.empty pts]) mempty mempty
         actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
     actual `shouldBe` result

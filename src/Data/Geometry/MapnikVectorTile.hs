@@ -13,15 +13,16 @@ import qualified Data.Foldable                   as DF
 import qualified Data.Geospatial                 as GJ
 import qualified Data.HashMap.Lazy               as HM
 import           Data.Monoid                     ((<>))
-import qualified Data.Sequence                   as DS
-import qualified Data.Text                       as T
-import qualified Geography.VectorTile            as VT
+import qualified Data.Text                       as DataText
+import qualified Data.Vector                     as DataVector
+import qualified Data.Vector.Storable            as DataVectorStorable
+import qualified Geography.VectorTile            as VectorTile
 
-import qualified Data.Geometry.Clip              as DGC
-import qualified Data.Geometry.GeoJsonToMvt      as DGG
+import qualified Data.Geometry.Clip              as DataGeometryClip
+import qualified Data.Geometry.GeoJsonToMvt      as DataGeometryGeoJsonToMvt
 import qualified Data.Geometry.SphericalMercator as DGS
 import qualified Data.Geometry.Types.LayerConfig as DGTL
-import qualified Data.Geometry.Types.MvtFeatures as DGMF
+import qualified Data.Geometry.Types.MvtFeatures as DataGeometryTypesMvtFeatures
 import qualified Data.Geometry.Types.Types       as DGTT
 
 -- Command line
@@ -34,7 +35,7 @@ writeLayer lc = do
 configFromLayerConfig :: DGTL.LayerConfig -> DGTT.Config
 configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
 
-geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VT.VectorTile
+geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VectorTile.VectorTile
 geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
@@ -46,34 +47,41 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO VT.VectorTile
+readMvt :: FilePath -> IO VectorTile.VectorTile
 readMvt filePath = do
     b <- B.readFile filePath
-    let t = VT.tile b
-        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> T.unpack a)
+    let t = VectorTile.tile b
+        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> DataText.unpack a)
     pure (either rawDecodeError id t)
 
 -- Lib
 
-encodeMvt :: VT.VectorTile -> BS.ByteString
-encodeMvt = VT.untile
+encodeMvt :: VectorTile.VectorTile -> BS.ByteString
+encodeMvt = VectorTile.untile
 
-createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VT.VectorTile
+createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VectorTile.VectorTile
 createMvt DGTT.Config{..} geoJson = do
     let zConfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc) _simplify
-        clipBb          = DGC.createBoundingBoxPts _buffer _extents
-        DGMF.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
-        cP = DF.foldl' (accNewGeom (DGC.clipPoints clipBb)) mempty mvtPoints
-        cL = DF.foldl' (accNewGeom (DGC.clipLines clipBb)) mempty mvtLines
-        cO = DF.foldl' (accNewGeom (DGC.clipPolygons clipBb )) mempty mvtPolygons
-        layer = VT.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
-    pure . VT.VectorTile $ HM.fromList [(_name, layer)]
+        clipBb          = DataGeometryClip.createBoundingBoxPts _buffer _extents
+        DataGeometryTypesMvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
+        cP = DF.foldl' (accNewGeom' (DataGeometryClip.clipPoints clipBb)) mempty mvtPoints
+        cL = DF.foldl' (accNewGeom'' (DataGeometryClip.clipLines clipBb)) mempty mvtLines
+        cO = DF.foldl' (accNewGeom'' (DataGeometryClip.clipPolygons clipBb )) mempty mvtPolygons
+        layer = VectorTile.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
+    pure . VectorTile.VectorTile $ HM.fromList [(_name, layer)]
 
-accNewGeom :: (DS.Seq a -> DS.Seq a) -> DS.Seq (VT.Feature a) -> VT.Feature a -> DS.Seq (VT.Feature a)
-accNewGeom convF acc startGeom = if DS.null genClip then acc else newGeom DS.<| acc
+
+accNewGeom' :: (DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point) -> DataVector.Vector (VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point)) -> VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point) -> DataVector.Vector (VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point))
+accNewGeom' conversionFunction acc startGeom = if DataVectorStorable.null clippedGeoms then acc else DataVector.cons newGeom acc
     where
-        genClip = convF (VT._geometries startGeom)
-        newGeom = startGeom { VT._geometries = genClip }
+        clippedGeoms = conversionFunction $ VectorTile._geometries startGeom
+        newGeom = startGeom { VectorTile._geometries = clippedGeoms }
 
-getFeatures :: DGTT.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DGMF.MvtFeatures
-getFeatures extentsQBb = DGG.geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures
+accNewGeom'' :: (DataVector.Vector a -> DataVector.Vector a) -> DataVector.Vector (VectorTile.Feature (DataVector.Vector a)) -> VectorTile.Feature (DataVector.Vector a) -> DataVector.Vector (VectorTile.Feature (DataVector.Vector a))
+accNewGeom'' conversionFunction acc startGeom = if DataVector.null clippedGeoms then acc else DataVector.cons newGeom acc
+    where
+        clippedGeoms = conversionFunction $ VectorTile._geometries startGeom
+        newGeom = startGeom { VectorTile._geometries = clippedGeoms }
+
+getFeatures :: DGTT.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DataGeometryTypesMvtFeatures.MvtFeatures
+getFeatures extentsQBb = DataGeometryGeoJsonToMvt.geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures

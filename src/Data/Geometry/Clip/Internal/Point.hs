@@ -2,14 +2,14 @@ module Data.Geometry.Clip.Internal.Point (
  clipPoints
 ) where
 
-import qualified Data.Sequence             as DS
-import qualified Geography.VectorTile      as VG
+import qualified Data.Vector.Storable      as DataVectorStorable
+import qualified Geography.VectorTile      as VectorTile
 
 import           Data.Geometry.Types.Types
 
-clipPoints :: BoundingBoxPts -> DS.Seq VG.Point -> DS.Seq VG.Point
-clipPoints = DS.filter . pointInsideExtent
+clipPoints :: BoundingBoxPts -> DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
+clipPoints = DataVectorStorable.filter . pointInsideExtent
 
-pointInsideExtent :: BoundingBoxPts -> VG.Point -> Bool
-pointInsideExtent BoundingBoxPts{_bbMinPts = (minX, minY), _bbMaxPts = (maxX, maxY)} (x, y) = x >= minX && x <= maxX && y >= minY && y <= maxY
+pointInsideExtent :: BoundingBoxPts -> VectorTile.Point -> Bool
+pointInsideExtent BoundingBoxPts{_bbMinPts = (VectorTile.Point minX minY), _bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x y) = x >= minX && x <= maxX && y >= minY && y <= maxY
 

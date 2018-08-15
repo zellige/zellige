@@ -12,41 +12,41 @@
 
 module Data.Geometry.Types.Simplify where
 
-import qualified Data.Aeson                            as A
-import qualified Data.Char                             as DC
-import qualified Data.String                           as DS
-import qualified Data.Vector.Unboxed                   as DVU
-import qualified Geography.VectorTile                  as VG
+import qualified Data.Aeson                            as Aeson
+import qualified Data.Char                             as Char
+import qualified Data.String                           as String
+import qualified Data.Vector.Storable                  as VectorStorable
+import qualified Geography.VectorTile                  as VectorTile
 
-import qualified Data.Geometry.Simplify.DouglasPeucker as DP
+import qualified Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPeucker
 
 data SimplificationAlgorithm = NoAlgorithm
   | Visvalingam
   | DouglasPeucker
   deriving (Eq, Show)
 
-instance DS.IsString SimplificationAlgorithm where
+instance String.IsString SimplificationAlgorithm where
     fromString s =
-        case DC.toLower <$> s of
+        case Char.toLower <$> s of
             "visvalingam"     -> Visvalingam
             "douglas-peucker" -> DouglasPeucker
             _                 -> NoAlgorithm
 
 
-simplifUsing :: SimplificationAlgorithm -> DVU.Vector VG.Point -> DVU.Vector VG.Point
-simplifUsing NoAlgorithm    = id
-simplifUsing DouglasPeucker = DP.douglasPeucker 1.0
-simplifUsing Visvalingam    = id
+simplifyUsing :: SimplificationAlgorithm -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
+simplifyUsing NoAlgorithm    = id
+simplifyUsing DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 1.0
+simplifyUsing Visvalingam    = id
 
-instance A.ToJSON SimplificationAlgorithm where
+instance Aeson.ToJSON SimplificationAlgorithm where
   toJSON algo =
-    A.String $ case algo of
+    Aeson.String $ case algo of
         NoAlgorithm    -> "none"
         Visvalingam    -> "visvalingam"
         DouglasPeucker -> "douglas-peucker"
 
-instance A.FromJSON SimplificationAlgorithm where
-  parseJSON = A.withText "SimplificationAlgorithm" $ \case
+instance Aeson.FromJSON SimplificationAlgorithm where
+  parseJSON = Aeson.withText "SimplificationAlgorithm" $ \case
     "none"            -> pure NoAlgorithm
     "visvalingam"     -> pure Visvalingam
     "douglas-peucker" -> pure DouglasPeucker
