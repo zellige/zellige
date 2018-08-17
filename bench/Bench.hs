@@ -2,9 +2,9 @@ module Main where
 
 import           Criterion.Main
 
-import qualified Data.Sequence                   as DS
 import           Data.Text
-import qualified Data.Vector.Unboxed             as DVU
+import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VG
 
 import           Data.Geometry.Clip              as C
@@ -13,19 +13,20 @@ import           Data.Geometry.Types.LayerConfig
 import qualified Data.Geometry.Types.Simplify    as DGTS
 import           Data.Geometry.Types.Types
 
+
 main :: IO ()
 main = do
-        let tenPoly = simplePoly (50 :: Double) (10 :: Double)
-            oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
-            oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
-            tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
-            multiTenPoly = DS.fromList(generateArrayPoly 1 tenPoly [])
-            multiOneHundredPoly = DS.fromList(generateArrayPoly 1 oneHundredPoly [])
-            multiOneThousandPoly = DS.fromList(generateArrayPoly 1 oneThousandPoly [])
-            multiTenThousandPoly = DS.fromList(generateArrayPoly 1 tenThousandPoly [])
-        defaultMain [
+    let tenPoly = simplePoly (50 :: Double) (10 :: Double)
+        oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
+        oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
+        tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
+        multiTenPoly = Vector.fromList(generateArrayPoly 1 tenPoly [])
+        multiOneHundredPoly = Vector.fromList(generateArrayPoly 1 oneHundredPoly [])
+        multiOneThousandPoly = Vector.fromList(generateArrayPoly 1 oneThousandPoly [])
+        multiTenThousandPoly = Vector.fromList(generateArrayPoly 1 tenThousandPoly [])
+    defaultMain [
                 bgroup "writeFiles" [
-                        bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
+                     bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
                 ]
                 ,
                 bgroup "Clip Polygon"[
@@ -87,8 +88,7 @@ testPoly :: Integer -> BoundingBoxPts -> VG.Polygon -> [Maybe VG.Polygon] -> [Ma
 testPoly 0 _ _ d = d
 testPoly a b c d = d ++ testPoly (a - 1) b c [C.clipPolygon b c]
 
-
-testPolys :: Integer -> BoundingBoxPts -> DS.Seq VG.Polygon -> [DS.Seq VG.Polygon] -> [DS.Seq VG.Polygon]
+testPolys :: Integer -> BoundingBoxPts -> Vector.Vector VG.Polygon -> [Vector.Vector VG.Polygon] -> [Vector.Vector VG.Polygon]
 testPolys 0 _ _ d = d
 testPolys a b c d = d ++ testPolys (a - 1) b c [C.clipPolygons b c]
 
@@ -97,19 +97,17 @@ generateArrayPoly 0 _ c = c
 generateArrayPoly a b c = c ++ generateArrayPoly (a - 1) b [b]
 
 simplePoly :: (Floating a, RealFrac a) => a -> a -> VG.Polygon
-simplePoly radius total = VG.Polygon (DVU.fromList (getPoints radius total)) (DS.fromList [])
+simplePoly radius total = VG.Polygon (VectorStorable.fromList (getPoints radius total)) (Vector.fromList [])
 
 getPoints :: (RealFrac a, Floating a) => a -> a -> [VG.Point]
 getPoints radius total = getPoints' radius total total []
-
 
 getPoints' :: (RealFrac a, Floating a) => a -> a -> a -> [VG.Point] -> [VG.Point]
 getPoints' _ 0 _ b = b
 getPoints' radius current total b = b ++ getPoints' radius (current - 1) total [getCoord radius current total]
 
-
 getCoord :: (RealFrac a, Floating a) => a -> a -> a -> VG.Point
-getCoord radius current total = (round (getX radius current total), round (getY radius current total))
+getCoord radius current total = VG.Point (round $ getX radius current total)  (round $ getY radius current total)
 
 getX :: (RealFrac a, Floating a) => a -> a -> a -> a
 getX radius current total = radius * sin ((360 / total) * current)
@@ -118,7 +116,7 @@ getY :: (RealFrac a, Floating a) => a -> a -> a -> a
 getY radius current total = radius * cos ((360 / total) * current)
 
 boundBox :: BoundingBoxPts
-boundBox = BoundingBoxPts (0, 0) (1, 1)
+boundBox = BoundingBoxPts (VG.Point 0 0) (VG.Point 1 1)
 
 testConf :: Config
 testConf = mkConfig (pack "demo") 15 (28999,19781) 128 2048 1 DGTS.NoAlgorithm

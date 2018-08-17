@@ -12,14 +12,15 @@ module Data.Geometry.Clip (
 , clipPolygons
 ) where
 
+import qualified Geography.VectorTile                as VectorTile
+
 import           Data.Geometry.Clip.Internal.Line
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
 import           Data.Geometry.Types.Types
 
-createBoundingBoxPts :: Word -> Word -> BoundingBoxPts
-createBoundingBoxPts buffer extent = BoundingBoxPts (-iBuffer, -iBuffer) (iExtent+iBuffer, iExtent+iBuffer)
+createBoundingBoxPts :: Word -> Int -> BoundingBoxPts
+createBoundingBoxPts buffer extent = BoundingBoxPts (VectorTile.Point (-iBuffer) (-iBuffer)) (VectorTile.Point (iExtent+iBuffer) (iExtent+iBuffer))
   where
     iBuffer = fromIntegral buffer
     iExtent = fromIntegral extent
-
