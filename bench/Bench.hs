@@ -88,12 +88,7 @@ testPoly :: Integer -> BoundingBoxPts -> VG.Polygon -> [Maybe VG.Polygon] -> [Ma
 testPoly 0 _ _ d = d
 testPoly a b c d = d ++ testPoly (a - 1) b c [C.clipPolygon b c]
 
-<<<<<<< HEAD
 testPolys :: Integer -> BoundingBoxPts -> Vector.Vector VG.Polygon -> [Vector.Vector VG.Polygon] -> [Vector.Vector VG.Polygon]
-=======
-
-testPolys :: Integer -> BoundingBoxPts -> DS.Seq VG.Polygon -> [DS.Seq VG.Polygon] -> [DS.Seq VG.Polygon]
->>>>>>> master
 testPolys 0 _ _ d = d
 testPolys a b c d = d ++ testPolys (a - 1) b c [C.clipPolygons b c]
 
