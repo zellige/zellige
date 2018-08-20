@@ -21,9 +21,9 @@ import qualified Geography.VectorTile            as VectorTile
 import qualified Data.Geometry.Clip              as DataGeometryClip
 import qualified Data.Geometry.GeoJsonToMvt      as DataGeometryGeoJsonToMvt
 import qualified Data.Geometry.SphericalMercator as DGS
+import qualified Data.Geometry.Types.Config      as TypesConfig
 import qualified Data.Geometry.Types.LayerConfig as DGTL
 import qualified Data.Geometry.Types.MvtFeatures as DataGeometryTypesMvtFeatures
-import qualified Data.Geometry.Types.Types       as DGTT
 
 -- Command line
 
@@ -32,10 +32,10 @@ writeLayer lc = do
     mvt <- geoJsonFileToMvt (DGTL._layerInput lc) (configFromLayerConfig lc)
     B.writeFile (DGTL._layerOutput lc) (encodeMvt mvt)
 
-configFromLayerConfig :: DGTL.LayerConfig -> DGTT.Config
-configFromLayerConfig DGTL.LayerConfig{..}  = DGTT.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
+configFromLayerConfig :: DGTL.LayerConfig -> TypesConfig.Config
+configFromLayerConfig DGTL.LayerConfig{..}  = TypesConfig.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
 
-geoJsonFileToMvt :: FilePath -> DGTT.Config -> IO VectorTile.VectorTile
+geoJsonFileToMvt :: FilePath -> TypesConfig.Config -> IO VectorTile.VectorTile
 geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
@@ -59,9 +59,9 @@ readMvt filePath = do
 encodeMvt :: VectorTile.VectorTile -> BS.ByteString
 encodeMvt = VectorTile.untile
 
-createMvt :: DGTT.Config -> GJ.GeoFeatureCollection A.Value -> IO VectorTile.VectorTile
-createMvt DGTT.Config{..} geoJson = do
-    let zConfig         = DGTT.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc) _simplify
+createMvt :: TypesConfig.Config -> GJ.GeoFeatureCollection A.Value -> IO VectorTile.VectorTile
+createMvt TypesConfig.Config{..} geoJson = do
+    let zConfig         = TypesConfig.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc) _simplify
         clipBb          = DataGeometryClip.createBoundingBoxPts _buffer _extents
         DataGeometryTypesMvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
         cP = DF.foldl' (accNewGeom' (DataGeometryClip.clipPoints clipBb)) mempty mvtPoints
@@ -83,5 +83,5 @@ accNewGeom'' conversionFunction acc startGeom = if DataVector.null clippedGeoms 
         clippedGeoms = conversionFunction $ VectorTile._geometries startGeom
         newGeom = startGeom { VectorTile._geometries = clippedGeoms }
 
-getFeatures :: DGTT.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DataGeometryTypesMvtFeatures.MvtFeatures
+getFeatures :: TypesConfig.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DataGeometryTypesMvtFeatures.MvtFeatures
 getFeatures extentsQBb = DataGeometryGeoJsonToMvt.geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures

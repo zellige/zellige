@@ -1,7 +1,8 @@
 module Data.Geometry.SphericalMercator where
 
-import qualified Data.Geometry.Types.Types as GeometryTypesTypes
-import qualified Geography.VectorTile      as VectorTile
+import qualified Geography.VectorTile          as VectorTile
+
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
 wgs84MajorRadius :: Double
 wgs84MajorRadius = 6378137.0
@@ -12,8 +13,8 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Int -> Int -> GeometryTypesTypes.BoundingBox -> GeometryTypesTypes.LatLon -> VectorTile.Point
-latLonToXYInTile extents quantizePixels (GeometryTypesTypes.BoundingBox minX minY maxX maxY) (GeometryTypesTypes.LatLon lat lon) = xy
+latLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> TypesGeography.LatLon -> VectorTile.Point
+latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) (TypesGeography.LatLon lat lon) = xy
     where
       xy = if quantizePixels > 1 then VectorTile.Point (quantize quantizePixels x) (quantize quantizePixels y) else VectorTile.Point x y
       x = round ((lonToX lat - minX) * dExtents / spanX)
@@ -40,8 +41,8 @@ latToY y = checkY tmpY
         checkY y' = if y' < -maxExtents then -maxExtents else y'
 
 -- Bounding box in 3857 based on x y zoom.
-boundingBox :: GeometryTypesTypes.GoogleTileCoordsInt -> GeometryTypesTypes.BoundingBox
-boundingBox (GeometryTypesTypes.GoogleTileCoordsInt zoom (GeometryTypesTypes.CoordsInt x y)) = GeometryTypesTypes.BoundingBox minX minY maxX maxY
+boundingBox :: TypesGeography.GoogleTileCoordsInt -> TypesGeography.BoundingBox
+boundingBox (TypesGeography.GoogleTileCoordsInt zoom (TypesGeography.CoordsInt x y)) = TypesGeography.BoundingBox minX minY maxX maxY
     where
       minX = -maxExtents + fromIntegral x * resolution
       minY = maxExtents - fromIntegral y * resolution

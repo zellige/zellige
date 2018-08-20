@@ -17,27 +17,28 @@ import qualified Geography.VectorTile            as VG
 import qualified Geography.VectorTile            as GeographyVectorTile
 
 import qualified Data.Geometry.SphericalMercator as DGSM
+import qualified Data.Geometry.Types.Config      as TypesConfig
+import qualified Data.Geometry.Types.Geography   as TypesGeography
 import qualified Data.Geometry.Types.MvtFeatures as DGTMF
 import qualified Data.Geometry.Types.Simplify    as DGTS
-import qualified Data.Geometry.Types.Types       as DGTT
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: DGTT.ZoomConfig -> [DG.GeoFeature A.Value] -> ST.ST s DGTMF.MvtFeatures
+geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> [DG.GeoFeature A.Value] -> ST.ST s DGTMF.MvtFeatures
 geoJsonFeaturesToMvtFeatures zConfig features = do
   ops <- ST.newSTRef 0
   F.foldMap (convertFeature zConfig ops) features
 
 -- Feature
 
-convertFeature :: DGTT.ZoomConfig -> ST.STRef s Word -> DG.GeoFeature A.Value -> ST.ST s DGTMF.MvtFeatures
+convertFeature :: TypesConfig.ZoomConfig -> ST.STRef s Word -> DG.GeoFeature A.Value -> ST.ST s DGTMF.MvtFeatures
 convertFeature zConfig ops (DG.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
   pure $ convertGeometry zConfig fid props geom
 
 -- Geometry
 
-convertGeometry :: DGTT.ZoomConfig -> Word -> A.Value -> DG.GeospatialGeometry -> DGTMF.MvtFeatures
+convertGeometry :: TypesConfig.ZoomConfig -> Word -> A.Value -> DG.GeospatialGeometry -> DGTMF.MvtFeatures
 convertGeometry zConfig fid props geom =
   case geom of
     DG.NoGeometry     -> mempty
@@ -67,16 +68,16 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: DGTT.ZoomConfig -> DG.GeoPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
+convertPoint :: TypesConfig.ZoomConfig -> DG.GeoPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
 convertPoint zConfig = coordsToPoints' zConfig . DG._unGeoPoint
 
-convertMultiPoint :: DGTT.ZoomConfig -> DG.GeoMultiPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
+convertMultiPoint :: TypesConfig.ZoomConfig -> DG.GeoMultiPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
 convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: DGTT.ZoomConfig -> DG.GeoLine -> DataVector.Vector GeographyVectorTile.LineString
-convertLineString zConfig@DGTT.ZoomConfig{..} =
+convertLineString :: TypesConfig.ZoomConfig -> DG.GeoLine -> DataVector.Vector GeographyVectorTile.LineString
+convertLineString zConfig@TypesConfig.ZoomConfig{..} =
   DataVector.singleton .
   VG.LineString .
   DGTS.simplifyUsing _zcSimplify .
@@ -85,12 +86,12 @@ convertLineString zConfig@DGTT.ZoomConfig{..} =
   DG.fromLineString .
   DG._unGeoLine
 
-convertMultiLineString :: DGTT.ZoomConfig -> DG.GeoMultiLine -> DataVector.Vector GeographyVectorTile.LineString
+convertMultiLineString :: TypesConfig.ZoomConfig -> DG.GeoMultiLine -> DataVector.Vector GeographyVectorTile.LineString
 convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: DGTT.ZoomConfig -> DG.GeoPolygon -> DataVector.Vector VG.Polygon
+convertPolygon :: TypesConfig.ZoomConfig -> DG.GeoPolygon -> DataVector.Vector VG.Polygon
 convertPolygon zConfig poly = DataVector.singleton $
   case DG._unGeoPolygon poly of
     []    -> VG.Polygon mempty mempty
@@ -99,16 +100,16 @@ convertPolygon zConfig poly = DataVector.singleton $
         []   -> mkPoly zConfig h
         rest -> VG.Polygon (mkPolyPoints zConfig h) (mkPolys zConfig rest)
 
-mkPolys :: Foldable t => DGTT.ZoomConfig -> t (DG.LinearRing [Double]) -> DataVector.Vector VG.Polygon
+mkPolys :: Foldable t => TypesConfig.ZoomConfig -> t (DG.LinearRing [Double]) -> DataVector.Vector VG.Polygon
 mkPolys zConfig = DL.foldl' (\acc lring -> (mkPoly zConfig lring `DataVector.cons` acc)) DataVector.empty
 
-mkPoly :: DGTT.ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
+mkPoly :: TypesConfig.ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
 mkPoly zConfig lring = VG.Polygon (mkPolyPoints zConfig lring) mempty
 
-mkPolyPoints :: DGTT.ZoomConfig -> DG.LinearRing [Double] -> DataVectorStorable.Vector VG.Point
-mkPolyPoints zConfig@DGTT.ZoomConfig{..} = DGTS.simplifyUsing _zcSimplify . DataVector.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
+mkPolyPoints :: TypesConfig.ZoomConfig -> DG.LinearRing [Double] -> DataVectorStorable.Vector VG.Point
+mkPolyPoints zConfig@TypesConfig.ZoomConfig{..} = DGTS.simplifyUsing _zcSimplify . DataVector.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
 
-convertMultiPolygon :: DGTT.ZoomConfig -> DG.GeoMultiPolygon -> DataVector.Vector VG.Polygon
+convertMultiPolygon :: TypesConfig.ZoomConfig -> DG.GeoMultiPolygon -> DataVector.Vector VG.Polygon
 convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon
 
 -- Helpers
@@ -119,13 +120,13 @@ createLines = DataVector.fromList . (zip <*> tail)
 createLines' :: [a] -> [(a, a)]
 createLines' = zip <*> tail
 
-coordsToPoints :: DGTT.ZoomConfig -> [Double] -> DataVector.Vector GeographyVectorTile.Point
+coordsToPoints :: TypesConfig.ZoomConfig -> [Double] -> DataVector.Vector GeographyVectorTile.Point
 coordsToPoints _ []        = mempty
 coordsToPoints _ [_]       = mempty
-coordsToPoints (DGTT.ZoomConfig ext q bb _) x = fmap (DGSM.latLonToXYInTile ext q bb . uncurry DGTT.LatLon) (createLines x)
+coordsToPoints (TypesConfig.ZoomConfig ext q bb _) x = fmap (DGSM.latLonToXYInTile ext q bb . uncurry TypesGeography.LatLon) (createLines x)
 
-coordsToPoints' :: DGTT.ZoomConfig -> [Double] -> DataVectorStorable.Vector GeographyVectorTile.Point
+coordsToPoints' :: TypesConfig.ZoomConfig -> [Double] -> DataVectorStorable.Vector GeographyVectorTile.Point
 coordsToPoints' _ []        = mempty
 coordsToPoints' _ [_]       = mempty
-coordsToPoints' (DGTT.ZoomConfig ext q bb _) coords = DL.foldl' (\a (lat, lon) -> DataVectorStorable.snoc a $ DGSM.latLonToXYInTile ext q bb (DGTT.LatLon lat lon)) DataVectorStorable.empty (createLines' coords)
+coordsToPoints' (TypesConfig.ZoomConfig ext q bb _) coords = DL.foldl' (\a (lat, lon) -> DataVectorStorable.snoc a $ DGSM.latLonToXYInTile ext q bb (TypesGeography.LatLon lat lon)) DataVectorStorable.empty (createLines' coords)
 

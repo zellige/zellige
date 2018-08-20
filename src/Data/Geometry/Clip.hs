@@ -17,7 +17,7 @@ import qualified Geography.VectorTile                as VectorTile
 import           Data.Geometry.Clip.Internal.Line
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
-import           Data.Geometry.Types.Types
+import           Data.Geometry.Types.Geography
 
 createBoundingBoxPts :: Word -> Int -> BoundingBoxPts
 createBoundingBoxPts buffer extent = BoundingBoxPts (VectorTile.Point (-iBuffer) (-iBuffer)) (VectorTile.Point (iExtent+iBuffer) (iExtent+iBuffer))

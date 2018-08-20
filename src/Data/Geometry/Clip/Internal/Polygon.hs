@@ -7,14 +7,14 @@ clipPolygon
 , clipPolygons
 ) where
 
-import qualified Data.Vector               as DataVector
-import qualified Data.Vector.Storable      as DataVectorStorable
-import qualified Geography.VectorTile      as VectorTile
-import qualified Geography.VectorTile      as VG
+import qualified Data.Vector                   as DataVector
+import qualified Data.Vector.Storable          as DataVectorStorable
+import qualified Geography.VectorTile          as VectorTile
+import qualified Geography.VectorTile          as VG
 
-import           Data.Geometry.Types.Types
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
-clipPolygons :: BoundingBoxPts -> DataVector.Vector VectorTile.Polygon -> DataVector.Vector VectorTile.Polygon
+clipPolygons :: TypesGeography.BoundingBoxPts -> DataVector.Vector VectorTile.Polygon -> DataVector.Vector VectorTile.Polygon
 clipPolygons bb = DataVector.foldl' addPoly mempty
   where
     addPoly acc f =
@@ -22,16 +22,16 @@ clipPolygons bb = DataVector.foldl' addPoly mempty
         Nothing -> acc
         Just x  -> DataVector.cons x acc
 
-clipPolygon :: BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
+clipPolygon :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
 clipPolygon bb poly@(VectorTile.Polygon _ interiors) =
   case clip bb poly of
     Nothing -> Nothing
     Just x  -> Just (VectorTile.Polygon x (clipPolygons bb interiors))
 
-clip :: BoundingBoxPts -> VectorTile.Polygon -> Maybe (DataVectorStorable.Vector VectorTile.Point)
+clip :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe (DataVectorStorable.Vector VectorTile.Point)
 clip bb poly = checkLength (DataVectorStorable.uniq newClippedPoly)
   where
-    newClippedPoly = DataVectorStorable.foldl' foo (VG.polyPoints poly) (mkBBoxPoly bb)
+    newClippedPoly = DataVectorStorable.foldl' foo (VG.polyPoints poly) (TypesGeography.mkBBoxPoly bb)
     checkLength newPoly =
       if DataVectorStorable.length newPoly <= 2
         then Nothing
@@ -49,7 +49,7 @@ closeIfNot poly =
 foo :: DataVectorStorable.Vector VectorTile.Point -> (VectorTile.Point, VectorTile.Point) -> DataVectorStorable.Vector VectorTile.Point
 foo polyPts bbLine = if DataVectorStorable.length polyPts <= 2 then DataVectorStorable.empty else newPoints
   where
-    newPoints = DataVectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DataVectorStorable.empty (pointsToLines polyPts)
+    newPoints = DataVectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DataVectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
 clipEdges :: (VectorTile.Point, VectorTile.Point) -> (VectorTile.Point, VectorTile.Point) -> DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
 clipEdges polyLine@(s, e) clipLine acc =

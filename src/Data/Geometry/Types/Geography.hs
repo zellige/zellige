@@ -1,13 +1,11 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-module Data.Geometry.Types.Types where
+module Data.Geometry.Types.Geography where
 
 import qualified Data.ByteString.Lazy         as LBS
 import qualified Data.Monoid                  as M
@@ -20,8 +18,6 @@ import           Foreign.Storable
 import qualified Geography.VectorTile         as VectorTile
 import           Numeric.Natural              (Natural)
 import           Prelude                      hiding (Left, Right)
-
-import qualified Data.Geometry.Types.Simplify as DGTS
 
 defaultVersion :: DW.Word
 defaultVersion = 2
@@ -53,33 +49,6 @@ mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (Vec
 pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector (VectorTile.Point, VectorTile.Point)
 pointsToLines pts = (VectorStorable.zipWith (,) <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
 
--- Config
-
-data Config = Config
-  { _name           :: LBS.ByteString
-  , _gtc            :: GoogleTileCoordsInt
-  , _buffer         :: DW.Word
-  , _extents        :: Int
-  , _quantizePixels :: Int
-  , _simplify       :: DGTS.SimplificationAlgorithm
-  , _version        :: DW.Word
-  } deriving (Show, Eq)
-
-mkConfig :: DT.Text -> Pixels -> (Pixels, Pixels) -> Pixels -> Pixels -> Pixels -> DGTS.SimplificationAlgorithm -> Config
-mkConfig name z (x, y) buffer extents quantizePixels simplify = Config ((LBS.fromStrict . DTE.encodeUtf8) name) (mkGoogleTileCoordsInt z x y) (fromIntegral buffer) (fromIntegral extents) (toInt quantizePixels) simplify defaultVersion
-
-toInt :: Natural -> Int
-toInt x = fromIntegral x :: Int
-
--- Zoom Config
-
-data ZoomConfig = ZoomConfig
-  { _zcExtents  :: Int
-  , _zcQuantize :: Int
-  , _zcBBox     :: BoundingBox
-  , _zcSimplify :: DGTS.SimplificationAlgorithm
-  } deriving (Eq, Show)
-
 -- Coords types
 
 data LatLon = LatLon
@@ -103,23 +72,8 @@ data GoogleTileCoordsInt = GoogleTileCoordsInt
 mkGoogleTileCoordsInt :: Pixels -> Pixels -> Pixels -> GoogleTileCoordsInt
 mkGoogleTileCoordsInt z x y = GoogleTileCoordsInt (toInt z) (CoordsInt (toInt x) (toInt y))
 
--- Options
-
-data Options = Options
-  { oVersion :: M.Last Int
-  , oName    :: M.Last String
-  , oExtent  :: M.Last Int
-  } deriving (Show, Eq)
-
-instance Monoid Options where
-  mempty = Options mempty mempty mempty
-  mappend x y = Options
-    { oVersion = oVersion x M.<> oVersion y
-    , oName    = oName    x M.<> oName    y
-    , oExtent  = oExtent  x M.<> oExtent  y
-    }
-
--- Outcode
+toInt :: Natural -> Int
+toInt x = fromIntegral x :: Int
 
 data OutCode = Inside
   | Left
@@ -145,11 +99,6 @@ word8ToOutCode w =
       2 -> Right
       4 -> Bottom
       _ -> Top
-
-derivingUnbox "OutCode"
-   [t| OutCode -> DW.Word8 |]
-   [| outCodeToWord8 |]
-   [| word8ToOutCode |]
 
 instance VectorStorable.Storable  ((OutCode, VectorTile.Point), (OutCode, VectorTile.Point)) where
   sizeOf _ = (16 * 2) + (1 * 2)

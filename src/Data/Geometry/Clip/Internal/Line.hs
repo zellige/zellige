@@ -8,43 +8,43 @@ module Data.Geometry.Clip.Internal.Line (
  clipLines
 ) where
 
-import qualified Data.Vector               as DataVector
-import qualified Data.Vector.Storable      as DataVectorStorable
-import qualified Geography.VectorTile      as VectorTile
-import qualified Geography.VectorTile      as VG
-import           Prelude                   hiding (Left, Right, lines)
+import qualified Data.Vector                   as Vector
+import qualified Data.Vector.Storable          as VectorStorable
+import qualified Geography.VectorTile          as VectorTile
+import qualified Geography.VectorTile          as VG
+import           Prelude                       hiding (Left, Right, lines)
 
-import           Data.Geometry.Types.Types
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
-clipLines :: BoundingBoxPts -> DataVector.Vector VectorTile.LineString -> DataVector.Vector VectorTile.LineString
-clipLines bb lines = DataVector.foldl' maybeAddLine mempty outCodes
+clipLines :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
+clipLines bb lines = Vector.foldl' maybeAddLine mempty outCodes
   where
     outCodes = findOutCode bb lines
 
-maybeAddLine :: DataVector.Vector VectorTile.LineString -> DataVectorStorable.Vector ((OutCode, VectorTile.Point), (OutCode, VectorTile.Point)) -> DataVector.Vector VectorTile.LineString
+maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector ((TypesGeography.OutCode, VectorTile.Point), (TypesGeography.OutCode, VectorTile.Point)) -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pp =
   case (checkValidLineString . foldPointsToLine) pp of
-    Just res -> DataVector.cons res acc
+    Just res -> Vector.cons res acc
     Nothing  -> acc
   where
-    foldPointsToLine = DataVectorStorable.foldr (mappend . (\((_,p1),(_,p2)) -> DataVectorStorable.fromList [p1, p2])) mempty
+    foldPointsToLine = VectorStorable.foldr (mappend . (\((_,p1),(_,p2)) -> VectorStorable.fromList [p1, p2])) mempty
     checkValidLineString pts =
-      if DataVectorStorable.length (segmentToLine pts) >= 2
+      if VectorStorable.length (segmentToLine pts) >= 2
         then Just (VectorTile.LineString (segmentToLine pts))
         else Nothing
 
-findOutCode :: Functor f => BoundingBoxPts -> f VectorTile.LineString -> f (DataVectorStorable.Vector ((OutCode, VectorTile.Point), (OutCode, VectorTile.Point)))
-findOutCode bb lines = fmap (DataVectorStorable.filter isSame . DataVectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
+findOutCode :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector ((TypesGeography.OutCode, VectorTile.Point), (TypesGeography.OutCode, VectorTile.Point)))
+findOutCode bb lines = fmap (VectorStorable.filter isSame . VectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
 
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
-segmentToLine :: DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
-segmentToLine l = if DataVectorStorable.length l > 1 then DataVectorStorable.cons start (second l) else mempty
+segmentToLine :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
+segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start (second l) else mempty
   where
-    start = DataVectorStorable.head l
-    second = DataVectorStorable.ifilter (\i _ -> odd i)
+    start = VectorStorable.head l
+    second = VectorStorable.ifilter (\i _ -> odd i)
 
-evalDiffKeepSame :: BoundingBoxPts -> ((OutCode, VG.Point), (OutCode, VG.Point)) -> ((OutCode, VG.Point), (OutCode, VG.Point))
+evalDiffKeepSame :: TypesGeography.BoundingBoxPts -> ((TypesGeography.OutCode, VG.Point), (TypesGeography.OutCode, VG.Point)) -> ((TypesGeography.OutCode, VG.Point), (TypesGeography.OutCode, VG.Point))
 evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
   case compare o1 o2 of
     GT -> eval (clipAndCompute o1, b)
@@ -55,44 +55,44 @@ evalDiffKeepSame bb (a@(o1, p1), b@(o2, p2)) =
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = (computeOutCode bb p, p)
 
-isSame :: ((OutCode, a), (OutCode, b)) -> Bool
+isSame :: ((TypesGeography.OutCode, a), (TypesGeography.OutCode, b)) -> Bool
 isSame ((o1, _), (o2, _)) =
   case (o1, o2) of
-    (Left   , Left  ) -> False
-    (Right  , Right ) -> False
-    (Bottom , Bottom) -> False
-    (Top    , Top   ) -> False
-    _                 -> True
+    (TypesGeography.Left   , TypesGeography.Left  ) -> False
+    (TypesGeography.Right  , TypesGeography.Right ) -> False
+    (TypesGeography.Bottom , TypesGeography.Bottom) -> False
+    (TypesGeography.Top    , TypesGeography.Top   ) -> False
+    _                                               -> True
 
-clipPoint :: OutCode -> BoundingBoxPts -> VG.Point -> VG.Point -> VG.Point
-clipPoint outCode BoundingBoxPts{_bbMinPts = (VG.Point minX minY), _bbMaxPts = (VG.Point maxX maxY)} (VG.Point x1 y1) (VG.Point x2 y2) =
+clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBoxPts -> VG.Point -> VG.Point -> VG.Point
+clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.Point minX minY), TypesGeography._bbMaxPts = (VG.Point maxX maxY)} (VG.Point x1 y1) (VG.Point x2 y2) =
   case outCode of
-    Left   -> VectorTile.Point minX (y1 + (y2 - y1) * (minX - x1) `div` (x2 - x1))
-    Right  -> VectorTile.Point maxX (y1 + (y2 - y1) * (maxX - x1) `div` (x2 - x1))
-    Bottom -> VectorTile.Point (x1 + (x2 - x1) * (minY - y1) `div` (y2 - y1)) minY
-    Top    -> VectorTile.Point (x1 + (x2 - x1) * (maxY - y1) `div` (y2 - y1)) maxY
+    TypesGeography.Left   -> VectorTile.Point minX (y1 + (y2 - y1) * (minX - x1) `div` (x2 - x1))
+    TypesGeography.Right  -> VectorTile.Point maxX (y1 + (y2 - y1) * (maxX - x1) `div` (x2 - x1))
+    TypesGeography.Bottom -> VectorTile.Point (x1 + (x2 - x1) * (minY - y1) `div` (y2 - y1)) minY
+    TypesGeography.Top    -> VectorTile.Point (x1 + (x2 - x1) * (maxY - y1) `div` (y2 - y1)) maxY
     _      -> undefined
 
-outCodeForLineStrings :: (Functor f) => BoundingBoxPts -> f VectorTile.LineString -> f (DataVectorStorable.Vector ((OutCode, VectorTile.Point), (OutCode, VectorTile.Point)))
-outCodeForLineStrings bb = fmap $ DataVectorStorable.map out . getLines
+outCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector ((TypesGeography.OutCode, VectorTile.Point), (TypesGeography.OutCode, VectorTile.Point)))
+outCodeForLineStrings bb = fmap $ VectorStorable.map out . getLines
   where
     out = uncurry (outCodeForLine bb)
     getLines line = linesFromPoints $ VectorTile.lsPoints line
 
 -- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
-linesFromPoints :: DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector (VectorTile.Point, VectorTile.Point)
-linesFromPoints x = (DataVectorStorable.zipWith (,) <*> DataVectorStorable.tail) (DataVectorStorable.convert x)
+linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector (VectorTile.Point, VectorTile.Point)
+linesFromPoints x = (VectorStorable.zipWith (,) <*> VectorStorable.tail) (VectorStorable.convert x)
 
-outCodeForLine :: BoundingBoxPts -> VG.Point -> VG.Point -> ((OutCode, VG.Point), (OutCode, VG.Point))
+outCodeForLine :: TypesGeography.BoundingBoxPts -> VG.Point -> VG.Point -> ((TypesGeography.OutCode, VG.Point), (TypesGeography.OutCode, VG.Point))
 outCodeForLine bb p1 p2 = (toP1, toP2)
   where
     toP1 = (computeOutCode bb p1, p1)
     toP2 = (computeOutCode bb p2, p2)
 
-computeOutCode :: BoundingBoxPts -> VG.Point -> OutCode
-computeOutCode BoundingBoxPts{_bbMinPts = (VG.Point minX minY), _bbMaxPts = (VG.Point maxX maxY)} (VG.Point x y)
-  | y > maxY  = Top
-  | y < minY  = Bottom
-  | x > maxX  = Right
-  | x < minX  = Left
-  | otherwise = Inside
+computeOutCode :: TypesGeography.BoundingBoxPts -> VG.Point -> TypesGeography.OutCode
+computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.Point minX minY), TypesGeography._bbMaxPts = (VG.Point maxX maxY)} (VG.Point x y)
+  | y > maxY  = TypesGeography.Top
+  | y < minY  = TypesGeography.Bottom
+  | x > maxX  = TypesGeography.Right
+  | x < minX  = TypesGeography.Left
+  | otherwise = TypesGeography.Inside

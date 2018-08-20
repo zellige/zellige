@@ -4,24 +4,24 @@
 
 module Data.Geometry.Types.LayerConfig where
 
-import           Data.Semigroup               ((<>))
-import qualified Data.Text                    as DT
-import qualified Options.Applicative          as OA
+import           Data.Semigroup                ((<>))
+import qualified Data.Text                     as DataText
+import qualified Options.Applicative           as OA
 
-import qualified Data.Geometry.Types.Simplify as DGTS
-import qualified Data.Geometry.Types.Types    as DGTT
+import qualified Data.Geometry.Types.Geography as TypesGeography
+import qualified Data.Geometry.Types.Simplify  as TypesSimplify
 
 data LayerConfig = LayerConfig
   { _layerInput          :: FilePath
   , _layerOutput         :: FilePath
-  , _layerName           :: DT.Text
-  , _layerZoom           :: DGTT.Pixels
-  , _layerX              :: DGTT.Pixels
-  , _layerY              :: DGTT.Pixels
-  , _layerBuffer         :: DGTT.Pixels
-  , _layerExtent         :: DGTT.Pixels
-  , _layerQuantizePixels :: DGTT.Pixels
-  , _layerSimplification :: DGTS.SimplificationAlgorithm
+  , _layerName           :: DataText.Text
+  , _layerZoom           :: TypesGeography.Pixels
+  , _layerX              :: TypesGeography.Pixels
+  , _layerY              :: TypesGeography.Pixels
+  , _layerBuffer         :: TypesGeography.Pixels
+  , _layerExtent         :: TypesGeography.Pixels
+  , _layerQuantizePixels :: TypesGeography.Pixels
+  , _layerSimplification :: TypesSimplify.SimplificationAlgorithm
   } deriving (Show, Eq)
 
 layerConfig :: OA.Parser LayerConfig
