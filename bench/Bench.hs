@@ -5,13 +5,14 @@ import           Criterion.Main
 import           Data.Text
 import qualified Data.Vector                     as Vector
 import qualified Data.Vector.Storable            as VectorStorable
-import qualified Geography.VectorTile            as VG
+import qualified Geography.VectorTile            as VectorTile
 
-import           Data.Geometry.Clip              as C
-import           Data.Geometry.MapnikVectorTile
-import           Data.Geometry.Types.LayerConfig
-import qualified Data.Geometry.Types.Simplify    as DGTS
-import           Data.Geometry.Types.Types
+import qualified Data.Geometry.Clip              as Clip
+import qualified Data.Geometry.MapnikVectorTile  as MapnikVectorTile
+import qualified Data.Geometry.Types.Config      as Config
+import qualified Data.Geometry.Types.Geography   as TypesGeography
+import qualified Data.Geometry.Types.LayerConfig as LayerConfig
+import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 
 main :: IO ()
@@ -84,30 +85,30 @@ main = do
                 ]
 
 
-testPoly :: Integer -> BoundingBoxPts -> VG.Polygon -> [Maybe VG.Polygon] -> [Maybe VG.Polygon]
+testPoly :: Integer -> TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> [Maybe VectorTile.Polygon] -> [Maybe VectorTile.Polygon]
 testPoly 0 _ _ d = d
-testPoly a b c d = d ++ testPoly (a - 1) b c [C.clipPolygon b c]
+testPoly a b c d = d ++ testPoly (a - 1) b c [Clip.clipPolygon b c]
 
-testPolys :: Integer -> BoundingBoxPts -> Vector.Vector VG.Polygon -> [Vector.Vector VG.Polygon] -> [Vector.Vector VG.Polygon]
+testPolys :: Integer -> TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.Polygon -> [Vector.Vector VectorTile.Polygon] -> [Vector.Vector VectorTile.Polygon]
 testPolys 0 _ _ d = d
-testPolys a b c d = d ++ testPolys (a - 1) b c [C.clipPolygons b c]
+testPolys a b c d = d ++ testPolys (a - 1) b c [Clip.clipPolygons b c]
 
-generateArrayPoly :: Integer -> VG.Polygon -> [VG.Polygon] -> [VG.Polygon]
+generateArrayPoly :: Integer -> VectorTile.Polygon -> [VectorTile.Polygon] -> [VectorTile.Polygon]
 generateArrayPoly 0 _ c = c
 generateArrayPoly a b c = c ++ generateArrayPoly (a - 1) b [b]
 
-simplePoly :: (Floating a, RealFrac a) => a -> a -> VG.Polygon
-simplePoly radius total = VG.Polygon (VectorStorable.fromList (getPoints radius total)) (Vector.fromList [])
+simplePoly :: (Floating a, RealFrac a) => a -> a -> VectorTile.Polygon
+simplePoly radius total = VectorTile.Polygon (VectorStorable.fromList (getPoints radius total)) (Vector.fromList [])
 
-getPoints :: (RealFrac a, Floating a) => a -> a -> [VG.Point]
+getPoints :: (RealFrac a, Floating a) => a -> a -> [VectorTile.Point]
 getPoints radius total = getPoints' radius total total []
 
-getPoints' :: (RealFrac a, Floating a) => a -> a -> a -> [VG.Point] -> [VG.Point]
+getPoints' :: (RealFrac a, Floating a) => a -> a -> a -> [VectorTile.Point] -> [VectorTile.Point]
 getPoints' _ 0 _ b = b
 getPoints' radius current total b = b ++ getPoints' radius (current - 1) total [getCoord radius current total]
 
-getCoord :: (RealFrac a, Floating a) => a -> a -> a -> VG.Point
-getCoord radius current total = VG.Point (round $ getX radius current total)  (round $ getY radius current total)
+getCoord :: (RealFrac a, Floating a) => a -> a -> a -> VectorTile.Point
+getCoord radius current total = VectorTile.Point (round $ getX radius current total)  (round $ getY radius current total)
 
 getX :: (RealFrac a, Floating a) => a -> a -> a -> a
 getX radius current total = radius * sin ((360 / total) * current)
@@ -115,14 +116,14 @@ getX radius current total = radius * sin ((360 / total) * current)
 getY :: (RealFrac a, Floating a) => a -> a -> a -> a
 getY radius current total = radius * cos ((360 / total) * current)
 
-boundBox :: BoundingBoxPts
-boundBox = BoundingBoxPts (VG.Point 0 0) (VG.Point 1 1)
+boundBox :: TypesGeography.BoundingBoxPts
+boundBox = TypesGeography.BoundingBoxPts (VectorTile.Point 0 0) (VectorTile.Point 1 1)
 
-testConf :: Config
-testConf = mkConfig (pack "demo") 15 (28999,19781) 128 2048 1 DGTS.NoAlgorithm
+testConf :: Config.Config
+testConf = Config.mkConfig (pack "demo") 15 (28999,19781) 128 2048 1 TypesSimplify.NoAlgorithm
 
-smallFC :: LayerConfig
-smallFC = LayerConfig "./test/integration/small.json" "./dump/small.mvt" (pack "demo") 15 28999 19781 128 2048 1 DGTS.NoAlgorithm
+smallFC :: LayerConfig.LayerConfig
+smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (pack "demo") 15 28999 19781 128 2048 1 TypesSimplify.NoAlgorithm
 
 testMain :: IO ()
-testMain = writeLayer smallFC
+testMain = MapnikVectorTile.writeLayer smallFC

@@ -95,7 +95,12 @@ word8ToOutCode w =
       4 -> Bottom
       _ -> Top
 
-instance VectorStorable.Storable  ((OutCode, VectorTile.Point), (OutCode, VectorTile.Point)) where
+data ClipPoint = ClipPoint
+ { _clipPointCode  :: !OutCode
+ , _clipPointPoint :: !VectorTile.Point
+ } deriving (Eq, Show)
+
+instance VectorStorable.Storable  (ClipPoint, ClipPoint) where
   sizeOf _ = (16 * 2) + (1 * 2)
   alignment _ = 8 * 2 + 2
   peek p = do
@@ -103,8 +108,9 @@ instance VectorStorable.Storable  ((OutCode, VectorTile.Point), (OutCode, Vector
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
     o1 <- peekByteOff p 32
     o2 <- peekByteOff p 33
-    pure ((word8ToOutCode o1, p1), (word8ToOutCode o2, p2))
-  poke p ((o1, VectorTile.Point a1 b1), (o2, VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
+    pure (ClipPoint (word8ToOutCode o1) p1, ClipPoint (word8ToOutCode o2) p2)
+  poke p (ClipPoint o1 (VectorTile.Point a1 b1), ClipPoint o2 (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
+
 
 instance VectorStorable.Storable (VectorTile.Point, VectorTile.Point) where
   sizeOf _ = 16 * 2
