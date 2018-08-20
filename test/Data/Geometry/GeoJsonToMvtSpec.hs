@@ -17,9 +17,9 @@ import qualified Test.QuickCheck.Gen             as GA
 
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
+import           Data.Geometry.Types.Config
 import           Data.Geometry.Types.MvtFeatures
 import           Data.Geometry.Types.Simplify
-import           Data.Geometry.Types.Types
 
 import           Data.Geometry.SpecHelper
 

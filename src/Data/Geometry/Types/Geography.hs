@@ -7,17 +7,12 @@
 
 module Data.Geometry.Types.Geography where
 
-import qualified Data.ByteString.Lazy         as LBS
-import qualified Data.Monoid                  as M
-import qualified Data.Text                    as DT
-import qualified Data.Text.Encoding           as DTE
-import qualified Data.Vector.Storable         as VectorStorable
-import           Data.Vector.Unboxed.Deriving
-import qualified Data.Word                    as DW
+import qualified Data.Vector.Storable as VectorStorable
+import qualified Data.Word            as DW
 import           Foreign.Storable
-import qualified Geography.VectorTile         as VectorTile
-import           Numeric.Natural              (Natural)
-import           Prelude                      hiding (Left, Right)
+import qualified Geography.VectorTile as VectorTile
+import           Numeric.Natural      (Natural)
+import           Prelude              hiding (Left, Right)
 
 defaultVersion :: DW.Word
 defaultVersion = 2

@@ -36,7 +36,6 @@ maybeAddLine acc pp =
 findOutCode :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector ((TypesGeography.OutCode, VectorTile.Point), (TypesGeography.OutCode, VectorTile.Point)))
 findOutCode bb lines = fmap (VectorStorable.filter isSame . VectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
 
-
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
 segmentToLine :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start (second l) else mempty

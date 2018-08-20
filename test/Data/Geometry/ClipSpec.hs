@@ -2,20 +2,20 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Vector               as Vector
-import qualified Geography.VectorTile      as VG
-import           Test.Hspec                (Spec, describe, it, shouldBe)
+import qualified Data.Vector                   as Vector
+import qualified Geography.VectorTile          as VectorTile
+import           Test.Hspec                    (Spec, describe, it, shouldBe)
 
-import           Data.Geometry.Clip        as DGC
-import           Data.Geometry.Types.Types as DGT
+import           Data.Geometry.Clip            as GeometryClip
+import           Data.Geometry.Types.Geography as GeometryGeography
 
 import           Data.Geometry.SpecHelper
 
-brokenPoly :: VG.Polygon
-brokenPoly = VG.Polygon (tupleToPts brokenPolyPts) mempty
+brokenPoly :: VectorTile.Polygon
+brokenPoly = VectorTile.Polygon (tupleToPts brokenPolyPts) mempty
 
-giantPoly :: VG.Polygon
-giantPoly = VG.Polygon (tupleToPts giantPolyPts) mempty
+giantPoly :: VectorTile.Polygon
+giantPoly = VectorTile.Polygon (tupleToPts giantPolyPts) mempty
 
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150), (200, 50), (350,150), (350,300), (250,300),
@@ -24,8 +24,8 @@ polyPts = [ (50,150), (200, 50), (350,150), (350,300), (250,300),
 innerPolyPts :: [(Int, Int)]
 innerPolyPts = [(75,200),(250,250),(250,150),(75,150)]
 
-poly :: VG.Polygon
-poly = VG.Polygon (tupleToPts polyPts) mempty
+poly :: VectorTile.Polygon
+poly = VectorTile.Polygon (tupleToPts polyPts) mempty
 
 resultPolyPts :: [(Int, Int)]
 resultPolyPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
@@ -33,14 +33,14 @@ resultPolyPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(25
 innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
 
-resultPoly :: VG.Polygon
-resultPoly = VG.Polygon (tupleToPts resultPolyPts) mempty
+resultPoly :: VectorTile.Polygon
+resultPoly = VectorTile.Polygon (tupleToPts resultPolyPts) mempty
 
-polyWithInner :: VG.Polygon
-polyWithInner = VG.Polygon (tupleToPts polyPts) (Vector.fromList [VG.Polygon (tupleToPts innerPolyPts) mempty])
+polyWithInner :: VectorTile.Polygon
+polyWithInner = VectorTile.Polygon (tupleToPts polyPts) (Vector.fromList [VectorTile.Polygon (tupleToPts innerPolyPts) mempty])
 
-resultPolyWithInner :: VG.Polygon
-resultPolyWithInner = VG.Polygon (tupleToPts resultPolyPts) (Vector.fromList [VG.Polygon (tupleToPts innerPolyResultPts) mempty])
+resultPolyWithInner :: VectorTile.Polygon
+resultPolyWithInner = VectorTile.Polygon (tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (tupleToPts innerPolyResultPts) mempty])
 
 brokenPolyPts :: [(Int, Int)]
 brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
@@ -49,23 +49,23 @@ giantPolyPts :: [(Int, Int)]
 giantPolyPts = [(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
 
 polyClipPts :: BoundingBoxPts
-polyClipPts = BoundingBoxPts (VG.Point 100 100) (VG.Point 300 300)
+polyClipPts = BoundingBoxPts (VectorTile.Point 100 100) (VectorTile.Point 300 300)
 
 brokenClipPts :: BoundingBoxPts
-brokenClipPts = BoundingBoxPts (VG.Point (-128) (-128)) (VG.Point 2176 2176)
+brokenClipPts = BoundingBoxPts (VectorTile.Point (-128) (-128)) (VectorTile.Point 2176 2176)
 
 giantClipPts :: BoundingBoxPts
-giantClipPts = BoundingBoxPts (VG.Point (-128) (-128)) (VG.Point 2176 2176)
+giantClipPts = BoundingBoxPts (VectorTile.Point (-128) (-128)) (VectorTile.Point 2176 2176)
 
-linesTst :: Vector.Vector VG.LineString
+linesTst :: Vector.Vector VectorTile.LineString
 linesTst = Vector.fromList
-  [ VG.LineString (tupleToPts [(11, 11), (59, 59)])
-  , VG.LineString (tupleToPts [(0, 0), (0, 100)])
-  , VG.LineString (tupleToPts [(5, 5), (45, 50), (90, 140)])
-  , VG.LineString (tupleToPts [(0, 0), (60, 60)])]
+  [ VectorTile.LineString (tupleToPts [(11, 11), (59, 59)])
+  , VectorTile.LineString (tupleToPts [(0, 0), (0, 100)])
+  , VectorTile.LineString (tupleToPts [(5, 5), (45, 50), (90, 140)])
+  , VectorTile.LineString (tupleToPts [(0, 0), (60, 60)])]
 
 lineClipPts :: BoundingBoxPts
-lineClipPts = BoundingBoxPts (VG.Point 10 10) (VG.Point 60 60)
+lineClipPts = BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
 
 spec :: Spec
 spec = do
@@ -79,9 +79,9 @@ testClipLine =
     it "Returns clipped line" $ do
       let actual = clipLines lineClipPts linesTst
           resultLines = Vector.fromList
-            [ VG.LineString (tupleToPts [(10, 10), (60, 60)])
-            , VG.LineString (tupleToPts [(10, 11), (45, 50), (50, 60)])
-            , VG.LineString (tupleToPts [(11, 11), (59, 59)])
+            [ VectorTile.LineString (tupleToPts [(10, 10), (60, 60)])
+            , VectorTile.LineString (tupleToPts [(10, 11), (45, 50), (50, 60)])
+            , VectorTile.LineString (tupleToPts [(11, 11), (59, 59)])
             ]
       actual `shouldBe` resultLines
 
@@ -96,7 +96,7 @@ testClipPolygon =
     it "Maximum polygon" $ do
       let actual = clipPolygon giantClipPts giantPoly
           resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
-          result = VG.Polygon (tupleToPts resultPts) mempty
+          result = VectorTile.Polygon (tupleToPts resultPts) mempty
       actual `shouldBe` Just result
 
 testClipPolygonWithInterior :: Spec

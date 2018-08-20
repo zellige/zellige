@@ -22,7 +22,8 @@ library
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.SphericalMercator
-                     , Data.Geometry.Types.Types
+                     , Data.Geometry.Types.Config
+                     , Data.Geometry.Types.Geography
                      , Data.Geometry.Types.LayerConfig
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Types.Simplify
