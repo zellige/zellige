@@ -46,21 +46,21 @@ closeIfNot poly =
     lastPt = DataVectorStorable.last poly
     firstPt = DataVectorStorable.head poly
 
-foo :: DataVectorStorable.Vector VectorTile.Point -> (VectorTile.Point, VectorTile.Point) -> DataVectorStorable.Vector VectorTile.Point
+foo :: DataVectorStorable.Vector VectorTile.Point -> TypesGeography.ClipLine -> DataVectorStorable.Vector VectorTile.Point
 foo polyPts bbLine = if DataVectorStorable.length polyPts <= 2 then DataVectorStorable.empty else newPoints
   where
     newPoints = DataVectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DataVectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
-clipEdges :: (VectorTile.Point, VectorTile.Point) -> (VectorTile.Point, VectorTile.Point) -> DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
-clipEdges polyLine@(s, e) clipLine acc =
+clipEdges :: TypesGeography.ClipLine -> TypesGeography.ClipLine -> DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
+clipEdges polyLine@(TypesGeography.ClipLine s e) clipLine acc =
   case (inside e clipLine, inside s clipLine) of
     (True, True)   -> DataVectorStorable.cons e acc
     (True, False)  -> DataVectorStorable.cons e $ DataVectorStorable.cons (lineIntersectPoint clipLine polyLine) acc
     (False, True)  -> DataVectorStorable.cons (lineIntersectPoint clipLine polyLine) acc
     (False, False) -> acc
 
-lineIntersectPoint :: (VectorTile.Point, VectorTile.Point) -> (VectorTile.Point, VectorTile.Point) -> VectorTile.Point
-lineIntersectPoint (VectorTile.Point x1 y1, VectorTile.Point x2 y2) (VectorTile.Point x1' y1', VectorTile.Point x2' y2') =
+lineIntersectPoint :: TypesGeography.ClipLine -> TypesGeography.ClipLine -> VectorTile.Point
+lineIntersectPoint (TypesGeography.ClipLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) (TypesGeography.ClipLine (VectorTile.Point x1' y1') (VectorTile.Point x2' y2')) =
   let
     (dx, dy) = (x1 - x2, y1 - y2)
     (dx', dy') = (x1' - x2', y1' - y2')
@@ -72,5 +72,5 @@ lineIntersectPoint (VectorTile.Point x1 y1, VectorTile.Point x2 y2) (VectorTile.
   in VectorTile.Point x y
 
 -- Is point of RHS of Line
-inside :: VectorTile.Point -> (VectorTile.Point, VectorTile.Point) -> Bool
-inside (VectorTile.Point x y) (VectorTile.Point x1 y1, VectorTile.Point x2 y2) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
+inside :: VectorTile.Point -> TypesGeography.ClipLine -> Bool
+inside (VectorTile.Point x y) (TypesGeography.ClipLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)

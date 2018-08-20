@@ -38,11 +38,11 @@ data BoundingBoxPts = BoundingBoxPts
   , _bbMaxPts :: VectorTile.Point
   } deriving (Show, Eq)
 
-mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector (VectorTile.Point, VectorTile.Point)
+mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector ClipLine
 mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (VectorTile.Point x2 y2)} = pointsToLines $ VectorStorable.fromList [VectorTile.Point x1 y1, VectorTile.Point x2 y1, VectorTile.Point x2 y2, VectorTile.Point x1 y2]
 
-pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector (VectorTile.Point, VectorTile.Point)
-pointsToLines pts = (VectorStorable.zipWith (,) <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
+pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector ClipLine
+pointsToLines pts = (VectorStorable.zipWith ClipLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
 
 -- Coords types
 
@@ -112,11 +112,16 @@ instance VectorStorable.Storable  (ClipPoint, ClipPoint) where
   poke p (ClipPoint o1 (VectorTile.Point a1 b1), ClipPoint o2 (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
 
 
-instance VectorStorable.Storable (VectorTile.Point, VectorTile.Point) where
+data ClipLine = ClipLine
+  { _clipLinePt1 :: !VectorTile.Point
+  , _clipLinePt2 :: !VectorTile.Point
+  } deriving (Eq, Show)
+
+instance VectorStorable.Storable ClipLine where
   sizeOf _ = 16 * 2
   alignment _ = 8 * 2
   peek p = do
     p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
-    pure (p1, p2)
-  poke p (VectorTile.Point a1 b1, VectorTile.Point a2 b2) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2
+    pure $ ClipLine p1 p2
+  poke p (ClipLine (VectorTile.Point a1 b1) (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2

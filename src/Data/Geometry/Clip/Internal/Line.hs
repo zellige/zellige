@@ -75,15 +75,15 @@ clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.P
 outCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector (TypesGeography.ClipPoint, TypesGeography.ClipPoint))
 outCodeForLineStrings bb = fmap $ VectorStorable.map out . getLines
   where
-    out = uncurry (outCodeForLine bb)
+    out = outCodeForLine bb
     getLines line = linesFromPoints $ VectorTile.lsPoints line
 
 -- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
-linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector (VectorTile.Point, VectorTile.Point)
-linesFromPoints x = (VectorStorable.zipWith (,) <*> VectorStorable.tail) (VectorStorable.convert x)
+linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector TypesGeography.ClipLine
+linesFromPoints x = (VectorStorable.zipWith TypesGeography.ClipLine <*> VectorStorable.tail) (VectorStorable.convert x)
 
-outCodeForLine :: TypesGeography.BoundingBoxPts -> VG.Point -> VG.Point -> (TypesGeography.ClipPoint, TypesGeography.ClipPoint)
-outCodeForLine bb p1 p2 = (toP1, toP2)
+outCodeForLine :: TypesGeography.BoundingBoxPts -> TypesGeography.ClipLine -> (TypesGeography.ClipPoint, TypesGeography.ClipPoint)
+outCodeForLine bb (TypesGeography.ClipLine p1 p2) = (toP1, toP2)
   where
     toP1 = TypesGeography.ClipPoint (computeOutCode bb p1) p1
     toP2 = TypesGeography.ClipPoint (computeOutCode bb p2) p2
