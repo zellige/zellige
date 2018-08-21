@@ -38,11 +38,11 @@ data BoundingBoxPts = BoundingBoxPts
   , _bbMaxPts :: VectorTile.Point
   } deriving (Show, Eq)
 
-mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector ClipLine
+mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector StorableLine
 mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (VectorTile.Point x2 y2)} = pointsToLines $ VectorStorable.fromList [VectorTile.Point x1 y1, VectorTile.Point x2 y1, VectorTile.Point x2 y2, VectorTile.Point x1 y2]
 
-pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector ClipLine
-pointsToLines pts = (VectorStorable.zipWith ClipLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
+pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector StorableLine
+pointsToLines pts = (VectorStorable.zipWith StorableLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
 
 -- Coords types
 
@@ -100,7 +100,12 @@ data ClipPoint = ClipPoint
  , _clipPointPoint :: !VectorTile.Point
  } deriving (Eq, Show)
 
-instance VectorStorable.Storable  (ClipPoint, ClipPoint) where
+data ClipLine = ClipLine
+ { _clipLine1 :: !ClipPoint
+ , _clipLine2 :: !ClipPoint
+ }
+
+instance VectorStorable.Storable ClipLine where
   sizeOf _ = (16 * 2) + (1 * 2)
   alignment _ = 8 * 2 + 2
   peek p = do
@@ -108,20 +113,20 @@ instance VectorStorable.Storable  (ClipPoint, ClipPoint) where
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
     o1 <- peekByteOff p 32
     o2 <- peekByteOff p 33
-    pure (ClipPoint (word8ToOutCode o1) p1, ClipPoint (word8ToOutCode o2) p2)
-  poke p (ClipPoint o1 (VectorTile.Point a1 b1), ClipPoint o2 (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
+    pure (ClipLine (ClipPoint (word8ToOutCode o1) p1) (ClipPoint (word8ToOutCode o2) p2))
+  poke p (ClipLine (ClipPoint o1 (VectorTile.Point a1 b1)) (ClipPoint o2 (VectorTile.Point a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
 
 
-data ClipLine = ClipLine
-  { _clipLinePt1 :: !VectorTile.Point
-  , _clipLinePt2 :: !VectorTile.Point
+data StorableLine = StorableLine
+  { _storableLinePt1 :: !VectorTile.Point
+  , _storableLinePt2 :: !VectorTile.Point
   } deriving (Eq, Show)
 
-instance VectorStorable.Storable ClipLine where
+instance VectorStorable.Storable StorableLine where
   sizeOf _ = 16 * 2
   alignment _ = 8 * 2
   peek p = do
     p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
-    pure $ ClipLine p1 p2
-  poke p (ClipLine (VectorTile.Point a1 b1) (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2
+    pure $ StorableLine p1 p2
+  poke p (StorableLine (VectorTile.Point a1 b1) (VectorTile.Point a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2

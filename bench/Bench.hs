@@ -2,7 +2,7 @@ module Main where
 
 import           Criterion.Main
 
-import           Data.Text
+import qualified Data.Text                       as DataText
 import qualified Data.Vector                     as Vector
 import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
@@ -120,10 +120,10 @@ boundBox :: TypesGeography.BoundingBoxPts
 boundBox = TypesGeography.BoundingBoxPts (VectorTile.Point 0 0) (VectorTile.Point 1 1)
 
 testConf :: Config.Config
-testConf = Config.mkConfig (pack "demo") 15 (28999,19781) 128 2048 1 TypesSimplify.NoAlgorithm
+testConf = Config.mkConfig (DataText.pack "demo") 15 (28999,19781) 128 2048 1 TypesSimplify.NoAlgorithm
 
 smallFC :: LayerConfig.LayerConfig
-smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (pack "demo") 15 28999 19781 128 2048 1 TypesSimplify.NoAlgorithm
+smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (DataText.pack "demo") 15 28999 19781 128 2048 1 TypesSimplify.NoAlgorithm
 
 testMain :: IO ()
 testMain = MapnikVectorTile.writeLayer smallFC

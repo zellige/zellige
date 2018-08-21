@@ -21,19 +21,19 @@ clipLines bb lines = Vector.foldl' maybeAddLine mempty outCodes
   where
     outCodes = findOutCode bb lines
 
-maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector (TypesGeography.ClipPoint, TypesGeography.ClipPoint) -> Vector.Vector VectorTile.LineString
+maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector TypesGeography.ClipLine -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pp =
   case (checkValidLineString . foldPointsToLine) pp of
     Just res -> Vector.cons res acc
     Nothing  -> acc
   where
-    foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.ClipPoint _ p1, TypesGeography.ClipPoint _ p2) -> VectorStorable.fromList [p1, p2])) mempty
+    foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.ClipLine (TypesGeography.ClipPoint _ p1) (TypesGeography.ClipPoint _ p2)) -> VectorStorable.fromList [p1, p2])) mempty
     checkValidLineString pts =
       if VectorStorable.length (segmentToLine pts) >= 2
         then Just (VectorTile.LineString (segmentToLine pts))
         else Nothing
 
-findOutCode :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector (TypesGeography.ClipPoint, TypesGeography.ClipPoint))
+findOutCode :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector TypesGeography.ClipLine)
 findOutCode bb lines = fmap (VectorStorable.filter isSame . VectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
@@ -43,19 +43,19 @@ segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start 
     start = VectorStorable.head l
     second = VectorStorable.ifilter (\i _ -> odd i)
 
-evalDiffKeepSame :: TypesGeography.BoundingBoxPts -> (TypesGeography.ClipPoint, TypesGeography.ClipPoint) -> (TypesGeography.ClipPoint, TypesGeography.ClipPoint)
-evalDiffKeepSame bb (a@(TypesGeography.ClipPoint o1 p1), b@(TypesGeography.ClipPoint o2 p2)) =
+evalDiffKeepSame :: TypesGeography.BoundingBoxPts -> TypesGeography.ClipLine -> TypesGeography.ClipLine
+evalDiffKeepSame bb (TypesGeography.ClipLine a@(TypesGeography.ClipPoint o1 p1) b@(TypesGeography.ClipPoint o2 p2)) =
   case compare o1 o2 of
-    GT -> eval (clipAndCompute o1, b)
-    LT -> eval (a, clipAndCompute o2)
-    EQ -> (a, b)
+    GT -> eval $ TypesGeography.ClipLine (clipAndCompute o1) b
+    LT -> eval $ TypesGeography.ClipLine a (clipAndCompute o2)
+    EQ -> TypesGeography.ClipLine a b
   where
     eval = evalDiffKeepSame bb
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = TypesGeography.ClipPoint (computeOutCode bb p) p
 
-isSame :: (TypesGeography.ClipPoint, TypesGeography.ClipPoint) -> Bool
-isSame (TypesGeography.ClipPoint o1 _, TypesGeography.ClipPoint o2 _) =
+isSame :: TypesGeography.ClipLine -> Bool
+isSame (TypesGeography.ClipLine (TypesGeography.ClipPoint o1 _) (TypesGeography.ClipPoint o2 _)) =
   case (o1, o2) of
     (TypesGeography.Left   , TypesGeography.Left  ) -> False
     (TypesGeography.Right  , TypesGeography.Right ) -> False
@@ -72,18 +72,18 @@ clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.P
     TypesGeography.Top    -> VectorTile.Point (x1 + (x2 - x1) * (maxY - y1) `div` (y2 - y1)) maxY
     _      -> undefined
 
-outCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector (TypesGeography.ClipPoint, TypesGeography.ClipPoint))
+outCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector TypesGeography.ClipLine)
 outCodeForLineStrings bb = fmap $ VectorStorable.map out . getLines
   where
     out = outCodeForLine bb
     getLines line = linesFromPoints $ VectorTile.lsPoints line
 
 -- Create segments from points [1,2,3] becomes [(1,2),(2,3)]
-linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector TypesGeography.ClipLine
-linesFromPoints x = (VectorStorable.zipWith TypesGeography.ClipLine <*> VectorStorable.tail) (VectorStorable.convert x)
+linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector TypesGeography.StorableLine
+linesFromPoints x = (VectorStorable.zipWith TypesGeography.StorableLine <*> VectorStorable.tail) (VectorStorable.convert x)
 
-outCodeForLine :: TypesGeography.BoundingBoxPts -> TypesGeography.ClipLine -> (TypesGeography.ClipPoint, TypesGeography.ClipPoint)
-outCodeForLine bb (TypesGeography.ClipLine p1 p2) = (toP1, toP2)
+outCodeForLine :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> TypesGeography.ClipLine
+outCodeForLine bb (TypesGeography.StorableLine p1 p2) = TypesGeography.ClipLine toP1 toP2
   where
     toP1 = TypesGeography.ClipPoint (computeOutCode bb p1) p1
     toP2 = TypesGeography.ClipPoint (computeOutCode bb p2) p2
