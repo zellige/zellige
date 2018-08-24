@@ -12,9 +12,9 @@ module Data.Geometry.Clip (
 , clipPolygons
 ) where
 
-import qualified Geography.VectorTile                as VectorTile
+import qualified Geography.VectorTile                            as VectorTile
 
-import           Data.Geometry.Clip.Internal.Line
+import           Data.Geometry.Clip.Internal.CohenSutherlandLine
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
 import           Data.Geometry.Types.Geography

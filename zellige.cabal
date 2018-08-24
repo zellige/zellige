@@ -18,6 +18,8 @@ library
   exposed-modules:     Data.Geometry.Clip
                      , Data.Geometry.Clip.Internal.Point
                      , Data.Geometry.Clip.Internal.Line
+                     , Data.Geometry.Clip.Internal.CohenSutherlandLine
+                     , Data.Geometry.Clip.Internal.LiangBarskyLine
                      , Data.Geometry.Clip.Internal.Polygon
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
