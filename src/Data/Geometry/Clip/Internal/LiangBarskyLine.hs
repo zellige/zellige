@@ -46,6 +46,8 @@ data T1AndT2 = T1AndT2
   , _t2 :: !Double
   } deriving (Show, Eq)
 
+data PAndQ = PAndQ !Double !Double
+
 newT1AndT2 :: Maybe T1AndT2
 newT1AndT2 = Just (T1AndT2 0.0 1.0)
 
@@ -55,8 +57,8 @@ recreateLine (T1AndT2 t1 t2) line@(TypesGeography.StorableLine (VectorTile.Point
     (VectorTile.Point (round $ fromIntegral x1 + t1 * deltaX line) (round $ fromIntegral y1 + t1 * deltaY line))
     (VectorTile.Point (round $ fromIntegral x1 + t2 * deltaX line) (round $ fromIntegral y1 + t2 * deltaY line))
 
-calcT1AndT2OrQuit :: (Double, Double) -> Maybe T1AndT2 -> Maybe T1AndT2
-calcT1AndT2OrQuit (p, q) orig =
+calcT1AndT2OrQuit :: PAndQ -> Maybe T1AndT2 -> Maybe T1AndT2
+calcT1AndT2OrQuit (PAndQ p q) orig =
     case orig of
       Nothing -> Nothing
       Just (T1AndT2 t1 t2) ->
@@ -72,13 +74,13 @@ calcT1AndT2OrQuit (p, q) orig =
   where
     r = q / p
 
-calcPAndQ :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> Edge -> (Double, Double)
+calcPAndQ :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> Edge -> PAndQ
 calcPAndQ (TypesGeography.BoundingBox minX minY maxX maxY) line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) _) e =
   case e of
-    LeftEdge   -> (-1 * deltaX line, fromIntegral x1 - minX)
-    RightEdge  -> (deltaX line, maxX - fromIntegral x1)
-    BottomEdge -> (-1 * deltaY line, fromIntegral y1 - minY)
-    TopEdge    -> (deltaY line, maxY - fromIntegral y1)
+    LeftEdge   -> PAndQ (-1 * deltaX line) (fromIntegral x1 - minX)
+    RightEdge  -> PAndQ (deltaX line) (maxX - fromIntegral x1)
+    BottomEdge -> PAndQ (-1 * deltaY line) (fromIntegral y1 - minY)
+    TopEdge    -> PAndQ (deltaY line) (maxY - fromIntegral y1)
 
 deltaX :: TypesGeography.StorableLine -> Double
 deltaX (TypesGeography.StorableLine (VectorTile.Point x1 _) (VectorTile.Point x2 _)) = fromIntegral $ x2 - x1
