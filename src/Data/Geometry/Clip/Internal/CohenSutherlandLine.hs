@@ -13,7 +13,6 @@ module Data.Geometry.Clip.Internal.CohenSutherlandLine (
 import qualified Data.Vector                      as Vector
 import qualified Data.Vector.Storable             as VectorStorable
 import qualified Geography.VectorTile             as VectorTile
-import qualified Geography.VectorTile             as VG
 import           Prelude                          hiding (Left, Right, lines)
 
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
@@ -54,8 +53,8 @@ isSame (TypesGeography.ClipLine (TypesGeography.ClipPoint o1 _) (TypesGeography.
     (TypesGeography.Top    , TypesGeography.Top   ) -> False
     _                                               -> True
 
-clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBoxPts -> VG.Point -> VG.Point -> VG.Point
-clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.Point minX minY), TypesGeography._bbMaxPts = (VG.Point maxX maxY)} (VG.Point x1 y1) (VG.Point x2 y2) =
+clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBoxPts -> VectorTile.Point -> VectorTile.Point -> VectorTile.Point
+clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorTile.Point minX minY), TypesGeography._bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x1 y1) (VectorTile.Point x2 y2) =
   case outCode of
     TypesGeography.Left   -> VectorTile.Point minX (y1 + (y2 - y1) * (minX - x1) `div` (x2 - x1))
     TypesGeography.Right  -> VectorTile.Point maxX (y1 + (y2 - y1) * (maxX - x1) `div` (x2 - x1))
@@ -74,8 +73,8 @@ outCodeForLine bb (TypesGeography.StorableLine p1 p2) = TypesGeography.ClipLine 
     toP1 = TypesGeography.ClipPoint (computeOutCode bb p1) p1
     toP2 = TypesGeography.ClipPoint (computeOutCode bb p2) p2
 
-computeOutCode :: TypesGeography.BoundingBoxPts -> VG.Point -> TypesGeography.OutCode
-computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VG.Point minX minY), TypesGeography._bbMaxPts = (VG.Point maxX maxY)} (VG.Point x y)
+computeOutCode :: TypesGeography.BoundingBoxPts -> VectorTile.Point -> TypesGeography.OutCode
+computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorTile.Point minX minY), TypesGeography._bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x y)
   | y > maxY  = TypesGeography.Top
   | y < minY  = TypesGeography.Bottom
   | x > maxX  = TypesGeography.Right
