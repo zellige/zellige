@@ -7,7 +7,7 @@
 -- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip.Internal.CohenSutherlandLine (
- clipLines
+  clipLinesCs
 ) where
 
 import qualified Data.Vector                      as Vector
@@ -18,8 +18,8 @@ import           Prelude                          hiding (Left, Right, lines)
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
-clipLines :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
-clipLines bb lines = Vector.foldl' maybeAddLine mempty (findClipLines bb lines)
+clipLinesCs :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
+clipLinesCs bb lines = Vector.foldl' maybeAddLine mempty (findClipLines bb lines)
 
 maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector TypesGeography.ClipLine -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pp =

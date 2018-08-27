@@ -4,8 +4,7 @@
 -- https://en.wikipedia.org/wiki/Liang%E2%80%93Barsky_algorithm
 
 module Data.Geometry.Clip.Internal.LiangBarskyLine (
- clipLines
- , foldLine
+  clipLinesLb
 ) where
 
 import qualified Data.Vector                      as Vector
@@ -18,8 +17,8 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 data Edge = LeftEdge | RightEdge | BottomEdge | TopEdge
   deriving (Show, Eq, Enum)
 
-clipLines :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
-clipLines bb = foldr (\lineString acc -> maybeAddLine acc (lineToClippedPoints bb lineString)) Vector.empty
+clipLinesLb :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
+clipLinesLb bb = Vector.foldl' (\acc lineString -> maybeAddLine acc (lineToClippedPoints bb lineString)) Vector.empty
 
 maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector VectorTile.Point -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pts =
