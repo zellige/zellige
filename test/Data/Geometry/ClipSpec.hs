@@ -88,9 +88,9 @@ testClipLine =
     it "Cohen Sutherland returns clipped line" $ do
       let actual = GeometryClip.clipLinesCs lineClipPts linesTst
       actual `shouldBe` resultLines
-    -- it "Liang Barsky returns clipped line" $ do
-    --   let actual = GeometryClip.clipLinesLb lineClipPts linesTst
-    --   actual `shouldBe` resultLines
+    it "Liang Barsky returns clipped line" $ do
+      let actual = GeometryClip.clipLinesLb lineClipPts linesTst
+      actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =
