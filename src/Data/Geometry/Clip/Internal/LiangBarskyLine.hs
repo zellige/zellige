@@ -34,28 +34,30 @@ foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLin
 
 clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine
 clipOrDiscard bb line acc =
-  case foldLine bb line of
+  case foldLine bb line dXdY of
     Nothing -> acc
-    Just pt -> VectorStorable.cons (recreateLine pt line) acc
+    Just pt -> VectorStorable.cons (recreateLine pt line dXdY) acc
+  where
+    dXdY = dXAndDyFromLine line
 
-foldLine :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> Maybe T1AndT2
-foldLine bb line = foldl (\acc edge -> calcT1AndT2OrQuit (calcPAndQ bb line edge) acc) newT1AndT2 [LeftEdge, RightEdge, BottomEdge, TopEdge]
+foldLine :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> DxAndDy -> Maybe T1AndT2
+foldLine bb line dXdY = foldl (\acc edge -> calcT1AndT2OrQuit (calcPAndQ bb line dXdY edge) acc) newT1AndT2 [LeftEdge, RightEdge, BottomEdge, TopEdge]
 
-data T1AndT2 = T1AndT2
-  { _t1 :: !Double
-  , _t2 :: !Double
-  } deriving (Show, Eq)
-
+data DxAndDy = DxAndDy !Double !Double
+data T1AndT2 = T1AndT2 !Double !Double
 data PAndQ = PAndQ !Double !Double
+
+dXAndDyFromLine :: TypesGeography.StorableLine -> DxAndDy
+dXAndDyFromLine (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = DxAndDy (fromIntegral $ x2 - x1) (fromIntegral $ y2 - y1)
 
 newT1AndT2 :: Maybe T1AndT2
 newT1AndT2 = Just (T1AndT2 0.0 1.0)
 
-recreateLine :: T1AndT2 -> TypesGeography.StorableLine -> TypesGeography.StorableLine
-recreateLine (T1AndT2 t1 t2) line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) _) =
+recreateLine :: T1AndT2 -> TypesGeography.StorableLine -> DxAndDy -> TypesGeography.StorableLine
+recreateLine (T1AndT2 t1 t2) (TypesGeography.StorableLine (VectorTile.Point x1 y1) _) (DxAndDy dX dY) =
   TypesGeography.StorableLine
-    (VectorTile.Point (round $ fromIntegral x1 + t1 * deltaX line) (round $ fromIntegral y1 + t1 * deltaY line))
-    (VectorTile.Point (round $ fromIntegral x1 + t2 * deltaX line) (round $ fromIntegral y1 + t2 * deltaY line))
+    (VectorTile.Point (round $ fromIntegral x1 + t1 * dX) (round $ fromIntegral y1 + t1 * dY))
+    (VectorTile.Point (round $ fromIntegral x1 + t2 * dX) (round $ fromIntegral y1 + t2 * dY))
 
 calcT1AndT2OrQuit :: PAndQ -> Maybe T1AndT2 -> Maybe T1AndT2
 calcT1AndT2OrQuit (PAndQ p q) orig =
@@ -74,16 +76,10 @@ calcT1AndT2OrQuit (PAndQ p q) orig =
   where
     r = q / p
 
-calcPAndQ :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> Edge -> PAndQ
-calcPAndQ (TypesGeography.BoundingBox minX minY maxX maxY) line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) _) e =
+calcPAndQ :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> DxAndDy -> Edge -> PAndQ
+calcPAndQ (TypesGeography.BoundingBox minX minY maxX maxY) (TypesGeography.StorableLine (VectorTile.Point x1 y1) _) (DxAndDy dX dY) e =
   case e of
-    LeftEdge   -> PAndQ (-1 * deltaX line) (fromIntegral x1 - minX)
-    RightEdge  -> PAndQ (deltaX line) (maxX - fromIntegral x1)
-    BottomEdge -> PAndQ (-1 * deltaY line) (fromIntegral y1 - minY)
-    TopEdge    -> PAndQ (deltaY line) (maxY - fromIntegral y1)
-
-deltaX :: TypesGeography.StorableLine -> Double
-deltaX (TypesGeography.StorableLine (VectorTile.Point x1 _) (VectorTile.Point x2 _)) = fromIntegral $ x2 - x1
-
-deltaY :: TypesGeography.StorableLine -> Double
-deltaY (TypesGeography.StorableLine (VectorTile.Point _ y1) (VectorTile.Point _ y2)) = fromIntegral $ y2 - y1
+    LeftEdge   -> PAndQ (-1 * dX) (fromIntegral x1 - minX)
+    RightEdge  -> PAndQ dX (maxX - fromIntegral x1)
+    BottomEdge -> PAndQ (-1 * dY) (fromIntegral y1 - minY)
+    TopEdge    -> PAndQ dY (maxY - fromIntegral y1)
