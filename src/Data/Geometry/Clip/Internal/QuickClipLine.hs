@@ -35,35 +35,79 @@ foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLin
 clipOrDiscard :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine
 clipOrDiscard bb line acc =
   case foldLine bb line of
-    Nothing -> acc
+    Nothing          -> acc
     Just clippedLine -> VectorStorable.cons clippedLine acc
 
 foldLine :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> Maybe TypesGeography.StorableLine
-foldLine bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point minX _) (VectorTile.Point maxX _)) line@(TypesGeography.StorableLine (VectorTile.Point x1 _) (VectorTile.Point x2 _)) = 
-  if (x1 > maxX) || (x2 < minX) then
-    Nothing
-  else
-    case checkX bbox line of
-      Nothing -> Nothing
-      Just newLine -> 
-        case checkY bbox newLine of
-          Nothing -> Nothing
-          Just newBboxAndLine -> Just $ snd newBboxAndLine
+foldLine bbox line = do
+  checkAllCoordinates <- checkX (False, bbox, line) >>= checkY >>= checkX1 >>= checkY1 >>= checkX2 >>= checkY2
+  reflectResult checkAllCoordinates
+  where
+    reflectResult (reflect, _, newLine@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2))) =
+      if reflect then
+        Just $ TypesGeography.StorableLine (VectorTile.Point x1 ((-1) * y1)) (VectorTile.Point x2 ((-1) * y2))
+      else
+        Just newLine
 
-checkX :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> Maybe TypesGeography.StorableLine
-checkX (TypesGeography.BoundingBoxPts (VectorTile.Point minX _) (VectorTile.Point maxX _)) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = 
-  if x1 > x2 && (x2 > maxX || x1 < minX) then
+checkX :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkX (_, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point minX _) (VectorTile.Point maxX _)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | x1 > x2 =
+    if x2 > maxX || x1 < minX then
       Nothing
     else
-      Just $ TypesGeography.StorableLine (VectorTile.Point x2 y2) (VectorTile.Point x1 y1)
+      Just (False, bbox, TypesGeography.StorableLine (VectorTile.Point x2 y2) (VectorTile.Point x1 y1))
+  | x1 > maxX || x2 < minX = Nothing
+  | otherwise = Just (False, bbox, line)
 
-checkY :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> Maybe (TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
-checkY (TypesGeography.BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) =
-  if y1 > y2 && (y2 > minY || y1 < maxY) then
-    Nothing
-  else
-    Just (newBbox, newLine)
+checkY :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkY (reflect, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | y1 > y2 =
+    if y2 > minY || y1 < maxY then
+      Nothing
+    else
+      Just (True, newBbox, newLine)
+  | y1 > minY || y2 < maxY = Nothing
+  | otherwise = Just (reflect, bbox, line)
   where
     newBbox = TypesGeography.BoundingBoxPts (VectorTile.Point minX ((-1) * minY)) (VectorTile.Point maxX ((-1) * maxY))
     newLine = TypesGeography.StorableLine (VectorTile.Point x1 ((-1) * y1)) (VectorTile.Point x2 ((-1) * y2))
-      
+
+checkX1 :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkX1 (reflect, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point _ _)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | x1 < minX =
+    if newY1 > minY then
+      Nothing
+    else
+      Just (reflect, bbox, TypesGeography.StorableLine (VectorTile.Point minX newY1) (VectorTile.Point x2 y2))
+  | otherwise = Just (reflect, bbox, line)
+  where
+    -- y1 += (xL - x1) * (y2 - y1) / (x2 - x1)
+    newY1 = y1 + ((minX - x1) * (y2 - y1) `div` (x2 - x1))
+
+checkY1 :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkY1 (reflect, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point _ _) (VectorTile.Point maxX maxY)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | y1 < maxY =
+    if newX1 > maxX then
+      Nothing
+    else
+      Just (reflect, bbox, TypesGeography.StorableLine (VectorTile.Point newX1 maxY) (VectorTile.Point x2 y2))
+  | otherwise = Just (reflect, bbox, line)
+  where
+    -- x1 += (yB - y1) * (x2 - x1) / (y2 - y1)
+    newX1 = x1 + ((maxY - y1) * (x2 - x1) `div` (y2 - y1))
+
+checkX2 :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkX2 (reflect, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point _ _) (VectorTile.Point maxX _)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | x2 > maxX = Just (reflect, bbox, TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point maxX newY2))
+  | otherwise = Just (reflect, bbox, line)
+  where
+    -- y2 = y1 + (xR - x1) * (y2 - y1) / (x2 - x1);
+    newY2 = y1 + (maxX - x1) * (y2 - y1) `div` (x2 - x1)
+
+checkY2 :: (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine) -> Maybe (Bool, TypesGeography.BoundingBoxPts, TypesGeography.StorableLine)
+checkY2 (reflect, bbox@(TypesGeography.BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point _ _)), line@(TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)))
+  | y2 > minY = Just (reflect, bbox, TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point newX2 minX))
+  | otherwise = Just (reflect, bbox, line)
+  where
+    --  x2 = x1 + (yT - y1) * (x2 - x1) / (y2 - y1);
+    newX2 = x1 + (minY - y1) * (x2 - x1) `div` (y2 - y1)
