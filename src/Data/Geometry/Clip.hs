@@ -9,6 +9,7 @@ module Data.Geometry.Clip (
 , clipPoints
 , clipLinesLb
 , clipLinesCs
+, clipLinesQc
 , clipPolygon
 , clipPolygons
 ) where
@@ -19,6 +20,7 @@ import           Data.Geometry.Clip.Internal.CohenSutherlandLine
 import           Data.Geometry.Clip.Internal.LiangBarskyLine
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
+import           Data.Geometry.Clip.Internal.QuickClipLine
 import           Data.Geometry.Types.Geography
 
 createBoundingBoxPts :: Word -> Int -> BoundingBoxPts

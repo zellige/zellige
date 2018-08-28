@@ -144,7 +144,7 @@ checkX2 (reflect, bbox@(TypesGeography.BoundingBox _ _ maxX _), line@((x1, y1), 
 --   y1 = yT;
 -- }
 checkY2 :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkY2 (reflect, bbox@(TypesGeography.BoundingBox minX _ _ maxY), line@((x1, y1), (x2, y2)))
+checkY2 (reflect, bbox@(TypesGeography.BoundingBox _ _ _ maxY), line@((x1, y1), (x2, y2)))
   | y2 > maxY = Just (reflect, bbox, ((x1, y1), (newX2, maxY)))
   | otherwise = Just (reflect, bbox, line)
   where

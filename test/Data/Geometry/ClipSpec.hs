@@ -91,6 +91,9 @@ testClipLine =
     it "Liang Barsky returns clipped line" $ do
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
       actual `shouldBe` resultLines
+    it "Liang Barsky returns clipped line" $ do
+      let actual = GeometryClip.clipLinesQc lineClipPts linesTst
+      actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =

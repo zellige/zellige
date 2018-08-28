@@ -65,7 +65,7 @@ createMvt TypesConfig.Config{..} geoJson = do
         clipBb          = DataGeometryClip.createBoundingBoxPts _buffer _extents
         DataGeometryTypesMvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
         cP = DF.foldl' (accNewGeom' (DataGeometryClip.clipPoints clipBb)) mempty mvtPoints
-        cL = DF.foldl' (accNewGeom'' (DataGeometryClip.clipLinesCs clipBb)) mempty mvtLines
+        cL = DF.foldl' (accNewGeom'' (DataGeometryClip.clipLinesQc clipBb)) mempty mvtLines
         cO = DF.foldl' (accNewGeom'' (DataGeometryClip.clipPolygons clipBb )) mempty mvtPolygons
         layer = VectorTile.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HM.fromList [(_name, layer)]
