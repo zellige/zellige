@@ -41,7 +41,7 @@ clipOrDiscard bb line acc =
     dXdY = dXAndDyFromLine line
 
 foldLine :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> DxAndDy -> Maybe T1AndT2
-foldLine bb line dXdY = foldl (\acc edge -> calcT1AndT2OrQuit (calcPAndQ bb line dXdY edge) acc) newT1AndT2 [LeftEdge, RightEdge, BottomEdge, TopEdge]
+foldLine bb line dXdY = Vector.foldl' (\acc edge -> calcT1AndT2OrQuit (calcPAndQ bb line dXdY edge) acc) newT1AndT2 (Vector.fromList [LeftEdge, RightEdge, BottomEdge, TopEdge])
 
 data DxAndDy = DxAndDy !Double !Double
 data T1AndT2 = T1AndT2 !Double !Double
