@@ -84,11 +84,11 @@ checkX (reflect, bbox@(TypesGeography.BoundingBox minX _ maxX _), line@((x1, y1)
 checkY :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
 checkY (_, bbox@(TypesGeography.BoundingBox minX minY maxX maxY), line@((x1, y1), (x2, y2)))
   | y1 > y2 =
-    if y2 > minY || y1 < maxY then
+    if y2 > maxY || y1 < minY then
       Nothing
     else
       Just (True, newBbox, newLine)
-  | y1 > minY || y2 < maxY = Nothing
+  | y1 > maxY || y2 < minY = Nothing
   | otherwise = Just (False, bbox, line)
   where
     newBbox = TypesGeography.BoundingBox minX ((-1) * maxY) maxX ((-1) * minY)
@@ -101,9 +101,9 @@ checkY (_, bbox@(TypesGeography.BoundingBox minX minY maxX maxY), line@((x1, y1)
 --   x0 = xL;
 -- }
 checkX1 :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkX1 (reflect, bbox@(TypesGeography.BoundingBox minX minY _ _), line@((x1, y1), (x2, y2)))
+checkX1 (reflect, bbox@(TypesGeography.BoundingBox minX _ _ maxY), line@((x1, y1), (x2, y2)))
   | x1 < minX =
-    if newY1 > minY then
+    if newY1 > maxY then
       Nothing
     else
       Just (reflect, bbox, ((minX, newY1), (x2, y2)))
@@ -118,15 +118,15 @@ checkX1 (reflect, bbox@(TypesGeography.BoundingBox minX minY _ _), line@((x1, y1
 --   y0 = yB;
 -- }
 checkY1 :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkY1 (reflect, bbox@(TypesGeography.BoundingBox _ _ maxX maxY), line@((x1, y1), (x2, y2)))
-  | y1 < maxY =
+checkY1 (reflect, bbox@(TypesGeography.BoundingBox _ minY maxX _), line@((x1, y1), (x2, y2)))
+  | y1 < minY =
     if newX1 > maxX then
       Nothing
     else
-      Just (reflect, bbox, ((newX1, maxY), (x2, y2)))
+      Just (reflect, bbox, ((newX1, minY), (x2, y2)))
   | otherwise = Just (reflect, bbox, line)
   where
-    newX1 = x1 + ((maxY - y1) * (x2 - x1) / (y2 - y1))
+    newX1 = x1 + ((minY - y1) * (x2 - x1) / (y2 - y1))
 
 -- if (x1 > xR) {
 --   y1 = y0 + (xR - x0) * (y1 - y0) / (x1 - x0);
@@ -144,8 +144,8 @@ checkX2 (reflect, bbox@(TypesGeography.BoundingBox _ _ maxX _), line@((x1, y1), 
 --   y1 = yT;
 -- }
 checkY2 :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkY2 (reflect, bbox@(TypesGeography.BoundingBox minX minY _ _), line@((x1, y1), (x2, y2)))
-  | y2 > minY = Just (reflect, bbox, ((x1, y1), (newX2, minX)))
+checkY2 (reflect, bbox@(TypesGeography.BoundingBox minX _ _ maxY), line@((x1, y1), (x2, y2)))
+  | y2 > maxY = Just (reflect, bbox, ((x1, y1), (newX2, maxY)))
   | otherwise = Just (reflect, bbox, line)
   where
-    newX2 = x1 + (minY - y1) * (x2 - x1) / (y2 - y1)
+    newX2 = x1 + (maxY - y1) * (x2 - x1) / (y2 - y1)
