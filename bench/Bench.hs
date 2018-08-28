@@ -17,77 +17,126 @@ import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 main :: IO ()
 main = do
-    let tenPoly = simplePoly (50 :: Double) (10 :: Double)
-        oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
-        oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
-        tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
-        multiTenPoly = Vector.fromList(generateArrayPoly 1 tenPoly [])
-        multiOneHundredPoly = Vector.fromList(generateArrayPoly 1 oneHundredPoly [])
-        multiOneThousandPoly = Vector.fromList(generateArrayPoly 1 oneThousandPoly [])
-        multiTenThousandPoly = Vector.fromList(generateArrayPoly 1 tenThousandPoly [])
-    defaultMain [
-                bgroup "writeFiles" [
-                     bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
-                ]
-                ,
-                bgroup "Clip Polygon"[
-                        bgroup "Size 10"
-                                [
-                                        -- bench "10 Points" $ nf (testPoly 10 boundBox tenPoly) [Nothing]
-                                 bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
-                                , bench "1000 Points" $ nf (testPoly 1000 boundBox tenPoly) [Nothing]
-                                , bench "10000 Points" $ nf (testPoly 10000 boundBox tenPoly) [Nothing]
-                                ]
-                        , bgroup "Size 100"
-                                [ bench "10 Points" $ nf (testPoly 10 boundBox oneHundredPoly) [Nothing]
-                                , bench "100 Points" $ nf (testPoly 100 boundBox oneHundredPoly) [Nothing]
-                                , bench "1000 Points" $ nf (testPoly 1000 boundBox oneHundredPoly) [Nothing]
-                                , bench "10000 Points" $ nf (testPoly 10000 boundBox oneHundredPoly) [Nothing]
-                                ]
-                        , bgroup "Size 1000"
-                                [ bench "10 Points" $ nf (testPoly 10 boundBox oneThousandPoly) [Nothing]
-                                , bench "100 Points" $ nf (testPoly 100 boundBox oneThousandPoly) [Nothing]
-                                , bench "1000 Points" $ nf (testPoly 1000 boundBox oneThousandPoly) [Nothing]
-                                , bench "10000 Points" $ nf (testPoly 10000 boundBox oneThousandPoly) [Nothing]
-                                ]
-                        , bgroup "Size 10000"
-                                [ bench "10 Points" $ nf (testPoly 10 boundBox tenThousandPoly) [Nothing]
-                                , bench "100 Points" $ nf (testPoly 100 boundBox tenThousandPoly) [Nothing]
-                                , bench "1000 Points" $ nf (testPoly 1000 boundBox tenThousandPoly) [Nothing]
-                                , bench "10000 Points" $ nf (testPoly 10000 boundBox tenThousandPoly) [Nothing]
-                                ]
-                ],bgroup "Clip MultiPolygon "[
-                        bgroup "Size 10"
-                                [ bench "10 Points" $ nf (testPolys 10 boundBox multiTenPoly) []
-                                , bench "100 Points" $ nf (testPolys 100 boundBox multiTenPoly) []
-                                , bench "1000 Points" $ nf (testPolys 1000 boundBox multiTenPoly) []
-                                , bench "10000 Points" $ nf (testPolys 10000 boundBox multiTenPoly) []
-                                ]
-                        , bgroup "Size 100"
-                                [ bench "10 Points" $ nf (testPolys 10 boundBox multiOneHundredPoly) []
-                                , bench "100 Points" $ nf (testPolys 100 boundBox multiOneHundredPoly) []
-                                , bench "1000 Points" $ nf (testPolys 1000 boundBox multiOneHundredPoly) []
-                                , bench "10000 Points" $ nf (testPolys 10000 boundBox multiOneHundredPoly) []
-                                ]
-                        , bgroup "Size 1000"
-                                [ bench "10 Points" $ nf (testPolys 10 boundBox multiOneThousandPoly) []
-                                , bench "100 Points" $ nf (testPolys 100 boundBox multiOneThousandPoly) []
-                                , bench "1000 Points" $ nf (testPolys 1000 boundBox multiOneThousandPoly) []
-                                , bench "10000 Points" $ nf (testPolys 10000 boundBox multiOneThousandPoly) []
-                                ]
-                        , bgroup "Size 10000"
-                                [ bench "10 Points" $ nf (testPolys 10 boundBox multiTenThousandPoly) []
-                                , bench "100 Points" $ nf (testPolys 100 boundBox multiTenThousandPoly) []
-                                , bench "1000 Points" $ nf (testPolys 1000 boundBox multiTenThousandPoly) []
-                                , bench "10000 Points" $ nf (testPolys 10000 boundBox multiTenThousandPoly) []
-                                ]
-                ]
-                ]
+  let tenLineString = simpleLineString (50 :: Double) (10 :: Double)
+      oneHundredLineString = simpleLineString (50 :: Double) (100 :: Double)
+      tenLineStrings = Vector.fromList(generateArrayLineString 1 tenLineString [])
+      oneHundredLineStrings = Vector.fromList(generateArrayLineString 1 oneHundredLineString [])
+      tenPoly = simplePoly (50 :: Double) (10 :: Double)
+      oneHundredPoly = simplePoly (50 :: Double) (100 :: Double)
+      oneThousandPoly = simplePoly (50 :: Double) (1000 :: Double)
+      tenThousandPoly = simplePoly (50 :: Double) (10000 :: Double)
+      multiTenPoly = Vector.fromList(generateArrayPoly 1 tenPoly [])
+      multiOneHundredPoly = Vector.fromList(generateArrayPoly 1 oneHundredPoly [])
+      multiOneThousandPoly = Vector.fromList(generateArrayPoly 1 oneThousandPoly [])
+      multiTenThousandPoly = Vector.fromList(generateArrayPoly 1 tenThousandPoly [])
+  defaultMain
+    [ bgroup "writeFiles"
+      [ bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
+      ]
+    , bgroup "Clip LineString"
+      [ bgroup "Quick Clip"
+        [ bgroup "Size 10"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesQc 100 boundBox tenLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesQc 1000 boundBox tenLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesQc 10000 boundBox tenLineStrings) []
+          ]
+        , bgroup "Size 100"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesQc 100 boundBox oneHundredLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesQc 1000 boundBox oneHundredLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesQc 10000 boundBox oneHundredLineStrings) []
+          ]
+        ]
+      , bgroup "Liang Barsky Clip"
+        [ bgroup "Size 10"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesLb 100 boundBox tenLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesLb 1000 boundBox tenLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesLb 10000 boundBox tenLineStrings) []
+          ]
+        , bgroup "Size 100"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesLb 100 boundBox oneHundredLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesLb 1000 boundBox oneHundredLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesLb 10000 boundBox oneHundredLineStrings) []
+          ]
+        ]
+      , bgroup "Cohen Sutherland Clip"
+        [ bgroup "Size 10"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesCs 100 boundBox tenLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesCs 1000 boundBox tenLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesCs 10000 boundBox tenLineStrings) []
+          ]
+        , bgroup "Size 100"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesCs 100 boundBox oneHundredLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesCs 1000 boundBox oneHundredLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesCs 10000 boundBox oneHundredLineStrings) []
+          ]
+        ]
+      ]
+    , bgroup "Clip Polygon"
+      [ bgroup "Size 10"
+        [ bench "100 Points" $ nf (testPoly 100 boundBox tenPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly 1000 boundBox tenPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly 10000 boundBox tenPoly) [Nothing]
+        ]
+      , bgroup "Size 100"
+        [ bench "10 Points" $ nf (testPoly 10 boundBox oneHundredPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly 100 boundBox oneHundredPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly 1000 boundBox oneHundredPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly 10000 boundBox oneHundredPoly) [Nothing]
+      ]
+      , bgroup "Size 1000"
+        [ bench "10 Points" $ nf (testPoly 10 boundBox oneThousandPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly 100 boundBox oneThousandPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly 1000 boundBox oneThousandPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly 10000 boundBox oneThousandPoly) [Nothing]
+        ]
+      , bgroup "Size 10000"
+        [ bench "10 Points" $ nf (testPoly 10 boundBox tenThousandPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly 100 boundBox tenThousandPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly 1000 boundBox tenThousandPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly 10000 boundBox tenThousandPoly) [Nothing]
+        ]
+      ],
+      bgroup "Clip MultiPolygon "
+        [ bgroup "Size 10"
+          [ bench "10 Points" $ nf (testPolys 10 boundBox multiTenPoly) []
+          , bench "100 Points" $ nf (testPolys 100 boundBox multiTenPoly) []
+          , bench "1000 Points" $ nf (testPolys 1000 boundBox multiTenPoly) []
+          , bench "10000 Points" $ nf (testPolys 10000 boundBox multiTenPoly) []
+          ]
+        , bgroup "Size 100"
+          [ bench "10 Points" $ nf (testPolys 10 boundBox multiOneHundredPoly) []
+          , bench "100 Points" $ nf (testPolys 100 boundBox multiOneHundredPoly) []
+          , bench "1000 Points" $ nf (testPolys 1000 boundBox multiOneHundredPoly) []
+          , bench "10000 Points" $ nf (testPolys 10000 boundBox multiOneHundredPoly) []
+        ]
+        , bgroup "Size 1000"
+          [ bench "10 Points" $ nf (testPolys 10 boundBox multiOneThousandPoly) []
+          , bench "100 Points" $ nf (testPolys 100 boundBox multiOneThousandPoly) []
+          , bench "1000 Points" $ nf (testPolys 1000 boundBox multiOneThousandPoly) []
+          , bench "10000 Points" $ nf (testPolys 10000 boundBox multiOneThousandPoly) []
+        ]
+        , bgroup "Size 10000"
+          [ bench "10 Points" $ nf (testPolys 10 boundBox multiTenThousandPoly) []
+          , bench "100 Points" $ nf (testPolys 100 boundBox multiTenThousandPoly) []
+          , bench "1000 Points" $ nf (testPolys 1000 boundBox multiTenThousandPoly) []
+          , bench "10000 Points" $ nf (testPolys 10000 boundBox multiTenThousandPoly) []
+        ]
+      ]
+    ]
 
+simplePoly :: (Floating a, RealFrac a) => a -> a -> VectorTile.Polygon
+simplePoly radius total = VectorTile.Polygon (VectorStorable.fromList (getPoints radius total)) (Vector.fromList [])
+
+simpleLineString :: (Floating a, RealFrac a) => a -> a -> VectorTile.LineString
+simpleLineString radius total = VectorTile.LineString (VectorStorable.fromList (getPoints radius total))
 
 testPoly :: Integer -> TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> [Maybe VectorTile.Polygon] -> [Maybe VectorTile.Polygon]
 testPoly 0 _ _ d = d
 testPoly a b c d = d ++ testPoly (a - 1) b c [Clip.clipPolygon b c]
+
+testLineString :: (TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString) -> Integer -> TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> [Vector.Vector VectorTile.LineString] -> [Vector.Vector VectorTile.LineString]
+testLineString _ 0 _ _ d    = d
+testLineString algo a b c d = d ++ testLineString algo (a - 1) b c [algo b c]
 
 testPolys :: Integer -> TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.Polygon -> [Vector.Vector VectorTile.Polygon] -> [Vector.Vector VectorTile.Polygon]
 testPolys 0 _ _ d = d
@@ -97,8 +146,9 @@ generateArrayPoly :: Integer -> VectorTile.Polygon -> [VectorTile.Polygon] -> [V
 generateArrayPoly 0 _ c = c
 generateArrayPoly a b c = c ++ generateArrayPoly (a - 1) b [b]
 
-simplePoly :: (Floating a, RealFrac a) => a -> a -> VectorTile.Polygon
-simplePoly radius total = VectorTile.Polygon (VectorStorable.fromList (getPoints radius total)) (Vector.fromList [])
+generateArrayLineString :: Integer -> VectorTile.LineString -> [VectorTile.LineString] -> [VectorTile.LineString]
+generateArrayLineString 0 _ c = c
+generateArrayLineString a b c = c ++ generateArrayLineString (a - 1) b [b]
 
 getPoints :: (RealFrac a, Floating a) => a -> a -> [VectorTile.Point]
 getPoints radius total = getPoints' radius total total []
