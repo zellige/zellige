@@ -38,12 +38,20 @@ clipOrDiscard bb line acc =
     Nothing          -> acc
     Just clippedLine -> VectorStorable.cons clippedLine acc
 
+data Line = Line
+  { _x1 :: !Double
+  , _y1 :: !Double
+  , _x2 :: !Double
+  , _y2 :: !Double
+  } deriving (Show, Eq)
+
+storableLineToLine (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = Line (fromIntegral x1 :: Double) (fromIntegral y1 :: Double) (fromIntegral x2 :: Double) (fromIntegral y2 :: Double)
+
 foldLine :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> Maybe TypesGeography.StorableLine
 foldLine bbox line = do
-  checkAllCoordinates <- checkX (False, bbox, lineToDoublePts line) >>= checkY >>= checkX1 >>= checkY1 >>= checkX2 >>= checkY2
+  checkAllCoordinates <- checkX (False, bbox, storableLineToLine line) >>= checkY >>= checkX1 >>= checkY1 >>= checkX2 >>= checkY2
   reflectResult checkAllCoordinates
   where
-    lineToDoublePts (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = ((fromIntegral x1 :: Double, fromIntegral y1 :: Double), (fromIntegral x2 :: Double, fromIntegral y2 :: Double))
     reflectResult (reflect, _, ((x1, y1), (x2, y2))) =
       if reflect then
         Just $ TypesGeography.StorableLine (VectorTile.Point (round x1) (round $ (-1) * y1)) (VectorTile.Point (round x2) (round $ (-1) * y2))
@@ -59,8 +67,8 @@ foldLine bbox line = do
 --   x1 = t;
 --   y1 = u;
 --} else if (x0 > xR || x1 < xL) return;
-checkX :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkX (reflect, bbox@(TypesGeography.BoundingBox minX _ maxX _), line@((x1, y1), (x2, y2)))
+checkX :: (Bool, TypesGeography.BoundingBox, Line) -> Maybe (Bool, TypesGeography.BoundingBox, Line)
+checkX (reflect, bbox@(TypesGeography.BoundingBox minX _ maxX _), line@(x1 y1 x2 y2))
   | x1 > x2 =
     if x2 > maxX || x1 < minX then
       Nothing
@@ -81,8 +89,8 @@ checkX (reflect, bbox@(TypesGeography.BoundingBox minX _ maxX _), line@((x1, y1)
 --   if (y0 > yT || y1 < yB) return;
 --   reflect = FALSE;
 -- }
-checkY :: (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double))) -> Maybe (Bool, TypesGeography.BoundingBox, ((Double, Double), (Double, Double)))
-checkY (_, bbox@(TypesGeography.BoundingBox minX minY maxX maxY), line@((x1, y1), (x2, y2)))
+checkY :: (Bool, TypesGeography.BoundingBox, Line) -> Maybe (Bool, TypesGeography.BoundingBox, Line)
+checkY (_, bbox@(TypesGeography.BoundingBox minX minY maxX maxY), line@(x1 y1 x2 y2))
   | y1 > y2 =
     if y2 > maxY || y1 < minY then
       Nothing
