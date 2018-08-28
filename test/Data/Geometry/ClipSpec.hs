@@ -93,14 +93,8 @@ testClipLine =
       actual `shouldBe` resultLines
     it "QuickClip returns clipped line" $ do
       let
-        -- Assume slightly different due to rounding.
-        resultLinesForQc = Vector.fromList
-          [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (45, 50), (50, 60)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
-          ]
         actual = GeometryClip.clipLinesQc lineClipPts linesTst
-      actual `shouldBe` resultLinesForQc
+      actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =
