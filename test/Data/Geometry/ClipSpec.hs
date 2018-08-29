@@ -66,6 +66,8 @@ linesTst = Vector.fromList
   [ VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (0, 100)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(5, 5), (45, 50), (90, 140)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (10, 10)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (0, 10)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (60, 60)])]
 
 lineClipPts :: GeometryGeography.BoundingBoxPts
@@ -82,6 +84,8 @@ testClipLine =
   describe "simple line test" $ do
     let resultLines = Vector.fromList
           [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
+          , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (10, 18)])
+          , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (10, 10)])
           , VectorTile.LineString (SpecHelper.tupleToPts [(10, 11), (45, 50), (50, 60)])
           , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
           ]
