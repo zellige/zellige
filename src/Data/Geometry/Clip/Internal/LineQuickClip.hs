@@ -3,7 +3,7 @@
 -- QuickClip line clipping
 -- https://ieeexplore.ieee.org/document/694214/
 
-module Data.Geometry.Clip.Internal.QuickClipLine (
+module Data.Geometry.Clip.Internal.LineQuickClip (
   clipLinesQc
 ) where
 
@@ -27,10 +27,7 @@ maybeAddLine acc pts =
       Just res -> Vector.cons res acc
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> VectorTile.LineString -> VectorStorable.Vector VectorTile.Point
-lineToClippedPoints bb lineString = foldPointsToLine $ VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines lineString)
-
-foldPointsToLine :: VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
-foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLine p1 p2) -> VectorStorable.fromList [p1, p2])) mempty
+lineToClippedPoints bb lineString = ClipLine.foldPointsToLine $ VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines lineString)
 
 clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine
 clipOrDiscard bb line acc =

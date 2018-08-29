@@ -6,7 +6,7 @@
 -- TODO Change to linear ring for polygons.
 -- TODO Change to valid segment (non empty vector?) for lines.
 
-module Data.Geometry.Clip.Internal.CohenSutherlandLine (
+module Data.Geometry.Clip.Internal.LineCohenSutherland (
   clipLinesCs
 ) where
 

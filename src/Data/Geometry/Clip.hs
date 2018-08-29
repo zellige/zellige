@@ -16,11 +16,11 @@ module Data.Geometry.Clip (
 
 import qualified Geography.VectorTile                            as VectorTile
 
-import           Data.Geometry.Clip.Internal.CohenSutherlandLine
-import           Data.Geometry.Clip.Internal.LiangBarskyLine
+import           Data.Geometry.Clip.Internal.LineCohenSutherland
+import           Data.Geometry.Clip.Internal.LineLiangBarsky
+import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
-import           Data.Geometry.Clip.Internal.QuickClipLine
 import           Data.Geometry.Types.Geography
 
 createBoundingBoxPts :: Word -> Int -> BoundingBoxPts

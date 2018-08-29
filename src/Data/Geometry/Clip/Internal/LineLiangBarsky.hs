@@ -3,7 +3,7 @@
 -- Liang Barsky Line Clipping Algorithm
 -- https://en.wikipedia.org/wiki/Liang%E2%80%93Barsky_algorithm
 
-module Data.Geometry.Clip.Internal.LiangBarskyLine (
+module Data.Geometry.Clip.Internal.LineLiangBarsky (
   clipLinesLb
 ) where
 
@@ -27,10 +27,7 @@ maybeAddLine acc pts =
       Just res -> Vector.cons res acc
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> VectorTile.LineString -> VectorStorable.Vector VectorTile.Point
-lineToClippedPoints bb lineString = foldPointsToLine $ VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines lineString)
-
-foldPointsToLine :: VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
-foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLine p1 p2) -> VectorStorable.fromList [p1, p2])) mempty
+lineToClippedPoints bb lineString = ClipLine.foldPointsToLine $ VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines lineString)
 
 clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector TypesGeography.StorableLine
 clipOrDiscard bb line acc =

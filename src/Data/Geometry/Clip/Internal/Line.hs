@@ -26,3 +26,6 @@ segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start 
   where
     start = VectorStorable.head l
     second = VectorStorable.ifilter (\i _ -> odd i)
+
+foldPointsToLine :: VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
+foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLine p1 p2) -> VectorStorable.fromList [p1, p2])) mempty
