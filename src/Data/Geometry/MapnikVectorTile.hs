@@ -5,83 +5,83 @@
 module Data.Geometry.MapnikVectorTile where
 
 import qualified Control.Monad.ST                as ST
-import qualified Data.Aeson                      as A
-import qualified Data.ByteString                 as B
-import qualified Data.ByteString.Char8           as BS
-import qualified Data.ByteString.Lazy            as LBS
-import qualified Data.Foldable                   as DF
-import qualified Data.Geospatial                 as GJ
-import qualified Data.HashMap.Lazy               as HM
+import qualified Data.Aeson                      as Aeson
+import qualified Data.ByteString                 as ByteString
+import qualified Data.ByteString.Char8           as ByteStringChar8
+import qualified Data.ByteString.Lazy            as ByteStringLazy
+import qualified Data.Foldable                   as Foldable
+import qualified Data.Geospatial                 as Geospatial
+import qualified Data.HashMap.Lazy               as HashMapLazy
 import           Data.Monoid                     ((<>))
-import qualified Data.Text                       as DataText
-import qualified Data.Vector                     as DataVector
-import qualified Data.Vector.Storable            as DataVectorStorable
+import qualified Data.Text                       as Text
+import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
-import qualified Data.Geometry.Clip              as DataGeometryClip
-import qualified Data.Geometry.GeoJsonToMvt      as DataGeometryGeoJsonToMvt
-import qualified Data.Geometry.SphericalMercator as DGS
-import qualified Data.Geometry.Types.Config      as TypesConfig
-import qualified Data.Geometry.Types.LayerConfig as DGTL
-import qualified Data.Geometry.Types.MvtFeatures as DataGeometryTypesMvtFeatures
+import qualified Data.Geometry.Clip              as Clip
+import qualified Data.Geometry.GeoJsonToMvt      as GeoJsonToMvt
+import qualified Data.Geometry.SphericalMercator as SphericalMercator
+import qualified Data.Geometry.Types.Config      as Config
+import qualified Data.Geometry.Types.LayerConfig as LayerConfig
+import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
 
 -- Command line
 
-writeLayer :: DGTL.LayerConfig -> IO ()
+writeLayer :: LayerConfig.LayerConfig -> IO ()
 writeLayer lc = do
-    mvt <- geoJsonFileToMvt (DGTL._layerInput lc) (configFromLayerConfig lc)
-    B.writeFile (DGTL._layerOutput lc) (encodeMvt mvt)
+    mvt <- geoJsonFileToMvt (LayerConfig._layerInput lc) (configFromLayerConfig lc)
+    ByteString.writeFile (LayerConfig._layerOutput lc) (encodeMvt mvt)
 
-configFromLayerConfig :: DGTL.LayerConfig -> TypesConfig.Config
-configFromLayerConfig DGTL.LayerConfig{..}  = TypesConfig.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
+configFromLayerConfig :: LayerConfig.LayerConfig -> Config.Config
+configFromLayerConfig LayerConfig.LayerConfig{..}  = Config.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
 
-geoJsonFileToMvt :: FilePath -> TypesConfig.Config -> IO VectorTile.VectorTile
+geoJsonFileToMvt :: FilePath -> Config.Config -> IO VectorTile.VectorTile
 geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
 
-readGeoJson :: FilePath -> IO (GJ.GeoFeatureCollection A.Value)
+readGeoJson :: FilePath -> IO (Geospatial.GeoFeatureCollection Aeson.Value)
 readGeoJson geoJsonFile = do
-    bs <- LBS.readFile geoJsonFile
-    let ebs         = A.eitherDecode' bs :: Either String (GJ.GeoFeatureCollection A.Value)
+    bs <- ByteStringLazy.readFile geoJsonFile
+    let ebs         = Aeson.eitherDecode' bs :: Either String (Geospatial.GeoFeatureCollection Aeson.Value)
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
 readMvt :: FilePath -> IO VectorTile.VectorTile
 readMvt filePath = do
-    b <- B.readFile filePath
+    b <- ByteString.readFile filePath
     let t = VectorTile.tile b
-        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> DataText.unpack a)
+        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> Text.unpack a)
     pure (either rawDecodeError id t)
 
 -- Lib
 
-encodeMvt :: VectorTile.VectorTile -> BS.ByteString
+encodeMvt :: VectorTile.VectorTile -> ByteStringChar8.ByteString
 encodeMvt = VectorTile.untile
 
-createMvt :: TypesConfig.Config -> GJ.GeoFeatureCollection A.Value -> IO VectorTile.VectorTile
-createMvt TypesConfig.Config{..} geoJson = do
-    let zConfig         = TypesConfig.ZoomConfig _extents _quantizePixels (DGS.boundingBox _gtc) _simplify
-        clipBb          = DataGeometryClip.createBoundingBoxPts _buffer _extents
-        DataGeometryTypesMvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
-        cP = DF.foldl' (accNewGeom' (DataGeometryClip.clipPoints clipBb)) mempty mvtPoints
-        cL = DF.foldl' (accNewGeom'' (DataGeometryClip.clipLinesQc clipBb)) mempty mvtLines
-        cO = DF.foldl' (accNewGeom'' (DataGeometryClip.clipPolygons clipBb )) mempty mvtPolygons
+createMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
+createMvt Config.Config{..} geoJson = do
+    let zConfig         = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
+        clipBb          = Clip.createBoundingBoxPts _buffer _extents
+        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
+        cP = Foldable.foldl' (accNewGeom' (Clip.clipPoints clipBb)) mempty mvtPoints
+        cL = Foldable.foldl' (accNewGeom'' (Clip.clipLinesQc clipBb)) mempty mvtLines
+        cO = Foldable.foldl' (accNewGeom'' (Clip.clipPolygons clipBb )) mempty mvtPolygons
         layer = VectorTile.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
-    pure . VectorTile.VectorTile $ HM.fromList [(_name, layer)]
+    pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 
-accNewGeom' :: (DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point) -> DataVector.Vector (VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point)) -> VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point) -> DataVector.Vector (VectorTile.Feature (DataVectorStorable.Vector VectorTile.Point))
-accNewGeom' conversionFunction acc startGeom = if DataVectorStorable.null clippedGeoms then acc else DataVector.cons newGeom acc
+accNewGeom' :: (VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point)) -> VectorTile.Feature (VectorStorable.Vector VectorTile.Point) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
+accNewGeom' conversionFunction acc startGeom = if VectorStorable.null clippedGeoms then acc else Vector.cons newGeom acc
     where
         clippedGeoms = conversionFunction $ VectorTile._geometries startGeom
         newGeom = startGeom { VectorTile._geometries = clippedGeoms }
 
-accNewGeom'' :: (DataVector.Vector a -> DataVector.Vector a) -> DataVector.Vector (VectorTile.Feature (DataVector.Vector a)) -> VectorTile.Feature (DataVector.Vector a) -> DataVector.Vector (VectorTile.Feature (DataVector.Vector a))
-accNewGeom'' conversionFunction acc startGeom = if DataVector.null clippedGeoms then acc else DataVector.cons newGeom acc
+accNewGeom'' :: (Vector.Vector a -> Vector.Vector a) -> Vector.Vector (VectorTile.Feature (Vector.Vector a)) -> VectorTile.Feature (Vector.Vector a) -> Vector.Vector (VectorTile.Feature (Vector.Vector a))
+accNewGeom'' conversionFunction acc startGeom = if Vector.null clippedGeoms then acc else Vector.cons newGeom acc
     where
         clippedGeoms = conversionFunction $ VectorTile._geometries startGeom
         newGeom = startGeom { VectorTile._geometries = clippedGeoms }
 
-getFeatures :: TypesConfig.ZoomConfig -> GJ.GeoFeatureCollection A.Value -> ST.ST s DataGeometryTypesMvtFeatures.MvtFeatures
-getFeatures extentsQBb = DataGeometryGeoJsonToMvt.geoJsonFeaturesToMvtFeatures extentsQBb . GJ._geofeatures
+getFeatures :: Config.ZoomConfig -> Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
+getFeatures extentsQBb = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures extentsQBb . Geospatial._geofeatures
