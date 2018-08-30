@@ -70,7 +70,6 @@ createMvt Config.Config{..} geoJson = do
         layer = VectorTile.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
-
 accNewGeom' :: (VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point)) -> VectorTile.Feature (VectorStorable.Vector VectorTile.Point) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
 accNewGeom' conversionFunction acc startGeom = if VectorStorable.null clippedGeoms then acc else Vector.cons newGeom acc
     where
