@@ -5,8 +5,11 @@
 
 module Data.Geometry.Clip.Internal.LineQuickClip (
   clipLinesQc
+, clipLineQc'
+, clipLinesQc'
 ) where
 
+import qualified Data.Geospatial                  as Geospatial
 import qualified Data.Vector                      as Vector
 import qualified Data.Vector.Storable             as VectorStorable
 import qualified Geography.VectorTile             as VectorTile
@@ -16,6 +19,12 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 
 data Edge = LeftEdge | RightEdge | BottomEdge | TopEdge
   deriving (Show, Eq, Enum)
+
+clipLineQc' :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Vector.Vector Geospatial.GeoPoint
+clipLineQc' bbox line = undefined
+
+clipLinesQc' :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Vector.Vector Geospatial.GeoPoint
+clipLinesQc' bbox ml = undefined
 
 clipLinesQc :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
 clipLinesQc bb = Vector.foldl' (\acc lineString -> maybeAddLine acc (lineToClippedPoints (TypesGeography.bboxPtsToBbox bb) lineString)) Vector.empty
