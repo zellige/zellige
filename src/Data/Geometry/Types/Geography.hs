@@ -98,6 +98,12 @@ word8ToOutCode w =
       4 -> Bottom
       _ -> Top
 
+instance Storable (Double, Double) where
+  sizeOf (a, b) = sizeOf a + sizeOf b
+  alignment (a, b) = alignment a + alignment b
+  peek p = (,) <$> peekByteOff p 0 <*> peekByteOff p 8
+  poke p (a, b) = pokeByteOff p 0 a *> pokeByteOff p 8 b
+
 data ClipPoint = ClipPoint
  { _clipPointCode  :: !OutCode
  , _clipPointPoint :: !VectorTile.Point

@@ -13,16 +13,16 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-latLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> TypesGeography.LatLon -> VectorTile.Point
-latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) (TypesGeography.LatLon lat lon) = xy
+latLonToXYInTile :: Int -> TypesGeography.BoundingBox -> TypesGeography.LatLon -> VectorTile.Point
+latLonToXYInTile extents (TypesGeography.BoundingBox minX minY maxX maxY) (TypesGeography.LatLon lat lon) = VectorTile.Point x y
     where
-      xy = if quantizePixels > 1 then VectorTile.Point (quantize quantizePixels x) (quantize quantizePixels y) else VectorTile.Point x y
       x = round ((lonToX lat - minX) * dExtents / spanX)
       y = round ((latToY lon - minY) * dExtents / spanY)
       dExtents = fromIntegral extents
       spanX = maxX - minX
       spanY = maxY - minY
 
+-- xy = if quantizePixels > 1 then VectorTile.Point (quantize quantizePixels x) (quantize quantizePixels y) else VectorTile.Point x y
 quantize :: Int -> Int -> Int
 quantize pixels i = (i `quot` pixels) * pixels
 
