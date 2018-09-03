@@ -99,8 +99,8 @@ word8ToOutCode w =
       _ -> Top
 
 instance Storable (Double, Double) where
-  sizeOf (a, b) = sizeOf a + sizeOf b
-  alignment (a, b) = alignment a + alignment b
+  sizeOf _ = 8 * 2
+  alignment _ = 8
   peek p = (,) <$> peekByteOff p 0 <*> peekByteOff p 8
   poke p (a, b) = pokeByteOff p 0 a *> pokeByteOff p 8 b
 
@@ -116,7 +116,7 @@ data ClipLine = ClipLine
 
 instance VectorStorable.Storable ClipLine where
   sizeOf _ = (16 * 2) + (1 * 2)
-  alignment _ = 8 * 2 + 2
+  alignment _ = 8 + 2
   peek p = do
     p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
@@ -132,8 +132,8 @@ data StorableLine = StorableLine
   } deriving (Eq, Show)
 
 instance VectorStorable.Storable StorableLine where
-  sizeOf _ = 16 * 2
-  alignment _ = 8 * 2
+  sizeOf _ = 8 * 2 * 2
+  alignment _ = 8
   peek p = do
     p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
