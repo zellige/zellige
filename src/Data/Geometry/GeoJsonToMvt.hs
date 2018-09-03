@@ -23,7 +23,7 @@ import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> [Geospatial.GeoFeature Aeson.Value] -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
 geoJsonFeaturesToMvtFeatures zConfig features = do
   ops <- STRef.newSTRef 0
   Foldable.foldMap (convertFeature zConfig ops) features

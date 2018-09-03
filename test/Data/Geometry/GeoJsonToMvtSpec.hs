@@ -58,7 +58,7 @@ testPoints =
           point = Geospatial.Point pt1
           pts = tupleToPts [(840,2194)]
           result = MvtFeatures (Vector.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
       actual `shouldBe` result
 
 testLines :: Spec
@@ -70,7 +70,7 @@ testLines =
           line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) []
           pts = tupleToPts [(840,2194),(23,2098)]
           result = MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
       actual `shouldBe` result
 
 -- Add test when all points are removed from polygon.
@@ -84,7 +84,7 @@ testPolygons =
           polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]
           pts = tupleToPts [(840,2194), (23,2098), (178,1162), (840,2194)]
           result = MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature]
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
       actual `shouldBe` result
 
 testCounter :: Spec
@@ -95,5 +95,5 @@ testCounter =
         point = Geospatial.Point pt1
         pts = tupleToPts [(840,2194)]
         result = MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
-        actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb [feature, feature]
+        actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature, feature])
     actual `shouldBe` result
