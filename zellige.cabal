@@ -21,6 +21,7 @@ library
                      , Data.Geometry.Clip.Internal.LineCohenSutherland
                      , Data.Geometry.Clip.Internal.LineLiangBarsky
                      , Data.Geometry.Clip.Internal.LineQuickClip
+                     , Data.Geometry.Clip.Internal.LineNichollLeeNicholl
                      , Data.Geometry.Clip.Internal.Polygon
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile

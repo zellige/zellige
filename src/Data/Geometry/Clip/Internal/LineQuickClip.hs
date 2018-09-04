@@ -14,9 +14,6 @@ import qualified Geography.VectorTile             as VectorTile
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
-data Edge = LeftEdge | RightEdge | BottomEdge | TopEdge
-  deriving (Show, Eq, Enum)
-
 clipLinesQc :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
 clipLinesQc bb = Vector.foldl' (\acc lineString -> maybeAddLine acc (lineToClippedPoints (TypesGeography.bboxPtsToBbox bb) lineString)) Vector.empty
 

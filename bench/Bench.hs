@@ -58,6 +58,18 @@ main = do
           , bench "10000 Points" $ nf (testLineString Clip.clipLinesLb 10000 boundBox oneHundredLineStrings) []
           ]
         ]
+      , bgroup "Nicholl-Lee-Nicholl Clip"
+        [ bgroup "Size 10"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesNLN 100 boundBox tenLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesNLN 1000 boundBox tenLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesNLN 10000 boundBox tenLineStrings) []
+          ]
+        , bgroup "Size 100"
+          [ bench "100 Points" $ nf (testLineString Clip.clipLinesNLN 100 boundBox oneHundredLineStrings) []
+          , bench "1000 Points" $ nf (testLineString Clip.clipLinesNLN 1000 boundBox oneHundredLineStrings) []
+          , bench "10000 Points" $ nf (testLineString Clip.clipLinesNLN 10000 boundBox oneHundredLineStrings) []
+          ]
+        ]
       , bgroup "Cohen Sutherland Clip"
         [ bgroup "Size 10"
           [ bench "100 Points" $ nf (testLineString Clip.clipLinesCs 100 boundBox tenLineStrings) []

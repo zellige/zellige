@@ -99,6 +99,10 @@ testClipLine =
       let
         actual = GeometryClip.clipLinesQc lineClipPts linesTst
       actual `shouldBe` resultLines
+    it "Nicholl-Lee-Nicholl returns clipped line" $ do
+      let
+        actual = GeometryClip.clipLinesNLN lineClipPts linesTst
+      actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =
