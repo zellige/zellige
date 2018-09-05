@@ -15,9 +15,7 @@ import qualified Data.Vector                     as Vector
 import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
-import qualified Data.Geometry.SphericalMercator as SphericalMercator
 import qualified Data.Geometry.Types.Config      as TypesConfig
-import qualified Data.Geometry.Types.Geography   as TypesGeography
 import qualified Data.Geometry.Types.MvtFeatures as TypesMvtFeatures
 import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
@@ -67,10 +65,10 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoPoint -> Vector.Vector VectorTile.Point
+convertPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoPoint -> VectorStorable.Vector VectorTile.Point
 convertPoint zConfig = coordsToPoints zConfig . Geospatial._unGeoPoint
 
-convertMultiPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPoint -> Vector.Vector VectorTile.Point
+convertMultiPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPoint -> VectorStorable.Vector VectorTile.Point
 convertMultiPoint zConfig = Foldable.foldMap (convertPoint zConfig) . Geospatial.splitGeoMultiPoint
 
 -- Lines
@@ -115,6 +113,6 @@ convertMultiPolygon zConfig = Foldable.foldMap (convertPolygon zConfig) . Geospa
 
 -- Helpers
 
-coordsToPoints :: TypesConfig.ZoomConfig -> Geospatial.GeoPositionWithoutCRS -> Vector.Vector VectorTile.Point
+coordsToPoints :: TypesConfig.ZoomConfig -> Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
 coordsToPoints _ _ = undefined
 
