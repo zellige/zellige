@@ -38,8 +38,18 @@ data BoundingBoxPts = BoundingBoxPts
   , _bbMaxPts :: VectorTile.Point
   } deriving (Show, Eq)
 
+data BoundingBoxRect = BoundingBoxRect
+  { _left   :: !Int
+  , _top    :: !Int
+  , _right  :: !Int
+  , _bottom :: !Int
+  } deriving (Show, Eq)
+
 bboxPtsToBbox :: BoundingBoxPts -> BoundingBox
 bboxPtsToBbox (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)) = BoundingBox (fromIntegral minX) (fromIntegral minY) (fromIntegral maxX) (fromIntegral maxY)
+
+bboxPtsToBboxRect :: BoundingBoxPts -> BoundingBoxRect
+bboxPtsToBboxRect (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)) = BoundingBoxRect minX minY maxX maxY
 
 mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector StorableLine
 mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (VectorTile.Point x2 y2)} = pointsToLines $ VectorStorable.fromList [VectorTile.Point x1 y1, VectorTile.Point x2 y1, VectorTile.Point x2 y2, VectorTile.Point x1 y2]

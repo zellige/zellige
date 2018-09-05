@@ -7,56 +7,55 @@ clipPolygon
 , clipPolygons
 ) where
 
-import qualified Data.Vector                   as DataVector
-import qualified Data.Vector.Storable          as DataVectorStorable
+import qualified Data.Vector                   as Vector
+import qualified Data.Vector.Storable          as VectorStorable
 import qualified Geography.VectorTile          as VectorTile
-import qualified Geography.VectorTile          as VG
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
-clipPolygons :: TypesGeography.BoundingBoxPts -> DataVector.Vector VectorTile.Polygon -> DataVector.Vector VectorTile.Polygon
-clipPolygons bb = DataVector.foldl' addPoly mempty
+clipPolygons :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.Polygon -> Vector.Vector VectorTile.Polygon
+clipPolygons bb = Vector.foldl' addPoly mempty
   where
     addPoly acc f =
       case clipPolygon bb f of
         Nothing -> acc
-        Just x  -> DataVector.cons x acc
+        Just x  -> Vector.cons x acc
 
 clipPolygon :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
-clipPolygon bb poly@(VectorTile.Polygon _ interiors) =
-  case clip bb poly of
+clipPolygon bb (VectorTile.Polygon polyPoints inner) =
+  case clipPolyPoints bb polyPoints of
     Nothing -> Nothing
-    Just x  -> Just (VectorTile.Polygon x (clipPolygons bb interiors))
+    Just x  -> Just (VectorTile.Polygon x (clipPolygons bb inner))
 
-clip :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe (DataVectorStorable.Vector VectorTile.Point)
-clip bb poly = checkLength (DataVectorStorable.uniq newClippedPoly)
+clipPolyPoints :: TypesGeography.BoundingBoxPts -> VectorStorable.Vector VectorTile.Point -> Maybe (VectorStorable.Vector VectorTile.Point)
+clipPolyPoints bb polyPoints = checkLength (VectorStorable.uniq newClippedPoly)
   where
-    newClippedPoly = DataVectorStorable.foldl' foo (VG.polyPoints poly) (TypesGeography.mkBBoxPoly bb)
+    newClippedPoly = VectorStorable.foldl' foo polyPoints (TypesGeography.mkBBoxPoly bb)
     checkLength newPoly =
-      if DataVectorStorable.length newPoly <= 2
+      if VectorStorable.length newPoly <= 2
         then Nothing
         else Just (closeIfNot newPoly)
 
-closeIfNot :: DataVectorStorable.Vector VG.Point -> DataVectorStorable.Vector VG.Point
+closeIfNot :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 closeIfNot poly =
   if lastPt /= firstPt
-    then DataVectorStorable.cons lastPt poly
+    then VectorStorable.cons lastPt poly
     else poly
   where
-    lastPt = DataVectorStorable.last poly
-    firstPt = DataVectorStorable.head poly
+    lastPt = VectorStorable.last poly
+    firstPt = VectorStorable.head poly
 
-foo :: DataVectorStorable.Vector VectorTile.Point -> TypesGeography.StorableLine -> DataVectorStorable.Vector VectorTile.Point
-foo polyPts bbLine = if DataVectorStorable.length polyPts <= 2 then DataVectorStorable.empty else newPoints
+foo :: VectorStorable.Vector VectorTile.Point -> TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
+foo polyPts bbLine = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
-    newPoints = DataVectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) DataVectorStorable.empty (TypesGeography.pointsToLines polyPts)
+    newPoints = VectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
-clipEdges :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> DataVectorStorable.Vector VectorTile.Point -> DataVectorStorable.Vector VectorTile.Point
+clipEdges :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 clipEdges polyLine@(TypesGeography.StorableLine s e) line acc =
   case (inside e line, inside s line) of
-    (True, True)   -> DataVectorStorable.cons e acc
-    (True, False)  -> DataVectorStorable.cons e $ DataVectorStorable.cons (lineIntersectPoint line polyLine) acc
-    (False, True)  -> DataVectorStorable.cons (lineIntersectPoint line polyLine) acc
+    (True, True)   -> VectorStorable.cons e acc
+    (True, False)  -> VectorStorable.cons e $ VectorStorable.cons (lineIntersectPoint line polyLine) acc
+    (False, True)  -> VectorStorable.cons (lineIntersectPoint line polyLine) acc
     (False, False) -> acc
 
 lineIntersectPoint :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorTile.Point

@@ -43,6 +43,21 @@ resultPoly = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) mempty
 polyWithInner :: VectorTile.Polygon
 polyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyPts) mempty])
 
+turningPointTestPolyPts :: [(Int, Int)]
+turningPointTestPolyPts = [(125,125),(175,175),(75,225),(25,175),(125,125)]
+
+turningPointTestPoly :: VectorTile.Polygon
+turningPointTestPoly = VectorTile.Polygon (SpecHelper.tupleToPts turningPointTestPolyPts) mempty
+
+turningPointTestClippedPolyPts :: [(Int, Int)]
+turningPointTestClippedPolyPts = [(125,125),(175,175),(124,200),(100,200),(100,137),(125,125)]
+
+turningPointTestClippedPoly :: VectorTile.Polygon
+turningPointTestClippedPoly = VectorTile.Polygon (SpecHelper.tupleToPts turningPointTestClippedPolyPts) mempty
+
+myClipPts :: GeometryGeography.BoundingBoxPts
+myClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 100 100) (VectorTile.Point 200 200)
+
 resultPolyWithInner :: VectorTile.Polygon
 resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
 
@@ -99,6 +114,10 @@ testClipLine =
       let
         actual = GeometryClip.clipLinesQc lineClipPts linesTst
       actual `shouldBe` resultLines
+    it "Nicholl-Lee-Nicholl returns clipped line" $ do
+      let
+        actual = GeometryClip.clipLinesNLN lineClipPts linesTst
+      actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =
@@ -113,6 +132,8 @@ testClipPolygon =
           resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
           result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
       actual `shouldBe` Just result
+    it "Turning point test" $
+      GeometryClip.clipPolygon myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
 
 testClipPolygonWithInterior :: Spec
 testClipPolygonWithInterior =
