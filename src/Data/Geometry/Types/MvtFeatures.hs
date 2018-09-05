@@ -21,12 +21,12 @@ import qualified Geography.VectorTile as VectorTile
 import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
-  { mvtPoints   :: Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
+  { mvtPoints   :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Point))
   , mvtLines    :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))
   , mvtPolygons :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon))
   } deriving (Eq, Show)
 
-mkPoint :: Word -> Aeson.Value -> VectorStorable.Vector VectorTile.Point -> MvtFeatures
+mkPoint :: Word -> Aeson.Value -> Vector.Vector VectorTile.Point -> MvtFeatures
 mkPoint fId props p = MvtFeatures (mkFeaturePts fId props p) (Vector.empty :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))) (Vector.empty :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon)))
 
 mkLineString :: Word -> Aeson.Value -> Vector.Vector VectorTile.LineString -> MvtFeatures
@@ -35,7 +35,7 @@ mkLineString fId props l = MvtFeatures mempty (mkFeature fId props l) mempty
 mkPolygon :: Word -> Aeson.Value -> Vector.Vector VectorTile.Polygon -> MvtFeatures
 mkPolygon x props o = MvtFeatures mempty mempty (mkFeature x props o)
 
-mkFeaturePts :: Word -> Aeson.Value -> VectorStorable.Vector g -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector g))
+mkFeaturePts :: Word -> Aeson.Value -> Vector.Vector g -> Vector.Vector (VectorTile.Feature (Vector.Vector g))
 mkFeaturePts fId props geoms = Vector.singleton $ VectorTile.Feature fId (convertProps props) geoms
 
 mkFeature :: Word -> Aeson.Value -> Vector.Vector g -> Vector.Vector (VectorTile.Feature (Vector.Vector g))

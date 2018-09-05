@@ -37,10 +37,7 @@ resolver: lts-11.22
 # will not be run. This is useful for tweaking upstream packages.
 packages:
 - '.'
-- location:
-    git: https://github.com/newmana/hs-geojson.git
-    commit: f2517d55531abcb6e01a844056162853ffca40c5
-  extra-dep: true
+- '../hs-geojson'
 
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)

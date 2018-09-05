@@ -5,7 +5,6 @@ module Data.Geometry.Clip.Internal.Point (
 
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.Vector                   as Vector
-import qualified Data.Vector.Storable          as VectorStorable
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
@@ -18,6 +17,7 @@ clipPoints bbox mp = Vector.filter (pointInsideExtent bbox) (Geospatial.splitGeo
 pointInsideExtent :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Bool
 pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) point = x >= minX && x <= maxX && y >= minY && y <= maxY
   where
-    (Geospatial.GeoPositionWithoutCRS pts) = Geospatial._unGeoPoint point
-    x = VectorStorable.unsafeIndex pts 0
-    y = VectorStorable.unsafeIndex pts 1
+    (x, y) = case Geospatial._unGeoPoint point of
+      (Geospatial.GeoPointXY (Geospatial.PointXY pX pY))         -> (pX, pY)
+      (Geospatial.GeoPointXYZ (Geospatial.PointXYZ pX pY _))     -> (pX, pY)
+      (Geospatial.GeoPointXYZM (Geospatial.PointXYZM pX pY _ _)) -> (pX, pY)

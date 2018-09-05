@@ -67,10 +67,10 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoPoint -> VectorStorable.Vector VectorTile.Point
+convertPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoPoint -> Vector.Vector VectorTile.Point
 convertPoint zConfig = coordsToPoints zConfig . Geospatial._unGeoPoint
 
-convertMultiPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPoint -> VectorStorable.Vector VectorTile.Point
+convertMultiPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPoint -> Vector.Vector VectorTile.Point
 convertMultiPoint zConfig = Foldable.foldMap (convertPoint zConfig) . Geospatial.splitGeoMultiPoint
 
 -- Lines
@@ -115,9 +115,6 @@ convertMultiPolygon zConfig = Foldable.foldMap (convertPolygon zConfig) . Geospa
 
 -- Helpers
 
-mkSegments :: VectorStorable.Vector Double -> VectorStorable.Vector (Double, Double)
-mkSegments = VectorStorable.zipWith (\a b -> (a, b)) <*> VectorStorable.tail
-
-coordsToPoints :: TypesConfig.ZoomConfig -> Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
-coordsToPoints (TypesConfig.ZoomConfig ext _ bb _) coords = VectorStorable.map (SphericalMercator.latLonToXYInTile ext bb . uncurry TypesGeography.LatLon) (mkSegments $ Geospatial.unGeoPosition coords)
+coordsToPoints :: TypesConfig.ZoomConfig -> Geospatial.GeoPositionWithoutCRS -> Vector.Vector VectorTile.Point
+coordsToPoints _ _ = undefined
 
