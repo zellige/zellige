@@ -7,6 +7,7 @@
 
 module Data.Geometry.Clip.Internal.LineNichollLeeNicholl (
   clipLinesNLN
+  , clipOrDiscard
 ) where
 
 import qualified Data.Vector                      as Vector

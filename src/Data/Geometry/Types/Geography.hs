@@ -39,11 +39,10 @@ data BoundingBoxPts = BoundingBoxPts
   } deriving (Show, Eq)
 
 data BoundingBoxRect = BoundingBoxRect
-  {
-    _left :: Int
-  , _top :: Int
-  , _right :: Int
-  , _bottom :: Int
+  { _left   :: !Int
+  , _top    :: !Int
+  , _right  :: !Int
+  , _bottom :: !Int
   } deriving (Show, Eq)
 
 bboxPtsToBbox :: BoundingBoxPts -> BoundingBox

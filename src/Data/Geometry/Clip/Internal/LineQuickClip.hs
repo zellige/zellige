@@ -5,6 +5,7 @@
 
 module Data.Geometry.Clip.Internal.LineQuickClip (
   clipLinesQc
+  , clipOrDiscard
 ) where
 
 import qualified Data.Vector                      as Vector

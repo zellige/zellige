@@ -22,15 +22,15 @@ clipPolygons bb = Vector.foldl' addPoly mempty
         Just x  -> Vector.cons x acc
 
 clipPolygon :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
-clipPolygon bb poly@(VectorTile.Polygon _ interiors) =
-  case clip bb poly of
+clipPolygon bb (VectorTile.Polygon polyPoints inner) =
+  case clipPolyPoints bb polyPoints of
     Nothing -> Nothing
-    Just x  -> Just (VectorTile.Polygon x (clipPolygons bb interiors))
+    Just x  -> Just (VectorTile.Polygon x (clipPolygons bb inner))
 
-clip :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe (VectorStorable.Vector VectorTile.Point)
-clip bb poly = checkLength (VectorStorable.uniq newClippedPoly)
+clipPolyPoints :: TypesGeography.BoundingBoxPts -> VectorStorable.Vector VectorTile.Point -> Maybe (VectorStorable.Vector VectorTile.Point)
+clipPolyPoints bb polyPoints = checkLength (VectorStorable.uniq newClippedPoly)
   where
-    newClippedPoly = VectorStorable.foldl' foo (VectorTile.polyPoints poly) (TypesGeography.mkBBoxPoly bb)
+    newClippedPoly = VectorStorable.foldl' foo polyPoints (TypesGeography.mkBBoxPoly bb)
     checkLength newPoly =
       if VectorStorable.length newPoly <= 2
         then Nothing
