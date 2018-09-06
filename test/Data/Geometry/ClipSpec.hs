@@ -122,18 +122,30 @@ testClipLine =
 testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
-    it "Returns clipped polygon" $
+    it "Simple - Returns clipped polygon" $
       GeometryClip.clipPolygon polyClipPts poly `shouldBe` Just resultPoly
-    it "Negative polygon" $ do
+    it "Simple - Negative polygon" $ do
       let actual = GeometryClip.clipPolygon brokenClipPts brokenPoly
       actual `shouldBe` Nothing
-    it "Maximum polygon" $ do
+    it "Simple - Maximum polygon" $ do
       let actual = GeometryClip.clipPolygon giantClipPts giantPoly
           resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
           result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
       actual `shouldBe` Just result
-    it "Turning point test" $
+    it "Simple - Turning point test" $
       GeometryClip.clipPolygon myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
+    it "QC - Returns clipped polygon" $
+      GeometryClip.clipPolygonNLN polyClipPts poly `shouldBe` Just resultPoly
+    it "QC - Negative polygon" $ do
+      let actual = GeometryClip.clipPolygonNLN brokenClipPts brokenPoly
+      actual `shouldBe` Nothing
+    it "QC - Maximum polygon" $ do
+      let actual = GeometryClip.clipPolygonNLN giantClipPts giantPoly
+          resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
+          result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
+      actual `shouldBe` Just result
+    it "QC - Turning point test" $
+      GeometryClip.clipPolygonNLN myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
 
 testClipPolygonWithInterior :: Spec
 testClipPolygonWithInterior =

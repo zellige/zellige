@@ -15,6 +15,8 @@ module Data.Geometry.Clip (
 , clipPolygons
 , clipPolygonQc
 , clipPolygonsQc
+, clipPolygonNLN
+, clipPolygonsNLN
 ) where
 
 import qualified Geography.VectorTile                            as VectorTile
@@ -26,6 +28,7 @@ import           Data.Geometry.Clip.Internal.LineNichollLeeNicholl
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
 import           Data.Geometry.Clip.Internal.PolygonQuickClip
+import           Data.Geometry.Clip.Internal.PolygonNichollLeeNicholl
 import           Data.Geometry.Types.Geography
 
 createBoundingBoxPts :: Word -> Int -> BoundingBoxPts

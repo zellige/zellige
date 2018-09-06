@@ -34,8 +34,9 @@ main = do
       [ bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox tenPoly) [Nothing]
       ]
     , bgroup "Quick Bench Poly"
-      [ bench "Sutherland" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneHundredPoly) []
-      , bench "Quick Clip Lines" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneHundredPoly) []
+      [ bench "Sutherland" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneThousandPoly) []
+      , bench "Quick Clip Lines" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) []
+      , bench "NLN Lines" $ nf (testPoly Clip.clipPolygonNLN 10000 boundBox oneThousandPoly) []
       ]
     , bgroup "Quick Bench LineString"
       [ bench "Cohen Sutherland" $ nf (testLineString Clip.clipLinesCs 10000 boundBox oneHundredLineStrings) []
@@ -95,27 +96,27 @@ main = do
       ]
     , bgroup "Clip Polygon"
       [ bgroup "Size 10"
-        [ bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox tenPoly) [Nothing]
-        , bench "1000 Points" $ nf (testPoly Clip.clipPolygon 1000 boundBox tenPoly) [Nothing]
-        , bench "10000 Points" $ nf (testPoly Clip.clipPolygon 10000 boundBox tenPoly) [Nothing]
+        [ bench "100 Points" $ nf (testPoly Clip.clipPolygonQc 100 boundBox tenPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly Clip.clipPolygonQc 1000 boundBox tenPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox tenPoly) [Nothing]
         ]
       , bgroup "Size 100"
-        [ bench "10 Points" $ nf (testPoly Clip.clipPolygon 10 boundBox oneHundredPoly) [Nothing]
-        , bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox oneHundredPoly) [Nothing]
-        , bench "1000 Points" $ nf (testPoly Clip.clipPolygon 1000 boundBox oneHundredPoly) [Nothing]
-        , bench "10000 Points" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneHundredPoly) [Nothing]
+        [ bench "10 Points" $ nf (testPoly Clip.clipPolygonQc 10 boundBox oneHundredPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly Clip.clipPolygonQc 100 boundBox oneHundredPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly Clip.clipPolygonQc 1000 boundBox oneHundredPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneHundredPoly) [Nothing]
       ]
       , bgroup "Size 1000"
-        [ bench "10 Points" $ nf (testPoly Clip.clipPolygon 10 boundBox oneThousandPoly) [Nothing]
-        , bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox oneThousandPoly) [Nothing]
-        , bench "1000 Points" $ nf (testPoly Clip.clipPolygon 1000 boundBox oneThousandPoly) [Nothing]
-        , bench "10000 Points" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneThousandPoly) [Nothing]
+        [ bench "10 Points" $ nf (testPoly Clip.clipPolygonQc 10 boundBox oneThousandPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly Clip.clipPolygonQc 100 boundBox oneThousandPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly Clip.clipPolygonQc 1000 boundBox oneThousandPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) [Nothing]
         ]
       , bgroup "Size 10000"
-        [ bench "10 Points" $ nf (testPoly Clip.clipPolygon 10 boundBox tenThousandPoly) [Nothing]
-        , bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox tenThousandPoly) [Nothing]
-        , bench "1000 Points" $ nf (testPoly Clip.clipPolygon 1000 boundBox tenThousandPoly) [Nothing]
-        , bench "10000 Points" $ nf (testPoly Clip.clipPolygon 10000 boundBox tenThousandPoly) [Nothing]
+        [ bench "10 Points" $ nf (testPoly Clip.clipPolygonQc 10 boundBox tenThousandPoly) [Nothing]
+        , bench "100 Points" $ nf (testPoly Clip.clipPolygonQc 100 boundBox tenThousandPoly) [Nothing]
+        , bench "1000 Points" $ nf (testPoly Clip.clipPolygonQc 1000 boundBox tenThousandPoly) [Nothing]
+        , bench "10000 Points" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox tenThousandPoly) [Nothing]
         ]
       ],
       bgroup "Clip MultiPolygon "

@@ -24,6 +24,7 @@ library
                      , Data.Geometry.Clip.Internal.LineNichollLeeNicholl
                      , Data.Geometry.Clip.Internal.Polygon
                      , Data.Geometry.Clip.Internal.PolygonQuickClip
+                     , Data.Geometry.Clip.Internal.PolygonNichollLeeNicholl
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.SphericalMercator

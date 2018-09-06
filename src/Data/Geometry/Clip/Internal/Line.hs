@@ -23,6 +23,9 @@ linesFromPoints :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vect
 linesFromPoints x = (VectorStorable.zipWith TypesGeography.StorableLine <*> VectorStorable.tail) (VectorStorable.convert x)
 {-# INLINE linesFromPoints #-}
 
+pointsFromLine :: TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
+pointsFromLine (TypesGeography.StorableLine p1 p2) = VectorStorable.fromList [p1, p2]
+
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
 segmentToLine :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start (second l) else mempty
