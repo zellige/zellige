@@ -28,7 +28,7 @@ douglasPeucker :: Double -> VectorStorable.Vector VectorTile.Point -> VectorStor
 douglasPeucker epsilon points
   | points == VectorStorable.empty = VectorStorable.empty
   | dmax > epsilon = douglasPeucker epsilon left VectorStorable.++ VectorStorable.tail (douglasPeucker epsilon right)
-  | otherwise = VectorStorable.snoc (VectorStorable.snoc VectorStorable.empty (VectorStorable.head points)) (VectorStorable.last points)
+  | otherwise = VectorStorable.snoc (VectorStorable.singleton (VectorStorable.head points)) (VectorStorable.last points)
   where
       (left, right) = (VectorStorable.take index points, VectorStorable.drop (index - 1) points)
       (dmax, index) = splitAtMaxDistance points
