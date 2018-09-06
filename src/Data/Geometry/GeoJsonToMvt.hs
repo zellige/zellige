@@ -21,31 +21,31 @@ import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
-geoJsonFeaturesToMvtFeatures zConfig layer features = do
+geoJsonFeaturesToMvtFeatures :: TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures layer features = do
   ops <- STRef.newSTRef 0
-  Foldable.foldMap (convertFeature zConfig layer ops) features
+  Foldable.foldMap (convertFeature layer ops) features
 
 -- Feature
 
-convertFeature :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesMvtFeatures.MvtFeatures
-convertFeature zConfig layer ops (Geospatial.GeoFeature _ geom props mfid) = do
+convertFeature :: TypesMvtFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
-  pure $ convertGeometry zConfig layer fid props geom
+  pure $ convertGeometry layer fid props geom
 
 -- Geometry
 
-convertGeometry :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures  -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
-convertGeometry zConfig layer@TypesMvtFeatures.MvtFeatures{..} fid props geom =
+convertGeometry :: TypesMvtFeatures.MvtFeatures  -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
+convertGeometry layer@TypesMvtFeatures.MvtFeatures{..} fid props geom =
   case geom of
     Geospatial.NoGeometry     -> mempty
-    Geospatial.Point g        -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertPoint zConfig g) mvtPoints }
-    Geospatial.MultiPoint g   -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertMultiPoint zConfig g) mvtPoints }
-    Geospatial.Line g         -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertLineString zConfig g) mvtLines }
-    Geospatial.MultiLine g    -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertMultiLineString zConfig g) mvtLines }
-    Geospatial.Polygon g      -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertPolygon zConfig g) mvtPolygons }
-    Geospatial.MultiPolygon g -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertMultiPolygon zConfig g) mvtPolygons }
-    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry zConfig layer fid props) gs
+    Geospatial.Point g        -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertPoint g) mvtPoints }
+    Geospatial.MultiPoint g   -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertMultiPoint g) mvtPoints }
+    Geospatial.Line g         -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertLineString g) mvtLines }
+    Geospatial.MultiLine g    -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertMultiLineString g) mvtLines }
+    Geospatial.Polygon g      -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertPolygon g) mvtPolygons }
+    Geospatial.MultiPolygon g -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertMultiPolygon g) mvtPolygons }
+    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry layer fid props) gs
 
 -- FeatureID
 
@@ -65,54 +65,54 @@ convertId mfid ops =
 
 -- Points
 
-convertPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoPoint -> VectorStorable.Vector VectorTile.Point
-convertPoint zConfig = coordsToPoints zConfig . Geospatial._unGeoPoint
+convertPoint :: Geospatial.GeoPoint -> VectorStorable.Vector VectorTile.Point
+convertPoint = coordsToPoints . Geospatial._unGeoPoint
 
-convertMultiPoint :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPoint -> VectorStorable.Vector VectorTile.Point
-convertMultiPoint zConfig = Foldable.foldMap (convertPoint zConfig) . Geospatial.splitGeoMultiPoint
+convertMultiPoint :: Geospatial.GeoMultiPoint -> VectorStorable.Vector VectorTile.Point
+convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: TypesConfig.ZoomConfig -> Geospatial.GeoLine -> Vector.Vector VectorTile.LineString
-convertLineString zConfig@TypesConfig.ZoomConfig{..} =
+convertLineString :: Geospatial.GeoLine -> Vector.Vector VectorTile.LineString
+convertLineString =
   Vector.singleton .
   VectorTile.LineString .
   Vector.convert .
-  Foldable.foldMap (coordsToPoints zConfig) .
+  Foldable.foldMap coordsToPoints .
   LineString.fromLineString .
   Geospatial._unGeoLine
 
-convertMultiLineString :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiLine -> Vector.Vector VectorTile.LineString
-convertMultiLineString zConfig = Foldable.foldMap (convertLineString zConfig) . Geospatial.splitGeoMultiLine
+convertMultiLineString :: Geospatial.GeoMultiLine -> Vector.Vector VectorTile.LineString
+convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: TypesConfig.ZoomConfig -> Geospatial.GeoPolygon -> Vector.Vector VectorTile.Polygon
-convertPolygon zConfig poly =
+convertPolygon :: Geospatial.GeoPolygon -> Vector.Vector VectorTile.Polygon
+convertPolygon poly =
   Vector.singleton $
   if Vector.null rawPoly
     then VectorTile.Polygon mempty mempty
     else
       if Vector.length rawPoly == 1
-        then mkPoly zConfig (Vector.head rawPoly)
-        else VectorTile.Polygon (mkPolyPoints zConfig (Vector.head rawPoly)) (mkPolys zConfig (Vector.tail rawPoly))
+        then mkPoly (Vector.head rawPoly)
+        else VectorTile.Polygon (mkPolyPoints (Vector.head rawPoly)) (mkPolys (Vector.tail rawPoly))
   where
     rawPoly = Geospatial._unGeoPolygon poly
 
-mkPolys :: Foldable t => TypesConfig.ZoomConfig -> t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Vector.Vector VectorTile.Polygon
-mkPolys zConfig = List.foldl' (\acc lring -> (mkPoly zConfig lring `Vector.cons` acc)) Vector.empty
+mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Vector.Vector VectorTile.Polygon
+mkPolys = List.foldl' (\acc lring -> (mkPoly lring `Vector.cons` acc)) Vector.empty
 
-mkPoly :: TypesConfig.ZoomConfig -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
-mkPoly zConfig lring = VectorTile.Polygon (mkPolyPoints zConfig lring) mempty
+mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
+mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
 
-mkPolyPoints :: TypesConfig.ZoomConfig -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
-mkPolyPoints zConfig@TypesConfig.ZoomConfig{..} = TypesSimplify.simplifyUsing _zcSimplify . Vector.convert . Foldable.foldMap (coordsToPoints zConfig)
+mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
+mkPolyPoints = Vector.convert . Foldable.foldMap coordsToPoints
 
-convertMultiPolygon :: TypesConfig.ZoomConfig -> Geospatial.GeoMultiPolygon -> Vector.Vector VectorTile.Polygon
-convertMultiPolygon zConfig = Foldable.foldMap (convertPolygon zConfig) . Geospatial.splitGeoMultiPolygon
+convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Vector.Vector VectorTile.Polygon
+convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
 
-coordsToPoints :: TypesConfig.ZoomConfig -> Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
-coordsToPoints _ _ = undefined
+coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
+coordsToPoints _ = undefined
 

@@ -58,9 +58,9 @@ encodeMvt = VectorTile.untile
 createMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
 createMvt Config.Config{..} geoJson = do
     let zConfig         = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
-        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
+        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures geoJson
         layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
-getFeatures :: Config.ZoomConfig -> Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
-getFeatures zoomConfig Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures zoomConfig MvtFeatures.emptyMvtFeatures _geofeatures
+getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
+getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures _geofeatures
