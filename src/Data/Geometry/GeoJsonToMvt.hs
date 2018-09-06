@@ -21,31 +21,31 @@ import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
-geoJsonFeaturesToMvtFeatures zConfig features = do
+geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures zConfig layer features = do
   ops <- STRef.newSTRef 0
-  Foldable.foldMap (convertFeature zConfig ops) features
+  Foldable.foldMap (convertFeature zConfig layer ops) features
 
 -- Feature
 
-convertFeature :: TypesConfig.ZoomConfig -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesMvtFeatures.MvtFeatures
-convertFeature zConfig ops (Geospatial.GeoFeature _ geom props mfid) = do
+convertFeature :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+convertFeature zConfig layer ops (Geospatial.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
-  pure $ convertGeometry zConfig fid props geom
+  pure $ convertGeometry zConfig layer fid props geom
 
 -- Geometry
 
-convertGeometry :: TypesConfig.ZoomConfig -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
-convertGeometry zConfig fid props geom =
+convertGeometry :: TypesConfig.ZoomConfig -> TypesMvtFeatures.MvtFeatures  -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
+convertGeometry zConfig layer@TypesMvtFeatures.MvtFeatures{..} fid props geom =
   case geom of
     Geospatial.NoGeometry     -> mempty
-    Geospatial.Point g        -> TypesMvtFeatures.mkPoint fid props . convertPoint zConfig $ g
-    Geospatial.MultiPoint g   -> TypesMvtFeatures.mkPoint fid props . convertMultiPoint zConfig $ g
-    Geospatial.Line g         -> TypesMvtFeatures.mkLineString fid props . convertLineString zConfig $ g
-    Geospatial.MultiLine g    -> TypesMvtFeatures.mkLineString fid props . convertMultiLineString zConfig $ g
-    Geospatial.Polygon g      -> TypesMvtFeatures.mkPolygon fid props . convertPolygon zConfig $ g
-    Geospatial.MultiPolygon g -> TypesMvtFeatures.mkPolygon fid props . convertMultiPolygon zConfig $ g
-    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry zConfig fid props) gs
+    Geospatial.Point g        -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertPoint zConfig g) mvtPoints }
+    Geospatial.MultiPoint g   -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertMultiPoint zConfig g) mvtPoints }
+    Geospatial.Line g         -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertLineString zConfig g) mvtLines }
+    Geospatial.MultiLine g    -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertMultiLineString zConfig g) mvtLines }
+    Geospatial.Polygon g      -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertPolygon zConfig g) mvtPolygons }
+    Geospatial.MultiPolygon g -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertMultiPolygon zConfig g) mvtPolygons }
+    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry zConfig layer fid props) gs
 
 -- FeatureID
 

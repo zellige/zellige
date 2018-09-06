@@ -26,20 +26,20 @@ data MvtFeatures = MvtFeatures
   , mvtPolygons :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon))
   } deriving (Eq, Show)
 
-mkPoint :: Word -> Aeson.Value -> VectorStorable.Vector VectorTile.Point -> MvtFeatures
-mkPoint fId props p = MvtFeatures (mkFeaturePts fId props p) (Vector.empty :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))) (Vector.empty :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon)))
+emptyMvtFeatures :: MvtFeatures
+emptyMvtFeatures = MvtFeatures mempty mempty mempty
 
-mkLineString :: Word -> Aeson.Value -> Vector.Vector VectorTile.LineString -> MvtFeatures
-mkLineString fId props l = MvtFeatures mempty (mkFeature fId props l) mempty
+mkPoint :: Word -> Aeson.Value -> VectorStorable.Vector VectorTile.Point -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point)) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
+mkPoint fId props p = Vector.cons (VectorTile.Feature fId (convertProps props) p)
 
-mkPolygon :: Word -> Aeson.Value -> Vector.Vector VectorTile.Polygon -> MvtFeatures
-mkPolygon x props o = MvtFeatures mempty mempty (mkFeature x props o)
+mkLineString :: Word -> Aeson.Value -> Vector.Vector VectorTile.LineString -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString)) -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))
+mkLineString fId props l = Vector.cons (mkFeature fId props l)
 
-mkFeaturePts :: Word -> Aeson.Value -> VectorStorable.Vector g -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector g))
-mkFeaturePts fId props geoms = Vector.singleton $ VectorTile.Feature fId (convertProps props) geoms
+mkPolygon :: Word -> Aeson.Value -> Vector.Vector VectorTile.Polygon -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon)) -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon))
+mkPolygon x props o = Vector.cons (mkFeature x props o)
 
-mkFeature :: Word -> Aeson.Value -> Vector.Vector g -> Vector.Vector (VectorTile.Feature (Vector.Vector g))
-mkFeature fId props geoms = Vector.singleton $ VectorTile.Feature fId (convertProps props) geoms
+mkFeature :: Word -> Aeson.Value -> Vector.Vector g -> VectorTile.Feature (Vector.Vector g)
+mkFeature fId props = VectorTile.Feature fId (convertProps props)
 
 convertProps :: Aeson.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
 convertProps (Aeson.Object x) = HashMapStrict.fromList . Maybe.catMaybes $ Prelude.fmap convertElems (HashMapStrict.toList x)

@@ -63,4 +63,4 @@ createMvt Config.Config{..} geoJson = do
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Config.ZoomConfig -> Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
-getFeatures extentsQBb = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures extentsQBb . Geospatial._geofeatures
+getFeatures zoomConfig Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures zoomConfig MvtFeatures.emptyMvtFeatures _geofeatures
