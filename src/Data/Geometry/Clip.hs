@@ -5,7 +5,8 @@
 -- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip (
-  createBoundingBoxPts
+  createBoundingBox
+, clipPoint
 , clipPoints
 , clipLinesLb
 , clipLinesCs
@@ -17,19 +18,17 @@ module Data.Geometry.Clip (
 , clipPolygonsQc
 ) where
 
-import qualified Geography.VectorTile                            as VectorTile
-
 import           Data.Geometry.Clip.Internal.LineCohenSutherland
 import           Data.Geometry.Clip.Internal.LineLiangBarsky
-import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.LineNichollLeeNicholl
+import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
 import           Data.Geometry.Clip.Internal.PolygonQuickClip
 import           Data.Geometry.Types.Geography
 
-createBoundingBoxPts :: Word -> Int -> BoundingBoxPts
-createBoundingBoxPts buffer extent = BoundingBoxPts (VectorTile.Point (-iBuffer) (-iBuffer)) (VectorTile.Point (iExtent+iBuffer) (iExtent+iBuffer))
+createBoundingBox :: Word -> Int -> BoundingBox
+createBoundingBox buffer extent = BoundingBox (-fiBuffer) (-fiBuffer) (fiExtent + fiBuffer) (fiExtent + fiBuffer)
   where
-    iBuffer = fromIntegral buffer
-    iExtent = fromIntegral extent
+    fiBuffer = fromIntegral buffer
+    fiExtent = fromIntegral extent

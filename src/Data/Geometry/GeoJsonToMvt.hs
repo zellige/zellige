@@ -35,7 +35,7 @@ convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
 
 -- Geometry
 
-convertGeometry :: TypesMvtFeatures.MvtFeatures  -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
+convertGeometry :: TypesMvtFeatures.MvtFeatures -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
 convertGeometry layer@TypesMvtFeatures.MvtFeatures{..} fid props geom =
   case geom of
     Geospatial.NoGeometry     -> mempty

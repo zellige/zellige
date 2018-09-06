@@ -3,21 +3,30 @@ module Data.Geometry.Clip.Internal.Point (
 , clipPoint
 ) where
 
+import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.Vector                   as Vector
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
-clipPoint :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Vector.Vector Geospatial.GeoPoint
-clipPoint bbox point = if pointInsideExtent bbox point then Vector.singleton point else Vector.empty
+clipPoint :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPoint bbox point feature acc =
+  if pointInsideExtent bbox (Geospatial._unGeoPoint point)
+    then Vector.cons feature acc
+    else acc
 
-clipPoints :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Vector.Vector Geospatial.GeoPoint
-clipPoints bbox mp = Vector.filter (pointInsideExtent bbox) (Geospatial.splitGeoMultiPoint mp)
-
-pointInsideExtent :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Bool
-pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) point = x >= minX && x <= maxX && y >= minY && y <= maxY
+clipPoints :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPoints bbox multiPoint feature acc =
+  if Vector.null newPoints
+    then acc
+    else Vector.cons (feature { Geospatial._geometry = Geospatial.MultiPoint (Geospatial.GeoMultiPoint newPoints) }) acc
   where
-    (x, y) = case Geospatial._unGeoPoint point of
+    newPoints = Vector.filter (pointInsideExtent bbox) (Vector.map Geospatial._unGeoPoint $ Geospatial.splitGeoMultiPoint multiPoint)
+
+pointInsideExtent :: TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Bool
+pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) position = x >= minX && x <= maxX && y >= minY && y <= maxY
+  where
+    (x, y) = case position of
       (Geospatial.GeoPointXY (Geospatial.PointXY pX pY))         -> (pX, pY)
       (Geospatial.GeoPointXYZ (Geospatial.PointXYZ pX pY _))     -> (pX, pY)
       (Geospatial.GeoPointXYZM (Geospatial.PointXYZM pX pY _ _)) -> (pX, pY)
