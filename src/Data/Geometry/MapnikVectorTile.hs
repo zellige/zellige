@@ -66,7 +66,7 @@ createMvt Config.Config{..} geoJson = do
         MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures zConfig geoJson
         cP = Foldable.foldl' (accNewGeom' (Clip.clipPoints clipBb)) mempty mvtPoints
         cL = Foldable.foldl' (accNewGeom'' (Clip.clipLinesNLN clipBb)) mempty mvtLines
-        cO = Foldable.foldl' (accNewGeom'' (Clip.clipPolygonsNLN clipBb )) mempty mvtPolygons
+        cO = Foldable.foldl' (accNewGeom'' (Clip.clipPolygons clipBb )) mempty mvtPolygons
         layer = VectorTile.Layer (fromIntegral _version) _name cP cL cO (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
