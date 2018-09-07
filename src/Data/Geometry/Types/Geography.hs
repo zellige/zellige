@@ -127,7 +127,7 @@ data ClipLine = ClipLine
 
 data GeoClipPoint = GeoClipPoint
   { _geoClipPointCode  :: !OutCode
-  , _geoClipPointPoint :: !Geospatial.GeoPositionWithoutCRS
+  , _geoClipPointPoint :: !Geospatial.PointXY
   } deriving (Eq, Show)
 
 data GeoClipLine = GeoClipLine
@@ -147,8 +147,8 @@ instance VectorStorable.Storable ClipLine where
   poke p (ClipLine (ClipPoint o1 (VectorTile.Point a1 b1)) (ClipPoint o2 (VectorTile.Point a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
 
 data GeoStorableLine = GeoStorableLine
-  { _geoStorableLinePt1 :: !Geospatial.GeoPositionWithoutCRS
-  , _geoStorableLinePt2 :: !Geospatial.GeoPositionWithoutCRS
+  { _geoStorableLinePt1 :: !Geospatial.PointXY
+  , _geoStorableLinePt2 :: !Geospatial.PointXY
   } deriving (Eq, Show)
 
 data StorableLine = StorableLine

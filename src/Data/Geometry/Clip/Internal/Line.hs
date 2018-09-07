@@ -31,7 +31,7 @@ linesFromPoints x = (VectorStorable.zipWith TypesGeography.StorableLine <*> Vect
 {-# INLINE linesFromPoints #-}
 
 newLinesFromPoints :: LineString.LineString Geospatial.GeoPositionWithoutCRS -> Vector.Vector TypesGeography.GeoStorableLine
-newLinesFromPoints a = LineString.toVector a TypesGeography.GeoStorableLine
+newLinesFromPoints a = LineString.toVector a (\x y -> TypesGeography.GeoStorableLine (Geospatial.retrieveXY x) (Geospatial.retrieveXY y))
 {-# INLINE newLinesFromPoints #-}
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]

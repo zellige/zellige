@@ -46,6 +46,17 @@ evalDiffKeepSame bb (TypesGeography.ClipLine a@(TypesGeography.ClipPoint o1 p1) 
     clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
     computeNewOutCode p = TypesGeography.ClipPoint (computeOutCode bb p) p
 
+newEvalDiffKeepSame ::  TypesGeography.BoundingBox -> TypesGeography.GeoClipLine -> TypesGeography.GeoClipLine
+newEvalDiffKeepSame bb (TypesGeography.GeoClipLine a@(TypesGeography.GeoClipPoint o1 p1) b@(TypesGeography.GeoClipPoint o2 p2)) =
+  case compare o1 o2 of
+    GT -> eval $ TypesGeography.GeoClipLine (clipAndCompute o1) b
+    LT -> eval $ TypesGeography.GeoClipLine a (clipAndCompute o2)
+    EQ -> TypesGeography.GeoClipLine a b
+  where
+    eval = newEvalDiffKeepSame bb
+    clipAndCompute o = computeNewOutCode $ newClipPoint o bb p1 p2
+    computeNewOutCode p = TypesGeography.GeoClipPoint (newComputeOutCode bb p) p
+
 isSame :: TypesGeography.ClipLine -> Bool
 isSame (TypesGeography.ClipLine (TypesGeography.ClipPoint o1 _) (TypesGeography.ClipPoint o2 _)) =
   case (o1, o2) of
@@ -55,6 +66,16 @@ isSame (TypesGeography.ClipLine (TypesGeography.ClipPoint o1 _) (TypesGeography.
     (TypesGeography.Top    , TypesGeography.Top   ) -> False
     _                                               -> True
 
+newIsSame :: TypesGeography.GeoClipLine -> Bool
+newIsSame (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint o1 _) (TypesGeography.GeoClipPoint o2 _)) =
+  case (o1, o2) of
+    (TypesGeography.Left   , TypesGeography.Left  ) -> False
+    (TypesGeography.Right  , TypesGeography.Right ) -> False
+    (TypesGeography.Bottom , TypesGeography.Bottom) -> False
+    (TypesGeography.Top    , TypesGeography.Top   ) -> False
+    _                                               -> True
+
+
 clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBoxPts -> VectorTile.Point -> VectorTile.Point -> VectorTile.Point
 clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorTile.Point minX minY), TypesGeography._bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x1 y1) (VectorTile.Point x2 y2) =
   case outCode of
@@ -62,6 +83,15 @@ clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (Vect
     TypesGeography.Right  -> VectorTile.Point maxX (y1 + (y2 - y1) * (maxX - x1) `div` (x2 - x1))
     TypesGeography.Bottom -> VectorTile.Point (x1 + (x2 - x1) * (minY - y1) `div` (y2 - y1)) minY
     TypesGeography.Top    -> VectorTile.Point (x1 + (x2 - x1) * (maxY - y1) `div` (y2 - y1)) maxY
+    _      -> undefined
+
+newClipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBox -> Geospatial.PointXY -> Geospatial.PointXY -> Geospatial.PointXY
+newClipPoint outCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2) =
+  case outCode of
+    TypesGeography.Left   -> Geospatial.PointXY minX (y1 + (y2 - y1) * (minX - x1) / (x2 - x1))
+    TypesGeography.Right  -> Geospatial.PointXY maxX (y1 + (y2 - y1) * (maxX - x1) / (x2 - x1))
+    TypesGeography.Bottom -> Geospatial.PointXY (x1 + (x2 - x1) * (minY - y1) / (y2 - y1)) minY
+    TypesGeography.Top    -> Geospatial.PointXY (x1 + (x2 - x1) * (maxY - y1) / (y2 - y1)) maxY
     _      -> undefined
 
 outCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector TypesGeography.ClipLine)
@@ -96,12 +126,10 @@ computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorT
   | x < minX  = TypesGeography.Left
   | otherwise = TypesGeography.Inside
 
-newComputeOutCode :: TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> TypesGeography.OutCode
-newComputeOutCode (TypesGeography.BoundingBox minX minY maxX maxY) position
+newComputeOutCode :: TypesGeography.BoundingBox -> Geospatial.PointXY -> TypesGeography.OutCode
+newComputeOutCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x y)
   | y > maxY  = TypesGeography.Top
   | y < minY  = TypesGeography.Bottom
   | x > maxX  = TypesGeography.Right
   | x < minX  = TypesGeography.Left
   | otherwise = TypesGeography.Inside
-  where
-    (Geospatial.PointXY x y) = Geospatial.retrieveXY position
