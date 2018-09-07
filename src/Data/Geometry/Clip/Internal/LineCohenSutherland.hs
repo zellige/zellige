@@ -10,6 +10,8 @@ module Data.Geometry.Clip.Internal.LineCohenSutherland (
   clipLinesCs
 ) where
 
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Geospatial                  as Geospatial
 import qualified Data.Vector                      as Vector
 import qualified Data.Vector.Storable             as VectorStorable
 import qualified Geography.VectorTile             as VectorTile
@@ -67,11 +69,22 @@ outCodeForLineStrings bb = fmap $ VectorStorable.map out . ClipLine.getLines
   where
     out = outCodeForLine bb
 
+newOutCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoClipLine)
+newOutCodeForLineStrings bb = fmap $ Vector.map out . ClipLine.newGetLines
+    where
+      out = newOutCodeForLine bb
+
 outCodeForLine :: TypesGeography.BoundingBoxPts -> TypesGeography.StorableLine -> TypesGeography.ClipLine
 outCodeForLine bb (TypesGeography.StorableLine p1 p2) = TypesGeography.ClipLine toP1 toP2
   where
     toP1 = TypesGeography.ClipPoint (computeOutCode bb p1) p1
     toP2 = TypesGeography.ClipPoint (computeOutCode bb p2) p2
+
+newOutCodeForLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> TypesGeography.GeoClipLine
+newOutCodeForLine bb (TypesGeography.GeoStorableLine p1 p2) = TypesGeography.GeoClipLine toP1 toP2
+  where
+    toP1 = TypesGeography.GeoClipPoint (newComputeOutCode bb p1) p1
+    toP2 = TypesGeography.GeoClipPoint (newComputeOutCode bb p2) p2
 
 computeOutCode :: TypesGeography.BoundingBoxPts -> VectorTile.Point -> TypesGeography.OutCode
 computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorTile.Point minX minY), TypesGeography._bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x y)
@@ -80,3 +93,15 @@ computeOutCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorT
   | x > maxX  = TypesGeography.Right
   | x < minX  = TypesGeography.Left
   | otherwise = TypesGeography.Inside
+  | x < minX  = TypesGeography.Left
+  | otherwise = TypesGeography.Inside
+
+newComputeOutCode :: TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> TypesGeography.OutCode
+newComputeOutCode (TypesGeography.BoundingBox minX minY maxX maxY) position
+  | y > maxY  = TypesGeography.Top
+  | y < minY  = TypesGeography.Bottom
+  | x > maxX  = TypesGeography.Right
+  | x < minX  = TypesGeography.Left
+  | otherwise = TypesGeography.Inside
+  where
+    (Geospatial.PointXY x y) = Geospatial.retrieveXY position
