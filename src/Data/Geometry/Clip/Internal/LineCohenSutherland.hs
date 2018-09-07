@@ -8,6 +8,7 @@
 
 module Data.Geometry.Clip.Internal.LineCohenSutherland (
   clipLinesCs
+, newClipLinesCs
 ) where
 
 import qualified Data.Aeson                       as Aeson
@@ -23,17 +24,32 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 clipLinesCs :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
 clipLinesCs bb lines = Vector.foldl' maybeAddLine mempty (findClipLines bb lines)
 
+newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+newClipLinesCs bb lines = undefined
+
 maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector TypesGeography.ClipLine -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pp =
   case (ClipLine.checkValidLineString . foldPointsToLine) pp of
     Just res -> Vector.cons res acc
     Nothing  -> acc
 
+newMaybeAddLine :: Vector.Vector VectorTile.LineString -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector VectorTile.LineString
+newMaybeAddLine acc pp =
+  case (_ . newFoldPointsToLine) pp of
+    Just res -> Vector.cons res acc
+    Nothing  -> acc
+
 foldPointsToLine :: VectorStorable.Vector TypesGeography.ClipLine -> VectorStorable.Vector VectorTile.Point
 foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.ClipLine (TypesGeography.ClipPoint _ p1) (TypesGeography.ClipPoint _ p2)) -> VectorStorable.fromList [p1, p2])) mempty
 
+newFoldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.PointXY
+newFoldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) -> Vector.fromList [p1, p2])) mempty
+
 findClipLines :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector TypesGeography.ClipLine)
 findClipLines bb lines = fmap (VectorStorable.filter isSame . VectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
+
+newFindClipLines :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoClipLine)
+newFindClipLines bb lines = fmap (Vector.filter newIsSame . Vector.map (newEvalDiffKeepSame bb)) (newOutCodeForLineStrings bb lines)
 
 evalDiffKeepSame :: TypesGeography.BoundingBoxPts -> TypesGeography.ClipLine -> TypesGeography.ClipLine
 evalDiffKeepSame bb (TypesGeography.ClipLine a@(TypesGeography.ClipPoint o1 p1) b@(TypesGeography.ClipPoint o2 p2)) =
