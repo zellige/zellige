@@ -32,7 +32,7 @@ poly :: VectorTile.Polygon
 poly = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) mempty
 
 resultPolyPts :: [(Int, Int)]
-resultPolyPts = [(100,250),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250)]
+resultPolyPts = [(100,200),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
 
 innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]

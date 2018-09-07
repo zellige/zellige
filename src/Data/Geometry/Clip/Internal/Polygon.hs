@@ -72,4 +72,4 @@ lineIntersectPoint (TypesGeography.StorableLine (VectorTile.Point x1 y1) (Vector
 
 -- Is point of RHS of Line
 inside :: VectorTile.Point -> TypesGeography.StorableLine -> Bool
-inside (VectorTile.Point x y) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
+inside (VectorTile.Point x y) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = (x2 - x1) * (y - y1) >= (y2 - y1) * (x - x1)
