@@ -13,6 +13,8 @@ module Data.Geometry.Clip.Internal.LineCohenSutherland (
 
 import qualified Data.Aeson                       as Aeson
 import qualified Data.Geospatial                  as Geospatial
+import qualified Data.LineString                  as LineString
+import qualified Data.Validation                  as Validation
 import qualified Data.Vector                      as Vector
 import qualified Data.Vector.Storable             as VectorStorable
 import qualified Geography.VectorTile             as VectorTile
@@ -24,8 +26,11 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 clipLinesCs :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
 clipLinesCs bb lines = Vector.foldl' maybeAddLine mempty (findClipLines bb lines)
 
-newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-newClipLinesCs bb lines = undefined
+newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+  where
+    reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
+    multiLine = Vector.foldl' newMaybeAddLine mempty (newFindClipLines bb (Geospatial.splitGeoMultiLine lines))
 
 maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector TypesGeography.ClipLine -> Vector.Vector VectorTile.LineString
 maybeAddLine acc pp =
@@ -33,17 +38,17 @@ maybeAddLine acc pp =
     Just res -> Vector.cons res acc
     Nothing  -> acc
 
-newMaybeAddLine :: Vector.Vector VectorTile.LineString -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector VectorTile.LineString
+newMaybeAddLine :: Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 newMaybeAddLine acc pp =
-  case (_ . newFoldPointsToLine) pp of
-    Just res -> Vector.cons res acc
-    Nothing  -> acc
+  case (LineString.fromVector . newFoldPointsToLine) pp of
+    Validation.Success res -> Vector.cons res acc
+    Validation.Failure _   -> acc
 
 foldPointsToLine :: VectorStorable.Vector TypesGeography.ClipLine -> VectorStorable.Vector VectorTile.Point
 foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.ClipLine (TypesGeography.ClipPoint _ p1) (TypesGeography.ClipPoint _ p2)) -> VectorStorable.fromList [p1, p2])) mempty
 
-newFoldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.PointXY
-newFoldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) -> Vector.fromList [p1, p2])) mempty
+newFoldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
+newFoldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) -> Vector.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2])) mempty
 
 findClipLines :: Functor f => TypesGeography.BoundingBoxPts -> f VectorTile.LineString -> f (VectorStorable.Vector TypesGeography.ClipLine)
 findClipLines bb lines = fmap (VectorStorable.filter isSame . VectorStorable.map (evalDiffKeepSame bb)) (outCodeForLineStrings bb lines)
@@ -90,7 +95,6 @@ newIsSame (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint o1 _) (TypesG
     (TypesGeography.Bottom , TypesGeography.Bottom) -> False
     (TypesGeography.Top    , TypesGeography.Top   ) -> False
     _                                               -> True
-
 
 clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBoxPts -> VectorTile.Point -> VectorTile.Point -> VectorTile.Point
 clipPoint outCode TypesGeography.BoundingBoxPts{TypesGeography._bbMinPts = (VectorTile.Point minX minY), TypesGeography._bbMaxPts = (VectorTile.Point maxX maxY)} (VectorTile.Point x1 y1) (VectorTile.Point x2 y2) =

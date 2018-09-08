@@ -9,7 +9,6 @@ import qualified Data.HashMap.Strict             as HM
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Vector                     as Vector
-import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
@@ -19,7 +18,7 @@ import qualified Test.QuickCheck.Gen             as GA
 import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.Config
-import           Data.Geometry.Types.MvtFeatures
+import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
 import           Data.Geometry.Types.Simplify
 
 import           Data.Geometry.SpecHelper
@@ -31,13 +30,13 @@ extentsBb :: ZoomConfig
 extentsBb = ZoomConfig (_extents config) (_quantizePixels config) (boundingBox $ _gtc config) NoAlgorithm
 
 pt1 :: Geospatial.GeoPoint
-pt1 = Geospatial.GeoPoint . Geospatial.GeoPositionWithoutCRS $ VectorStorable.fromList [144.961043, -37.800096]
+pt1 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.961043 (-37.800096)))
 
 pt2 :: Geospatial.GeoPoint
-pt2 = Geospatial.GeoPoint  . Geospatial.GeoPositionWithoutCRS $ VectorStorable.fromList [144.960495, -37.800045]
+pt2 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960495 (-37.800045)))
 
 pt3 :: Geospatial.GeoPoint
-pt3 = Geospatial.GeoPoint . Geospatial.GeoPositionWithoutCRS $ VectorStorable.fromList [144.960599, -37.799549]
+pt3 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960599 (-37.799549)))
 
 mkFeatureID :: Word -> Maybe Geospatial.FeatureID
 mkFeatureID = Just . Geospatial.FeatureIDNumber . fromIntegral
@@ -57,8 +56,8 @@ testPoints =
       let feature = Geospatial.GeoFeature Nothing point AT.Null (mkFeatureID x)
           point = Geospatial.Point pt1
           pts = tupleToPts [(840,2194)]
-          result = MvtFeatures (Vector.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures (Vector.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
 
 testLines :: Spec
@@ -69,8 +68,8 @@ testLines =
       let feature = Geospatial.GeoFeature Nothing line AT.Null (mkFeatureID x)
           line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) []
           pts = tupleToPts [(840,2194),(23,2098)]
-          result = MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
 
 -- Add test when all points are removed from polygon.
@@ -83,8 +82,8 @@ testPolygons =
       let feature = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
           polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]
           pts = tupleToPts [(840,2194), (23,2098), (178,1162), (840,2194)]
-          result = MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
 
 testCounter :: Spec
@@ -94,6 +93,6 @@ testCounter =
     let feature = Geospatial.GeoFeature Nothing point AT.Null Nothing
         point = Geospatial.Point pt1
         pts = tupleToPts [(840,2194)]
-        result = MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
-        actual = ST.runST $ geoJsonFeaturesToMvtFeatures extentsBb (Vector.fromList [feature, feature])
+        result = MvtFeatures.MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
+        actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature, feature])
     actual `shouldBe` result

@@ -15,9 +15,7 @@ import qualified Data.Vector                     as Vector
 import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
-import qualified Data.Geometry.Types.Config      as TypesConfig
 import qualified Data.Geometry.Types.MvtFeatures as TypesMvtFeatures
-import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 -- Lib
 
