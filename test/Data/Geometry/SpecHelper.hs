@@ -2,7 +2,6 @@ module Data.Geometry.SpecHelper where
 
 import qualified Data.Geospatial      as Geospatial
 import qualified Data.LineString      as LineString
-import qualified Data.Vector          as Vector
 import qualified Data.Vector.Storable as VectorStorable
 import qualified Geography.VectorTile as VectorTile
 

@@ -2,8 +2,8 @@
 
 module Data.Geometry.ClipSpec where
 
+import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
-import qualified Data.LineString               as LineString
 import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 import           Test.Hspec                    (Spec, describe, it, shouldBe)
@@ -87,6 +87,15 @@ linesTst = Vector.fromList
   , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (0, 10)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (60, 60)])]
 
+resultLines :: Vector.Vector VectorTile.LineString
+resultLines = Vector.fromList
+  [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (10, 18)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (10, 10)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(10, 11), (45, 50), (50, 60)])
+  , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
+  ]
+
 geoLinesTst :: Geospatial.GeoMultiLine
 geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
   [ SpecHelper.mkLineString (11, 11) (59, 59) []
@@ -94,7 +103,23 @@ geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
   , SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)]
   , SpecHelper.mkLineString (0, 0) (10, 10) []
   , SpecHelper.mkLineString (50, 50) (0, 10) []
-  , SpecHelper.mkLineString (0, 0) (60, 60) []]
+  , SpecHelper.mkLineString (0, 0) (60, 60) []
+  ]
+
+geoLinesFeatureTst :: Geospatial.GeoFeature Aeson.Value
+geoLinesFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoLinesTst) Aeson.Null Nothing
+
+geoResultLines :: Geospatial.GeoMultiLine
+geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
+  [ SpecHelper.mkLineString (10, 10) (60, 60) []
+  , SpecHelper.mkLineString (50, 50) (10, 18) []
+  , SpecHelper.mkLineString (10, 10) (10, 10) []
+  , SpecHelper.mkLineString (10, 11) (45, 50) [(50, 60)]
+  , SpecHelper.mkLineString (11, 11) (59, 59) []
+  ]
+
+geoResultFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
 lineClip :: GeometryGeography.BoundingBox
 lineClip = GeometryGeography.BoundingBox 10 10 60 60
@@ -111,17 +136,9 @@ spec = do
 testClipLine :: Spec
 testClipLine =
   describe "simple line test" $ do
-    let resultLines = Vector.fromList
-          [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (10, 18)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (10, 10)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(10, 11), (45, 50), (50, 60)])
-          , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
-          ]
-          -- TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
     it "Cohen Sutherland returns clipped line" $ do
-      let actual = GeometryClip.newClipLinesCs lineClip geoLinesTst _ _
-      actual `shouldBe` resultLines
+      let actual = GeometryClip.newClipLinesCs lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      actual `shouldBe` geoResultFeatureTst
     it "Liang Barsky returns clipped line" $ do
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
       actual `shouldBe` resultLines
@@ -144,7 +161,7 @@ testClipPolygon =
       actual `shouldBe` Nothing
     it "Maximum polygon" $ do
       let actual = GeometryClip.clipPolygon giantClipPts giantPoly
-          resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
+          resultPts = [(-128, -128), (2176, -128), (2176, 2176), (-128, 2176), (-128, -128)]
           result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
       actual `shouldBe` Just result
     it "Turning point test" $

@@ -8,7 +8,6 @@ module Data.Geometry.Clip.Internal.LineQuickClip (
   , clipOrDiscard
 ) where
 
-import qualified Data.Geospatial                  as Geospatial
 import qualified Data.Vector                      as Vector
 import qualified Data.Vector.Storable             as VectorStorable
 import qualified Geography.VectorTile             as VectorTile

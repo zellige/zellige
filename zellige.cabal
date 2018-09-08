@@ -46,6 +46,7 @@ library
                      , trifecta
                      , utf8-string
                      , unordered-containers
+                     , validation
                      , vector
                      , vector-th-unbox
                      , vectortiles >=1.4.0                
