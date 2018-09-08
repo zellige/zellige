@@ -9,7 +9,6 @@ module Data.Geometry.Clip (
 , clipPoint
 , clipPoints
 , clipLinesLb
-, clipLinesCs
 , newClipLinesCs
 , clipLinesQc
 , clipLinesNLN

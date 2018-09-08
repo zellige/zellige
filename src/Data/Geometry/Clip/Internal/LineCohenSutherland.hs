@@ -7,8 +7,7 @@
 -- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip.Internal.LineCohenSutherland (
-  clipLinesCs
-, newClipLinesCs
+  newClipLinesCs
 ) where
 
 import qualified Data.Aeson                       as Aeson
@@ -23,8 +22,11 @@ import           Prelude                          hiding (Left, Right, lines)
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
-clipLinesCs :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
-clipLinesCs bb lines = Vector.foldl' maybeAddLine mempty (findClipLines bb lines)
+newClipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+newClipLineCs bb line (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+  where
+    reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine line)) props fId
+    line = undefined
 
 newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
@@ -32,20 +34,11 @@ newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) = Vector.cons r
     reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
     multiLine = Vector.foldl' newMaybeAddLine mempty (newFindClipLines bb (Geospatial.splitGeoMultiLine lines))
 
-maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector TypesGeography.ClipLine -> Vector.Vector VectorTile.LineString
-maybeAddLine acc pp =
-  case (ClipLine.checkValidLineString . foldPointsToLine) pp of
-    Just res -> Vector.cons res acc
-    Nothing  -> acc
-
 newMaybeAddLine :: Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 newMaybeAddLine acc pp =
   case (LineString.fromVector . newFoldPointsToLine) pp of
     Validation.Success res -> Vector.cons res acc
     Validation.Failure _   -> acc
-
-foldPointsToLine :: VectorStorable.Vector TypesGeography.ClipLine -> VectorStorable.Vector VectorTile.Point
-foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.ClipLine (TypesGeography.ClipPoint _ p1) (TypesGeography.ClipPoint _ p2)) -> VectorStorable.fromList [p1, p2])) mempty
 
 newFoldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
 newFoldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) -> Vector.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2])) mempty

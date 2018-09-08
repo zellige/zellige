@@ -2,6 +2,8 @@
 
 module Data.Geometry.ClipSpec where
 
+import qualified Data.Geospatial               as Geospatial
+import qualified Data.LineString               as LineString
 import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 import           Test.Hspec                    (Spec, describe, it, shouldBe)
@@ -85,6 +87,18 @@ linesTst = Vector.fromList
   , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (0, 10)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (60, 60)])]
 
+geoLinesTst :: Geospatial.GeoMultiLine
+geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
+  [ SpecHelper.mkLineString (11, 11) (59, 59) []
+  , SpecHelper.mkLineString (0, 0) (0, 100) []
+  , SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)]
+  , SpecHelper.mkLineString (0, 0) (10, 10) []
+  , SpecHelper.mkLineString (50, 50) (0, 10) []
+  , SpecHelper.mkLineString (0, 0) (60, 60) []]
+
+lineClip :: GeometryGeography.BoundingBox
+lineClip = GeometryGeography.BoundingBox 10 10 60 60
+
 lineClipPts :: GeometryGeography.BoundingBoxPts
 lineClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
 
@@ -104,8 +118,9 @@ testClipLine =
           , VectorTile.LineString (SpecHelper.tupleToPts [(10, 11), (45, 50), (50, 60)])
           , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
           ]
+          -- TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
     it "Cohen Sutherland returns clipped line" $ do
-      let actual = GeometryClip.clipLinesCs lineClipPts linesTst
+      let actual = GeometryClip.newClipLinesCs lineClip geoLinesTst _ _
       actual `shouldBe` resultLines
     it "Liang Barsky returns clipped line" $ do
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
