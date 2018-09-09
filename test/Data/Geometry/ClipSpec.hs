@@ -106,6 +106,15 @@ geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
   , SpecHelper.mkLineString (0, 0) (60, 60) []
   ]
 
+geoResultLine :: Geospatial.GeoLine
+geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 11) (45, 50) [(50, 60)])
+
+geoLineTst :: Geospatial.GeoLine
+geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
+
+geoLineFeatureTst :: Geospatial.GeoFeature Aeson.Value
+geoLineFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Line geoLineTst) Aeson.Null Nothing
+
 geoLinesFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoLinesFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoLinesTst) Aeson.Null Nothing
 
@@ -118,8 +127,11 @@ geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
   , SpecHelper.mkLineString (11, 11) (59, 59) []
   ]
 
-geoResultFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
+geoResultLineFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultLineFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Line geoResultLine) Aeson.Null Nothing
+
+geoResultLinesFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
 lineClip :: GeometryGeography.BoundingBox
 lineClip = GeometryGeography.BoundingBox 10 10 60 60
@@ -137,8 +149,11 @@ testClipLine :: Spec
 testClipLine =
   describe "simple line test" $ do
     it "Cohen Sutherland returns clipped line" $ do
+      let actual = GeometryClip.newClipLineCs lineClip geoLineTst geoLineFeatureTst Vector.empty
+      actual `shouldBe` geoResultLineFeatureTst
+    it "Cohen Sutherland returns clipped lines" $ do
       let actual = GeometryClip.newClipLinesCs lineClip geoLinesTst geoLinesFeatureTst Vector.empty
-      actual `shouldBe` geoResultFeatureTst
+      actual `shouldBe` geoResultLinesFeatureTst
     it "Liang Barsky returns clipped line" $ do
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
       actual `shouldBe` resultLines
