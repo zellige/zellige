@@ -22,42 +22,55 @@ import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
 newClipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-newClipLineCs _ _ (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+newClipLineCs bb geoLine (Geospatial.GeoFeature bbox _ props fId) acc =
+  case validLine of
+    Validation.Success res -> Vector.cons (reMakeFeature res) acc
+    Validation.Failure _   -> acc
   where
-    reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine line)) props fId
-    line = undefined
+      reMakeFeature res = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine res)) props fId
+      validLine = clipLineToValidationLineString $ findClipLine bb geoLine
 
 newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
   where
+    checkLinesAndAdd = if Vector.null multiLine then acc else Vector.cons reMakeFeature acc
     reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
-    multiLine = Vector.foldl' newMaybeAddLine mempty (newFindClipLines bb (Geospatial.splitGeoMultiLine lines))
+    multiLine = Vector.foldl' newMaybeAddLine mempty (findClipLines bb (Geospatial.splitGeoMultiLine lines))
 
 newMaybeAddLine :: Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 newMaybeAddLine acc pp =
-  case (LineString.fromVector . newFoldPointsToLine) pp of
+  case clipLineToValidationLineString pp of
     Validation.Success res -> Vector.cons res acc
     Validation.Failure _   -> acc
 
-newFoldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
-newFoldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) -> Vector.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2])) mempty
+clipLineToValidationLineString :: Vector.Vector TypesGeography.GeoClipLine -> Validation.Validation LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+clipLineToValidationLineString = LineString.fromVector . foldPointsToLine
 
-newFindClipLines :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoClipLine)
-newFindClipLines bb lines = fmap (Vector.filter newIsSame . Vector.map (newEvalDiffKeepSame bb)) (newOutCodeForLineStrings bb lines)
+foldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
+foldPointsToLine = Vector.foldr (mappend . getPoints) mempty
 
-newEvalDiffKeepSame ::  TypesGeography.BoundingBox -> TypesGeography.GeoClipLine -> TypesGeography.GeoClipLine
-newEvalDiffKeepSame bb (TypesGeography.GeoClipLine a@(TypesGeography.GeoClipPoint o1 p1) b@(TypesGeography.GeoClipPoint o2 p2)) =
+getPoints :: TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
+getPoints (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint _ p1) (TypesGeography.GeoClipPoint _ p2)) = Vector.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2]
+
+findClipLine :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Vector.Vector TypesGeography.GeoClipLine
+findClipLine bb line = (Vector.filter isSame . Vector.map (evalDiffKeepSame bb)) (outCodeForLineString bb line)
+
+findClipLines :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoClipLine)
+findClipLines bb = fmap (findClipLine bb)
+
+evalDiffKeepSame :: TypesGeography.BoundingBox -> TypesGeography.GeoClipLine -> TypesGeography.GeoClipLine
+evalDiffKeepSame bb (TypesGeography.GeoClipLine a@(TypesGeography.GeoClipPoint o1 p1) b@(TypesGeography.GeoClipPoint o2 p2)) =
   case compare o1 o2 of
     GT -> eval $ TypesGeography.GeoClipLine (clipAndCompute o1) b
     LT -> eval $ TypesGeography.GeoClipLine a (clipAndCompute o2)
     EQ -> TypesGeography.GeoClipLine a b
   where
-    eval = newEvalDiffKeepSame bb
-    clipAndCompute o = computeNewOutCode $ newClipPoint o bb p1 p2
-    computeNewOutCode p = TypesGeography.GeoClipPoint (newComputeOutCode bb p) p
+    eval = evalDiffKeepSame bb
+    clipAndCompute o = computeNewOutCode $ clipPoint o bb p1 p2
+    computeNewOutCode p = TypesGeography.GeoClipPoint (computeOutCode bb p) p
 
-newIsSame :: TypesGeography.GeoClipLine -> Bool
-newIsSame (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint o1 _) (TypesGeography.GeoClipPoint o2 _)) =
+isSame :: TypesGeography.GeoClipLine -> Bool
+isSame (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint o1 _) (TypesGeography.GeoClipPoint o2 _)) =
   case (o1, o2) of
     (TypesGeography.Left   , TypesGeography.Left  ) -> False
     (TypesGeography.Right  , TypesGeography.Right ) -> False
@@ -65,8 +78,8 @@ newIsSame (TypesGeography.GeoClipLine (TypesGeography.GeoClipPoint o1 _) (TypesG
     (TypesGeography.Top    , TypesGeography.Top   ) -> False
     _                                               -> True
 
-newClipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBox -> Geospatial.PointXY -> Geospatial.PointXY -> Geospatial.PointXY
-newClipPoint outCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2) =
+clipPoint :: TypesGeography.OutCode -> TypesGeography.BoundingBox -> Geospatial.PointXY -> Geospatial.PointXY -> Geospatial.PointXY
+clipPoint outCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2) =
   case outCode of
     TypesGeography.Left   -> Geospatial.PointXY minX (y1 + (y2 - y1) * (minX - x1) / (x2 - x1))
     TypesGeography.Right  -> Geospatial.PointXY maxX (y1 + (y2 - y1) * (maxX - x1) / (x2 - x1))
@@ -74,19 +87,17 @@ newClipPoint outCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatia
     TypesGeography.Top    -> Geospatial.PointXY (x1 + (x2 - x1) * (maxY - y1) / (y2 - y1)) maxY
     _      -> undefined
 
-newOutCodeForLineStrings :: (Functor f) => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoClipLine)
-newOutCodeForLineStrings bb = fmap $ Vector.map out . ClipLine.newGetLines
-    where
-      out = newOutCodeForLine bb
+outCodeForLineString :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Vector.Vector TypesGeography.GeoClipLine
+outCodeForLineString bb line = Vector.map (outCodeForLine bb) (ClipLine.newGetLines line)
 
-newOutCodeForLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> TypesGeography.GeoClipLine
-newOutCodeForLine bb (TypesGeography.GeoStorableLine p1 p2) = TypesGeography.GeoClipLine toP1 toP2
+outCodeForLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> TypesGeography.GeoClipLine
+outCodeForLine bb (TypesGeography.GeoStorableLine p1 p2) = TypesGeography.GeoClipLine toP1 toP2
   where
-    toP1 = TypesGeography.GeoClipPoint (newComputeOutCode bb p1) p1
-    toP2 = TypesGeography.GeoClipPoint (newComputeOutCode bb p2) p2
+    toP1 = TypesGeography.GeoClipPoint (computeOutCode bb p1) p1
+    toP2 = TypesGeography.GeoClipPoint (computeOutCode bb p2) p2
 
-newComputeOutCode :: TypesGeography.BoundingBox -> Geospatial.PointXY -> TypesGeography.OutCode
-newComputeOutCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x y)
+computeOutCode :: TypesGeography.BoundingBox -> Geospatial.PointXY -> TypesGeography.OutCode
+computeOutCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.PointXY x y)
   | y > maxY  = TypesGeography.Top
   | y < minY  = TypesGeography.Bottom
   | x > maxX  = TypesGeography.Right
