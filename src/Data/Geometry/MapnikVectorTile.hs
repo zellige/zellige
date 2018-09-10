@@ -13,13 +13,11 @@ import qualified Data.Geospatial                 as Geospatial
 import qualified Data.HashMap.Lazy               as HashMapLazy
 import           Data.Monoid                     ((<>))
 import qualified Data.Text                       as Text
-import qualified Data.Vector                     as Vector
 import qualified Geography.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
 import qualified Data.Geometry.GeoJsonToMvt      as GeoJsonToMvt
 import qualified Data.Geometry.Types.Config      as Config
-import qualified Data.Geometry.Types.Geography   as Geography
 import qualified Data.Geometry.Types.LayerConfig as LayerConfig
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
 
@@ -59,28 +57,15 @@ encodeMvt :: VectorTile.VectorTile -> ByteStringChar8.ByteString
 encodeMvt = VectorTile.untile
 
 createMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
-createMvt Config.Config{..} geoJson = do
-    let MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures geoJson
+createMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
+    let MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox clippedFeatures)
         -- zConfig = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
-        -- clipBb = Clip.createBoundingBox _buffer _extents
+        clipBb = Clip.createBoundingBox _buffer _extents
+        clippedFeatures = Clip.clipFeatures clipBb geoFeatures
         layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
 getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures _geofeatures
 
-clipFeatures :: Geography.BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipFeatures bbox = Vector.foldr (clipFeature bbox) Vector.empty
-
-clipFeature :: Geography.BoundingBox -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipFeature bbox feature@Geospatial.GeoFeature{..} acc =
-    case _geometry of
-        Geospatial.NoGeometry     -> acc
-        Geospatial.Point g        -> Clip.clipPoint bbox g feature acc
-        Geospatial.MultiPoint g   -> Clip.clipPoints bbox g feature acc
-        Geospatial.Line g         -> Clip.clipLineCs bbox g feature acc
-        Geospatial.MultiLine g    -> Clip.clipLinesCs bbox g feature acc
-        Geospatial.Polygon _      -> acc
-        Geospatial.MultiPolygon _ -> acc
-        Geospatial.Collection _   -> acc
 
