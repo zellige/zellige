@@ -13,7 +13,7 @@ import qualified Geography.VectorTile          as VectorTile
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
-import qualified Data.Geometry.Clip.Internal.LineNichollLeeNicholl as ClipLineQuickClip
+import qualified Data.Geometry.Clip.Internal.LineQuickClip as ClipLineQuickClip
 
 clipPolygonsQc :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.Polygon -> Vector.Vector VectorTile.Polygon
 clipPolygonsQc bb = Vector.foldl' addPoly mempty
@@ -32,7 +32,7 @@ clipPolygonQc bb (VectorTile.Polygon polyPoints inner) =
 clipPolyPoints :: TypesGeography.BoundingBoxPts -> VectorStorable.Vector VectorTile.Point -> Maybe (VectorStorable.Vector VectorTile.Point)
 clipPolyPoints bb polyPoints = checkLength (VectorStorable.uniq newClippedPoly)
   where
-    newClippedPoly = foo (TypesGeography.bboxPtsToBboxRect bb) polyPoints
+    newClippedPoly = foo (TypesGeography.bboxPtsToBbox bb) polyPoints
     checkLength newPoly =
       if VectorStorable.length newPoly <= 2
         then Nothing
@@ -47,13 +47,13 @@ closeIfNot poly =
     lastPt = VectorStorable.last poly
     firstPt = VectorStorable.head poly
 
-foo ::  TypesGeography.BoundingBoxRect-> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
+foo ::  TypesGeography.BoundingBox -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
     -- newPoints = VectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
-lineToClippedPoints :: TypesGeography.BoundingBoxRect -> VectorStorable.Vector TypesGeography.StorableLine-> VectorStorable.Vector VectorTile.Point
+lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.StorableLine-> VectorStorable.Vector VectorTile.Point
 lineToClippedPoints bb l = ClipLine.foldPointsToLine $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty l
 
 -- clip :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
