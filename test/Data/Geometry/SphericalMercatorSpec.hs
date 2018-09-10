@@ -66,7 +66,6 @@ testLines =
           actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
       actual `shouldBe` expected
 
--- -- Add test when all points are removed from polygon.
 testPolygon :: Spec
 testPolygon =
   describe "polygon" $
