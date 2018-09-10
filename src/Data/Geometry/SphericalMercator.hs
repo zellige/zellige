@@ -24,9 +24,9 @@ convertFeature extents qt bb geometry feature acc =
   case geometry of
     Geospatial.NoGeometry     -> acc
     Geospatial.Point g        -> convertPoint extents qt bb g feature acc
-    Geospatial.MultiPoint _   -> acc
+    Geospatial.MultiPoint g   -> convertPoints extents qt bb g feature acc
     Geospatial.Line g         -> convertLine extents qt bb g feature acc
-    Geospatial.MultiLine _    -> acc
+    Geospatial.MultiLine g    -> convertLines extents qt bb g feature acc
     Geospatial.Polygon _      -> acc
     Geospatial.MultiPolygon _ -> acc
     Geospatial.Collection _   -> acc
@@ -37,11 +37,23 @@ convertPoint extents qt bb (Geospatial.GeoPoint point) (Geospatial.GeoFeature bb
       newPoint = newLatLonToXYInTile extents qt bb point
       reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Point (Geospatial.GeoPoint newPoint)) props fId
 
+convertPoints :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertPoints extents qt bb (Geospatial.GeoMultiPoint points) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+    where
+      newPoints = fmap (newLatLonToXYInTile extents qt bb) points
+      reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiPoint (Geospatial.GeoMultiPoint newPoints)) props fId
+
 convertLine :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 convertLine extents qt bb (Geospatial.GeoLine line) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
     where
       newLine = fmap (newLatLonToXYInTile extents qt bb) line
       reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine newLine)) props fId
+
+convertLines :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertLines extents qt bb (Geospatial.GeoMultiLine mLines) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+    where
+      newLines = (fmap . fmap) (newLatLonToXYInTile extents qt bb) mLines
+      reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine newLines)) props fId
 
 newLatLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Geospatial.GeoPositionWithoutCRS
 newLatLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) pt = xy
