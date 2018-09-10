@@ -42,7 +42,7 @@ spec = do
 
 testPoints :: Spec
 testPoints =
-  describe "points" $
+  describe "point" $
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let pts = Geospatial.Point . Geospatial.GeoPoint $ tupleToGeoPts (840, 2194)
@@ -54,7 +54,7 @@ testPoints =
 
 testLines :: Spec
 testLines =
-  describe "lines" $
+  describe "line" $
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let lineString = Geospatial.Line $ Geospatial.GeoLine (mkLineString (840, 2194) (23, 2098) [])
