@@ -23,6 +23,7 @@ module Data.Geometry.Clip (
 ) where
 
 import qualified Data.Aeson                                        as Aeson
+import qualified Data.Foldable                                     as Foldable
 import qualified Data.Geospatial                                   as Geospatial
 import qualified Data.Vector                                       as Vector
 
@@ -42,16 +43,17 @@ createBoundingBox buffer extent = BoundingBox (-fiBuffer) (-fiBuffer) (fiExtent 
     fiExtent = fromIntegral extent
 
 clipFeatures :: BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipFeatures bbox = Vector.foldr (clipFeature bbox) Vector.empty
+clipFeatures bbox = Vector.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Vector.empty
 
-clipFeature :: BoundingBox -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipFeature bbox feature@Geospatial.GeoFeature{..} acc =
-    case _geometry of
-        Geospatial.NoGeometry     -> acc
-        Geospatial.Point g        -> clipPoint bbox g feature acc
-        Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
-        Geospatial.Line g         -> clipLineCs bbox g feature acc
-        Geospatial.MultiLine g    -> clipLinesCs bbox g feature acc
-        Geospatial.Polygon _      -> acc
-        Geospatial.MultiPolygon _ -> acc
-        Geospatial.Collection _   -> acc
+clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipFeature bbox geometry feature acc =
+  case geometry of
+    Geospatial.NoGeometry     -> acc
+    Geospatial.Point g        -> clipPoint bbox g feature acc
+    Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
+    Geospatial.Line g         -> clipLineCs bbox g feature acc
+    Geospatial.MultiLine g    -> clipLinesCs bbox g feature acc
+    Geospatial.Polygon _      -> acc
+    Geospatial.MultiPolygon _ -> acc
+    Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
+

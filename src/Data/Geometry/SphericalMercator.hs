@@ -1,5 +1,9 @@
 module Data.Geometry.SphericalMercator where
 
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Foldable                 as Foldable
+import qualified Data.Geospatial               as Geospatial
+import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
@@ -12,6 +16,21 @@ maxExtents = 20037508.342789244 :: Double
 
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
+
+convertFeatures :: TypesGeography.BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertFeatures bbox = Vector.foldr (\x acc -> convertFeature bbox (Geospatial._geometry x) x acc) Vector.empty
+
+convertFeature :: TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertFeature bbox geometry feature acc =
+  case geometry of
+    Geospatial.NoGeometry     -> acc
+    Geospatial.Point _        -> acc
+    Geospatial.MultiPoint _   -> acc
+    Geospatial.Line _         -> acc
+    Geospatial.MultiLine _    -> acc
+    Geospatial.Polygon _      -> acc
+    Geospatial.MultiPolygon _ -> acc
+    Geospatial.Collection _   -> acc
 
 latLonToXYInTile :: Int -> TypesGeography.BoundingBox -> TypesGeography.LatLon -> VectorTile.Point
 latLonToXYInTile extents (TypesGeography.BoundingBox minX minY maxX maxY) (TypesGeography.LatLon lat lon) = VectorTile.Point x y
