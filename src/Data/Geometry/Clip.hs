@@ -1,5 +1,4 @@
 {-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE RecordWildCards  #-}
 
 -- TODO Work out how to create instance of Unboxed Vector
 -- TODO Change to linear ring for polygons.
