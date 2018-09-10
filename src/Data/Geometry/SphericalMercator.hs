@@ -28,8 +28,8 @@ convertFeature extents qt bb geometry feature acc =
     Geospatial.Line g         -> convertLine extents qt bb g feature acc
     Geospatial.MultiLine g    -> convertLines extents qt bb g feature acc
     Geospatial.Polygon g      -> convertPolygon extents qt bb g feature acc
-    Geospatial.MultiPolygon _ -> acc
-    Geospatial.Collection _   -> acc
+    Geospatial.MultiPolygon g -> convertMultiPolygon extents qt bb g feature acc
+    Geospatial.Collection _   -> acc -- TODO FIXME!
 
 convertPoint :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 convertPoint extents qt bb (Geospatial.GeoPoint point) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
@@ -58,8 +58,14 @@ convertLines extents qt bb (Geospatial.GeoMultiLine mLines) (Geospatial.GeoFeatu
 convertPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 convertPolygon extents qt bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
     where
-      newLine = (fmap . fmap) (newLatLonToXYInTile extents qt bb) poly
-      reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newLine)) props fId
+      newPoly = (fmap . fmap) (newLatLonToXYInTile extents qt bb) poly
+      reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId
+
+convertMultiPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertMultiPolygon extents qt bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) = Vector.cons reMakeFeature
+    where
+      newPolys = (fmap . fmap . fmap) (newLatLonToXYInTile extents qt bb) polys
+      reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId
 
 newLatLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Geospatial.GeoPositionWithoutCRS
 newLatLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) pt = xy
