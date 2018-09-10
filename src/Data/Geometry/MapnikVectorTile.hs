@@ -78,7 +78,7 @@ clipFeature bbox feature@Geospatial.GeoFeature{..} acc =
         Geospatial.NoGeometry     -> acc
         Geospatial.Point g        -> Clip.clipPoint bbox g feature acc
         Geospatial.MultiPoint g   -> Clip.clipPoints bbox g feature acc
-        Geospatial.Line _         -> acc
+        Geospatial.Line g         -> Clip.newClipLineCs bbox g feature acc
         Geospatial.MultiLine g    -> Clip.newClipLinesCs bbox g feature acc
         Geospatial.Polygon _      -> acc
         Geospatial.MultiPolygon _ -> acc

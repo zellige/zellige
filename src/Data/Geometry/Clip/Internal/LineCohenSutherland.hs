@@ -44,7 +44,7 @@ newMaybeAddLine acc pp =
     Validation.Failure _   -> acc
 
 clipLineToValidationLineString :: Vector.Vector TypesGeography.GeoClipLine -> Validation.Validation LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-clipLineToValidationLineString = LineString.fromVector . foldPointsToLine
+clipLineToValidationLineString = LineString.fromVector . ClipLine.newSegmentToLine . foldPointsToLine
 
 foldPointsToLine :: Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector Geospatial.GeoPositionWithoutCRS
 foldPointsToLine = Vector.foldr (mappend . getPoints) mempty

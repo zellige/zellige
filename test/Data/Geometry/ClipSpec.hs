@@ -107,7 +107,7 @@ geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
   ]
 
 geoResultLine :: Geospatial.GeoLine
-geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 11) (45, 50) [(50, 60)])
+geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 10.625) (45, 50) [(50, 60)])
 
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
@@ -123,7 +123,7 @@ geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
   [ SpecHelper.mkLineString (10, 10) (60, 60) []
   , SpecHelper.mkLineString (50, 50) (10, 18) []
   , SpecHelper.mkLineString (10, 10) (10, 10) []
-  , SpecHelper.mkLineString (10, 11) (45, 50) [(50, 60)]
+  , SpecHelper.mkLineString (10, 10.625) (45, 50) [(50, 60)]
   , SpecHelper.mkLineString (11, 11) (59, 59) []
   ]
 

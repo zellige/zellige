@@ -42,6 +42,14 @@ segmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons start 
     second = VectorStorable.ifilter (\i _ -> odd i)
 {-# INLINE segmentToLine #-}
 
+-- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
+newSegmentToLine :: Vector.Vector Geospatial.GeoPositionWithoutCRS -> Vector.Vector Geospatial.GeoPositionWithoutCRS
+newSegmentToLine l = if Vector.length l > 1 then Vector.cons start (second l) else mempty
+  where
+    start = Vector.head l
+    second = Vector.ifilter (\i _ -> odd i)
+{-# INLINE newSegmentToLine #-}
+
 foldPointsToLine :: VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
 foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.StorableLine p1 p2) -> VectorStorable.fromList [p1, p2])) mempty
 {-# INLINE foldPointsToLine #-}
