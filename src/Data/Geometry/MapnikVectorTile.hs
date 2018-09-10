@@ -17,6 +17,7 @@ import qualified Geography.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
 import qualified Data.Geometry.GeoJsonToMvt      as GeoJsonToMvt
+import qualified Data.Geometry.SphericalMercator as SphericalMercator
 import qualified Data.Geometry.Types.Config      as Config
 import qualified Data.Geometry.Types.LayerConfig as LayerConfig
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
@@ -58,10 +59,11 @@ encodeMvt = VectorTile.untile
 
 createMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
 createMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
-    let MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox clippedFeatures)
-        -- zConfig = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
+    let --zConfig = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
+        sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
         clipBb = Clip.createBoundingBox _buffer _extents
-        clippedFeatures = Clip.clipFeatures clipBb geoFeatures
+        clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
+        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox clippedFeatures)
         layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
