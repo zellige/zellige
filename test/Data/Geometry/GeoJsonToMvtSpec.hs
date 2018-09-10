@@ -55,7 +55,7 @@ testPoints =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing point AT.Null (mkFeatureID x)
           point = Geospatial.Point pt1
-          pts = tupleToPts [(840,2194)]
+          pts = tupleToPts [(840, 2194)]
           result = MvtFeatures.MvtFeatures (Vector.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
@@ -67,7 +67,7 @@ testLines =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing line AT.Null (mkFeatureID x)
           line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) []
-          pts = tupleToPts [(840,2194),(23,2098)]
+          pts = tupleToPts [(840, 2194), (23, 2098)]
           result = MvtFeatures.MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
@@ -81,7 +81,7 @@ testPolygons =
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
           polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]
-          pts = tupleToPts [(840,2194), (23,2098), (178,1162), (840,2194)]
+          pts = tupleToPts [(840, 2194), (23, 2098), (178, 1162), (840, 2194)]
           result = MvtFeatures.MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
       actual `shouldBe` result
@@ -92,7 +92,7 @@ testCounter =
     it "Returns same twice - tests counter" $ do
     let feature = Geospatial.GeoFeature Nothing point AT.Null Nothing
         point = Geospatial.Point pt1
-        pts = tupleToPts [(840,2194)]
+        pts = tupleToPts [(840, 2194)]
         result = MvtFeatures.MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
         actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature, feature])
     actual `shouldBe` result

@@ -112,5 +112,8 @@ convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMulti
 -- Helpers
 
 coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
-coordsToPoints _ = undefined
+coordsToPoints geoPosition = VectorStorable.singleton newPoint
+    where
+      newPoint = VectorTile.Point (round posX) (round posY)
+      (Geospatial.PointXY posX posY) = Geospatial.retrieveXY geoPosition
 

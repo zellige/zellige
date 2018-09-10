@@ -7,8 +7,8 @@
 -- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip.Internal.LineCohenSutherland
-( newClipLinesCs
-, newClipLineCs
+( clipLineCs
+, clipLinesCs
 ) where
 
 import qualified Data.Aeson                       as Aeson
@@ -21,8 +21,8 @@ import           Prelude                          hiding (Left, Right, lines)
 import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
-newClipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-newClipLineCs bb geoLine (Geospatial.GeoFeature bbox _ props fId) acc =
+clipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipLineCs bb geoLine (Geospatial.GeoFeature bbox _ props fId) acc =
   case validLine of
     Validation.Success res -> Vector.cons (reMakeFeature res) acc
     Validation.Failure _   -> acc
@@ -30,15 +30,15 @@ newClipLineCs bb geoLine (Geospatial.GeoFeature bbox _ props fId) acc =
       reMakeFeature res = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine res)) props fId
       validLine = clipLineToValidationLineString $ findClipLine bb geoLine
 
-newClipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-newClipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
+clipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
   where
     checkLinesAndAdd = if Vector.null multiLine then acc else Vector.cons reMakeFeature acc
     reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
-    multiLine = Vector.foldl' newMaybeAddLine mempty (findClipLines bb (Geospatial.splitGeoMultiLine lines))
+    multiLine = Vector.foldl' maybeAddLine mempty (findClipLines bb (Geospatial.splitGeoMultiLine lines))
 
-newMaybeAddLine :: Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-newMaybeAddLine acc pp =
+maybeAddLine :: Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Vector.Vector TypesGeography.GeoClipLine -> Vector.Vector (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+maybeAddLine acc pp =
   case clipLineToValidationLineString pp of
     Validation.Success res -> Vector.cons res acc
     Validation.Failure _   -> acc

@@ -149,10 +149,10 @@ testClipLine :: Spec
 testClipLine =
   describe "simple line test" $ do
     it "Cohen Sutherland returns clipped line" $ do
-      let actual = GeometryClip.newClipLineCs lineClip geoLineTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLineCs lineClip geoLineTst geoLineFeatureTst Vector.empty
       actual `shouldBe` geoResultLineFeatureTst
     it "Cohen Sutherland returns clipped lines" $ do
-      let actual = GeometryClip.newClipLinesCs lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      let actual = GeometryClip.clipLinesCs lineClip geoLinesTst geoLinesFeatureTst Vector.empty
       actual `shouldBe` geoResultLinesFeatureTst
     it "Liang Barsky returns clipped line" $ do
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
