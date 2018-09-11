@@ -33,58 +33,76 @@ pt2 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960495 
 pt3 :: Geospatial.GeoPoint
 pt3 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960599 (-37.799549)))
 
+testLine :: Geospatial.GeospatialGeometry
+testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) []))
+
+testPolygon :: Geospatial.GeospatialGeometry
+testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]))
+
+point1 :: Geospatial.GeospatialGeometry
+point1 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (840, 2194)))
+
+point2 :: Geospatial.GeospatialGeometry
+point2 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (23, 2098)))
+
+point3 :: Geospatial.GeospatialGeometry
+point3 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (178, 1162)))
+
+lineString :: Geospatial.GeospatialGeometry
+lineString = Geospatial.Line (Geospatial.GeoLine (mkLineString (840, 2194) (23, 2098) []))
+
+polygon :: Geospatial.GeospatialGeometry
+polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (840, 2194) (23, 2098) (178, 1162) []))
+
+collection :: Geospatial.GeospatialGeometry
+collection = Geospatial.Collection (Vector.fromList [point1, lineString, polygon])
+
 mkFeatureID :: Word -> Maybe Geospatial.FeatureID
 mkFeatureID = Just . Geospatial.FeatureIDNumber . fromIntegral
 
 spec :: Spec
 spec = do
-  testPoints
-  testLines
-  testPolygon
+  testConvertPoints
+  testConvertLines
+  testConvertPolygon
+  testConvertCollection
 
-testPoints :: Spec
-testPoints =
+testConvertPoints :: Spec
+testConvertPoints =
   describe "point" $
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
-      let pts = Geospatial.Point . Geospatial.GeoPoint $ tupleToGeoPts (840, 2194)
-          expected = Geospatial.GeoFeature Nothing pts AT.Null (mkFeatureID x)
-          point = Geospatial.Point pt1
-          feature = Geospatial.GeoFeature Nothing point AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
+      let testFeature = Geospatial.GeoFeature Nothing (Geospatial.Point pt1) AT.Null (mkFeatureID x)
+          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [testFeature])
+          expected = Geospatial.GeoFeature Nothing point1 AT.Null (mkFeatureID x)
       actual `shouldBe` expected
 
-testLines :: Spec
-testLines =
+testConvertLines :: Spec
+testConvertLines =
   describe "line" $
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
-      let lineString = Geospatial.Line $ Geospatial.GeoLine (mkLineString (840, 2194) (23, 2098) [])
+      let testFeature = Geospatial.GeoFeature Nothing testLine AT.Null (mkFeatureID x)
+          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [testFeature])
           expected = Geospatial.GeoFeature Nothing lineString AT.Null (mkFeatureID x)
-          line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) []
-          feature = Geospatial.GeoFeature Nothing line AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
       actual `shouldBe` expected
 
-testPolygon :: Spec
-testPolygon =
+testConvertPolygon :: Spec
+testConvertPolygon =
   describe "polygon" $
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
-      let poly = Geospatial.Polygon $ Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (840, 2194) (23, 2098) (178, 1162) [])
-          expected = Geospatial.GeoFeature Nothing poly AT.Null (mkFeatureID x)
-          polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]
-          feature = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
+      let expected = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
+          feature = Geospatial.GeoFeature Nothing testPolygon AT.Null (mkFeatureID x)
           actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
       actual `shouldBe` expected
 
--- testCounter :: Spec
--- testCounter =
---   describe "features without id" $
---     it "Returns same twice - tests counter" $ do
---     let feature = Geospatial.GeoFeature Nothing point AT.Null Nothing
---         point = Geospatial.Point pt1
---         pts = tupleToPts [(840, 2194)]
---         result = MvtFeatures.MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
---         actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature, feature])
---     actual `shouldBe` result
+testConvertCollection :: Spec
+testConvertCollection =
+  describe "collection" $
+    it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
+      x <- GA.generate QA.arbitrary :: IO Word
+      let expected = Geospatial.GeoFeature Nothing collection AT.Null (mkFeatureID x)
+          feature = Geospatial.GeoFeature Nothing (Geospatial.Collection (Vector.fromList [Geospatial.Point pt1, testLine, testPolygon])) AT.Null (mkFeatureID x)
+          actual = convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
+      actual `shouldBe` Vector.fromList [expected]

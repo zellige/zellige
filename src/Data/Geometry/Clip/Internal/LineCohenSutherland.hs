@@ -22,12 +22,11 @@ import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography    as TypesGeography
 
 clipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipLineCs bb geoLine (Geospatial.GeoFeature bbox _ props fId) acc =
+clipLineCs bb geoLine feature acc =
   case validLine of
-    Validation.Success res -> Vector.cons (reMakeFeature res) acc
+    Validation.Success res -> Vector.cons (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
     Validation.Failure _   -> acc
   where
-      reMakeFeature res = Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine res)) props fId
       validLine = clipLineToValidationLineString $ findClipLine bb geoLine
 
 clipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
