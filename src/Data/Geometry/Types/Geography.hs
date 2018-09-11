@@ -8,14 +8,15 @@
 module Data.Geometry.Types.Geography where
 
 import qualified Data.Geospatial      as Geospatial
+import qualified Data.Vector          as Vector
 import qualified Data.Vector.Storable as VectorStorable
-import qualified Data.Word            as DW
+import qualified Data.Word            as DataWord
 import           Foreign.Storable
 import qualified Geography.VectorTile as VectorTile
 import           Numeric.Natural      (Natural)
 import           Prelude              hiding (Left, Right)
 
-defaultVersion :: DW.Word
+defaultVersion :: DataWord.Word
 defaultVersion = 2
 
 -- Pixels
@@ -55,8 +56,14 @@ bboxPtsToBboxRect (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point
 mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector StorableLine
 mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (VectorTile.Point x2 y2)} = pointsToLines $ VectorStorable.fromList [VectorTile.Point x1 y1, VectorTile.Point x2 y1, VectorTile.Point x2 y2, VectorTile.Point x1 y2]
 
+newMkBBoxPoly :: BoundingBox -> Vector.Vector GeoStorableLine
+newMkBBoxPoly (BoundingBox x1 y1 x2 y2) = newPointsToLines $ Vector.fromList [Geospatial.PointXY x1 y1, Geospatial.PointXY x2 y1, Geospatial.PointXY x2 y2, Geospatial.PointXY x1 y2]
+
 pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector StorableLine
 pointsToLines pts = (VectorStorable.zipWith StorableLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
+
+newPointsToLines :: Vector.Vector Geospatial.PointXY -> Vector.Vector GeoStorableLine
+newPointsToLines pts = (Vector.zipWith GeoStorableLine <*> Vector.tail) $ Vector.cons (Vector.last pts) pts
 
 -- Coords types
 
@@ -91,7 +98,7 @@ data OutCode = Inside
   | Top
   deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
-outCodeToWord8 :: OutCode -> DW.Word8
+outCodeToWord8 :: OutCode -> DataWord.Word8
 outCodeToWord8 c =
     case c of
       Inside -> 0
@@ -100,7 +107,7 @@ outCodeToWord8 c =
       Bottom -> 4
       Top    -> 8
 
-word8ToOutCode :: DW.Word8 -> OutCode
+word8ToOutCode :: DataWord.Word8 -> OutCode
 word8ToOutCode w =
     case w of
       0 -> Inside

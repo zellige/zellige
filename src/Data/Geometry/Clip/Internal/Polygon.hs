@@ -37,6 +37,15 @@ clipPolyPoints bb polyPoints = checkLength (VectorStorable.uniq newClippedPoly)
         then Nothing
         else Just (closeIfNot newPoly)
 
+newClipPolyPoints :: TypesGeography.BoundingBox -> Vector.Vector Geospatial.PointXY -> Maybe (Vector.Vector Geospatial.PointXY)
+newClipPolyPoints bb polyPoints = checkLength (Vector.uniq newClippedPoly)
+  where
+    newClippedPoly = Vector.foldl' newFoo polyPoints (TypesGeography.newMkBBoxPoly bb)
+    checkLength newPoly =
+      if Vector.length newPoly <= 2
+        then Nothing
+        else Just (newCloseIfNot newPoly)
+
 closeIfNot :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 closeIfNot poly =
   if lastPt /= firstPt
@@ -46,10 +55,24 @@ closeIfNot poly =
     lastPt = VectorStorable.last poly
     firstPt = VectorStorable.head poly
 
+newCloseIfNot :: Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+newCloseIfNot poly =
+  if lastPt /= firstPt
+    then Vector.cons lastPt poly
+    else poly
+  where
+    lastPt = Vector.last poly
+    firstPt = Vector.head poly
+
 foo :: VectorStorable.Vector VectorTile.Point -> TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point
 foo polyPts bbLine = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
     newPoints = VectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
+
+newFoo :: Vector.Vector Geospatial.PointXY -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
+newFoo polyPts bbLine = if Vector.length polyPts <= 2 then Vector.empty else newPoints
+  where
+    newPoints = Vector.foldl' (\pts polyLine -> newClipEdges polyLine bbLine pts) Vector.empty (TypesGeography.newPointsToLines polyPts)
 
 clipEdges :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 clipEdges polyLine@(TypesGeography.StorableLine s e) line acc =
@@ -57,6 +80,14 @@ clipEdges polyLine@(TypesGeography.StorableLine s e) line acc =
     (True, True)   -> VectorStorable.cons e acc
     (True, False)  -> VectorStorable.cons e $ VectorStorable.cons (lineIntersectPoint line polyLine) acc
     (False, True)  -> VectorStorable.cons (lineIntersectPoint line polyLine) acc
+    (False, False) -> acc
+
+newClipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+newClipEdges polyLine@(TypesGeography.GeoStorableLine s e) line acc =
+  case (newInside e line, newInside s line) of
+    (True, True)   -> Vector.cons e acc
+    (True, False)  -> Vector.cons e $ Vector.cons (newLineIntersectPoint line polyLine) acc
+    (False, True)  -> Vector.cons (newLineIntersectPoint line polyLine) acc
     (False, False) -> acc
 
 lineIntersectPoint :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorTile.Point
