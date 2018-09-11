@@ -2,9 +2,6 @@
 
 -- Cohen Sutherland Line Clipping Algorithm
 -- https://en.wikipedia.org/wiki/Cohen%E2%80%93Sutherland_algorithm
--- TODO Work out how to create instance of Unboxed Vector
--- TODO Change to linear ring for polygons.
--- TODO Change to valid segment (non empty vector?) for lines.
 
 module Data.Geometry.Clip.Internal.LineCohenSutherland
 ( clipLineCs

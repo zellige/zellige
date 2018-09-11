@@ -7,6 +7,7 @@ clipPolygon
 , clipPolygons
 ) where
 
+import qualified Data.Geospatial               as Geospatial
 import qualified Data.Vector                   as Vector
 import qualified Data.Vector.Storable          as VectorStorable
 import qualified Geography.VectorTile          as VectorTile
@@ -70,6 +71,21 @@ lineIntersectPoint (TypesGeography.StorableLine (VectorTile.Point x1 y1) (Vector
     y = ((n1 * dy') - (n2 * dy)) `div` d
   in VectorTile.Point x y
 
+newLineIntersectPoint :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Geospatial.PointXY
+newLineIntersectPoint (TypesGeography.GeoStorableLine (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2)) (TypesGeography.GeoStorableLine (Geospatial.PointXY x1' y1') (Geospatial.PointXY x2' y2')) =
+  let
+    (dx, dy) = (x1 - x2, y1 - y2)
+    (dx', dy') = (x1' - x2', y1' - y2')
+    n1 = (x1 * y2) - (y1 * x2)
+    n2 = (x1' * y2') - (y1' * x2')
+    d = (dx * dy') - (dy * dx')
+    x = ((n1 * dx') - (n2 * dx)) / d
+    y = ((n1 * dy') - (n2 * dy)) / d
+  in Geospatial.PointXY x y
+
 -- Is point of RHS of Line
 inside :: VectorTile.Point -> TypesGeography.StorableLine -> Bool
 inside (VectorTile.Point x y) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = (x2 - x1) * (y - y1) >= (y2 - y1) * (x - x1)
+
+newInside :: Geospatial.PointXY  -> TypesGeography.GeoStorableLine -> Bool
+newInside (Geospatial.PointXY x y) (TypesGeography.GeoStorableLine (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2)) = (x2 - x1) * (y - y1) >= (y2 - y1) * (x - x1)
