@@ -10,10 +10,10 @@ jobs:
       - checkout
       - restore-cache:
           keys:
-            - stack{{checksum "stack.yaml"}}
+            - stack{{checksum "stack-ci.yaml"}}
       - restore-cache:
           keys:
-            - stack{{checksum "zellige.cabal"}}{{checksum "stack.yaml"}}
+            - stack{{checksum "zellige.cabal"}}{{checksum "stack-ci.yaml"}}
       - run:
           name: Install deps
           command: |
@@ -30,23 +30,23 @@ jobs:
           name: pre
           no_output_timeout: 60m
           command: |
-            stack setup --stack-yaml stack.yaml --no-terminal -j2
-            stack build --stack-yaml stack.yaml --no-system-ghc --only-configure --no-terminal -j2
+            stack setup --stack-yaml stack-ci.yaml --no-terminal -j2
+            stack build --stack-yaml stack-ci.yaml --no-system-ghc --only-configure --no-terminal -j2 --fast
       - run:
           name: compile
           no_output_timeout: 60m
           command: |
-            stack build  --stack-yaml stack.yaml --no-terminal -j2
+            stack build  --stack-yaml stack-ci.yaml --no-terminal -j2 --fast
       - run:
           name: test
           no_output_timeout: 60m
           command: |
-            stack test  --stack-yaml stack.yaml --no-terminal -j2
+            stack test  --stack-yaml stack-ci.yaml --no-terminal -j2 --fast
       - save-cache:
-          key: stack{{checksum "stack.yaml"}}
+          key: stack{{checksum "stack-ci.yaml" }}
           paths:
             - "~/.stack"
       - save-cache:
-          key: stack{{checksum "zellige.cabal"}}{{checksum "stack.yaml"}}
+          key: stack{{checksum "zellige.cabal"}}{{checksum "stack-ci.yaml" }}
           paths:
             - "~/zellige/.stack-work"
