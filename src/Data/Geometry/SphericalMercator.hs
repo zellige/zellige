@@ -81,7 +81,7 @@ convertCollection extents qt bb gs = Geospatial.Collection newCollection
 latLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Geospatial.GeoPositionWithoutCRS
 latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) pt = xy
     where
-      xy = if quantizePixels > 1 then newPoint (newQuantize dQuantizePixels x) (newQuantize dQuantizePixels y) else newPoint (toNice x) (toNice y)
+      xy = if quantizePixels > 1 then newPoint (newQuantize dQuantizePixels x) (newQuantize dQuantizePixels y) else newPoint x y
       newPoint newX newY = Geospatial.GeoPointXY (Geospatial.PointXY newX newY)
       x = (lonToX lat - minX) * dExtents / spanX
       y = (latToY lon - minY) * dExtents / spanY
@@ -91,11 +91,8 @@ latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY ma
       spanX = maxX - minX
       spanY = maxY - minY
 
-toNice :: Double -> Double
-toNice = (fromIntegral :: Integer -> Double) . round
-
 newQuantize :: Double -> Double -> Double
-newQuantize pixels i = toNice $ (i / pixels) * pixels
+newQuantize pixels i = (i / pixels) * pixels
 
 -- Longitude 4326 to 3857 X
 lonToX :: Double -> Double

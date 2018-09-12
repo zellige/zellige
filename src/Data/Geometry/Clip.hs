@@ -13,6 +13,8 @@ module Data.Geometry.Clip (
 , clipLinesCs
 , clipLinesQc
 , clipLinesNLN
+, newClipPolygon
+, newClipPolygons
 , clipPolygon
 , clipPolygons
 , clipPolygonQc

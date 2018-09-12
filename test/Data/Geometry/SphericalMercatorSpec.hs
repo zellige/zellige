@@ -40,19 +40,19 @@ testPolygon :: Geospatial.GeospatialGeometry
 testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) []]))
 
 point1 :: Geospatial.GeospatialGeometry
-point1 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (840, 2194)))
+point1 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (839.9996700223613, 2194.1081715809173)))
 
 point2 :: Geospatial.GeospatialGeometry
-point2 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (23, 2098)))
+point2 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (22.762837334737632, 2097.8526471037135)))
 
 point3 :: Geospatial.GeospatialGeometry
-point3 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (178, 1162)))
+point3 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (177.85887856088198, 1161.7239537991395)))
 
 lineString :: Geospatial.GeospatialGeometry
-lineString = Geospatial.Line (Geospatial.GeoLine (mkLineString (840, 2194) (23, 2098) []))
+lineString = Geospatial.Line (Geospatial.GeoLine (mkLineString (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) []))
 
 polygon :: Geospatial.GeospatialGeometry
-polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (840, 2194) (23, 2098) (178, 1162) []))
+polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) (177.85887856088198, 1161.7239537991395) []))
 
 collection :: Geospatial.GeospatialGeometry
 collection = Geospatial.Collection (Vector.fromList [point1, lineString, polygon])

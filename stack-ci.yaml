@@ -39,7 +39,7 @@ packages:
 - '.'
 - location:
     git: https://github.com/newmana/hs-geojson.git
-    commit: 2830cc81fc10af4c5aa2847690a10fd7803fc8a3
+    commit: 59cb873328391bcbc8935cef6dc9da4e80222fca
   extra-dep: true
 
 # Dependency packages to be pulled from upstream that are not in the resolver
