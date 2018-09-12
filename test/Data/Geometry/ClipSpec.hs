@@ -4,6 +4,7 @@ module Data.Geometry.ClipSpec where
 
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
+import qualified Data.LinearRing               as LinearRing
 import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 import           Test.Hspec                    (Spec, describe, it, shouldBe)
@@ -112,17 +113,20 @@ geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 10.625) (45, 50
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
 
+geoLinearRingTst_1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoLinearRingTst_1 = SpecHelper.mkLinearRing (50,150) (200, 50) (350,150) [(350,300), (250,300), (200,250), (150,350), (100,250), (100,200)]
+
+geoLinearRingTst_2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoLinearRingTst_2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
+
 geoPolyTst :: Geospatial.GeoPolygon
-geoPolyTst = Geospatial.GeoPolygon (Vector.singleton (SpecHelper.mkLinearRing (50,150) (200, 50) (350,150) [(350,300), (250,300), (200,250), (150,350), (100,250), (100,200)]))
+geoPolyTst = Geospatial.GeoPolygon (Vector.singleton geoLinearRingTst_1)
 
--- poly :: VectorTile.Polygon
--- poly = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) mempty
-
--- resultPolyPts :: [(Int, Int)]
--- resultPolyPts = [(100,200),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
-
--- innerPolyResultPts :: [(Int, Int)]
--- innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
+geoPolysTst :: Geospatial.GeoMultiPolygon
+geoPolysTst = Geospatial.GeoMultiPolygon (Vector.fromList [
+    Vector.singleton geoLinearRingTst_1,
+    Vector.singleton geoLinearRingTst_2
+  ])
 
 geoLineFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoLineFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Line geoLineTst) Aeson.Null Nothing
@@ -148,8 +152,17 @@ geoResultLineFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geos
 geoResultLinesFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
+geoResultLinearRing_1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultLinearRing_1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+
+geoResultLinearRing_2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultLinearRing_2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
+
 geoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton (SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)])))) Aeson.Null Nothing
+geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultLinearRing_1))) Aeson.Null Nothing
+
+geoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing_1, Vector.singleton geoResultLinearRing_2]))) Aeson.Null Nothing
 
 lineClip :: GeometryGeography.BoundingBox
 lineClip = GeometryGeography.BoundingBox 10 10 60 60
@@ -191,8 +204,9 @@ testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Simple - Returns clipped polygon" $
-    -- newClipPolygons :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
       GeometryClip.newClipPolygon polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
+    it "Simple - Returns clipped multipolygon" $
+      GeometryClip.newClipPolygons polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
     it "Simple - Negative polygon" $ do
       let actual = GeometryClip.clipPolygon brokenClipPts brokenPoly
       actual `shouldBe` Nothing
