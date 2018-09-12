@@ -3,10 +3,13 @@
 -- TODO Change to linear ring.
 
 module Data.Geometry.Clip.Internal.Polygon (
-clipPolygon
+  clipPolygon
 , clipPolygons
+, newClipPolygon
+, newClipPolygons
 ) where
 
+import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.List.NonEmpty            as ListNonEmpty
@@ -25,14 +28,29 @@ clipPolygons bb = Vector.foldl' addPoly mempty
         Nothing -> acc
         Just x  -> Vector.cons x acc
 
+newClipPolygons :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+newClipPolygons bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
+  case newMaybeNewMultiPoly bb polys of
+    Nothing   -> acc
+    Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId) acc
+
 clipPolygon :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
 clipPolygon bb (VectorTile.Polygon polyPoints inner) =
   case clipPolyPoints bb polyPoints of
     Nothing -> Nothing
     Just x  -> Just (VectorTile.Polygon x (clipPolygons bb inner))
 
-newClipPolygon :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Maybe Geospatial.GeoPolygon
-newClipPolygon bb (Geospatial.GeoPolygon polys)= Geospatial.GeoPolygon <$> traverse (clipLinearRing bb) polys
+newClipPolygon :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+newClipPolygon bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
+    case newMaybeNewPoly bb poly of
+      Nothing   -> acc
+      Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId) acc
+
+newMaybeNewMultiPoly :: TypesGeography.BoundingBox -> Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
+newMaybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
+
+newMaybeNewPoly :: TypesGeography.BoundingBox -> Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+newMaybeNewPoly bb = traverse (clipLinearRing bb)
 
 clipLinearRing :: TypesGeography.BoundingBox -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Maybe (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
 clipLinearRing bb linearRing =
