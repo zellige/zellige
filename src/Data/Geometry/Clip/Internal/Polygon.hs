@@ -13,8 +13,6 @@ import qualified Data.LinearRing               as LinearRing
 import qualified Data.List.NonEmpty            as ListNonEmpty
 import qualified Data.Validation               as Validation
 import qualified Data.Vector                   as Vector
-import qualified Data.Vector.Storable          as VectorStorable
-import qualified Geography.VectorTile          as VectorTile
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
