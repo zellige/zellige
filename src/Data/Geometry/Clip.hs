@@ -13,8 +13,6 @@ module Data.Geometry.Clip (
 , clipLinesCs
 , clipLinesQc
 , clipLinesNLN
-, newClipPolygon
-, newClipPolygons
 , clipPolygon
 , clipPolygons
 , clipPolygonQc
@@ -57,7 +55,7 @@ clipFeature bbox geometry feature acc =
     Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
     Geospatial.Line g         -> clipLineCs bbox g feature acc
     Geospatial.MultiLine g    -> clipLinesCs bbox g feature acc
-    Geospatial.Polygon g      -> newClipPolygon bbox g feature acc
-    Geospatial.MultiPolygon g -> newClipPolygons bbox g feature acc
+    Geospatial.Polygon g      -> clipPolygon bbox g feature acc
+    Geospatial.MultiPolygon g -> clipPolygons bbox g feature acc
     Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
 

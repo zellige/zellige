@@ -14,12 +14,6 @@ import qualified Data.Geometry.Types.Geography as GeometryGeography
 
 import qualified Data.Geometry.SpecHelper      as SpecHelper
 
-brokenPoly :: VectorTile.Polygon
-brokenPoly = VectorTile.Polygon (SpecHelper.tupleToPts brokenPolyPts) mempty
-
-giantPoly :: VectorTile.Polygon
-giantPoly = VectorTile.Polygon (SpecHelper.tupleToPts giantPolyPts) mempty
-
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150),  (200, 50)
           , (350,150), (350,300)
@@ -34,50 +28,8 @@ innerPolyPts = [(75,200),(250,250),(250,150),(75,150)]
 poly :: VectorTile.Polygon
 poly = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) mempty
 
-resultPolyPts :: [(Int, Int)]
-resultPolyPts = [(100,200),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
-
-innerPolyResultPts :: [(Int, Int)]
-innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
-
-resultPoly :: VectorTile.Polygon
-resultPoly = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) mempty
-
-polyWithInner :: VectorTile.Polygon
-polyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyPts) mempty])
-
-turningPointTestPolyPts :: [(Int, Int)]
-turningPointTestPolyPts = [(125,125),(175,175),(75,225),(25,175),(125,125)]
-
-turningPointTestPoly :: VectorTile.Polygon
-turningPointTestPoly = VectorTile.Polygon (SpecHelper.tupleToPts turningPointTestPolyPts) mempty
-
-turningPointTestClippedPolyPts :: [(Int, Int)]
-turningPointTestClippedPolyPts = [(125,125),(175,175),(124,200),(100,200),(100,137),(125,125)]
-
-turningPointTestClippedPoly :: VectorTile.Polygon
-turningPointTestClippedPoly = VectorTile.Polygon (SpecHelper.tupleToPts turningPointTestClippedPolyPts) mempty
-
-myClipPts :: GeometryGeography.BoundingBoxPts
-myClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 100 100) (VectorTile.Point 200 200)
-
-resultPolyWithInner :: VectorTile.Polygon
-resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
-
-brokenPolyPts :: [(Int, Int)]
-brokenPolyPts = [(-512,-400),(96,-400),(96,-904),(-512,-904),(-512,-400)]
-
-giantPolyPts :: [(Int, Int)]
-giantPolyPts = [(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
-
-polyClipPts :: GeometryGeography.BoundingBoxPts
-polyClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 100 100) (VectorTile.Point 300 300)
-
-brokenClipPts :: GeometryGeography.BoundingBoxPts
-brokenClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point (-128) (-128)) (VectorTile.Point 2176 2176)
-
-giantClipPts :: GeometryGeography.BoundingBoxPts
-giantClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point (-128) (-128)) (VectorTile.Point 2176 2176)
+lineClipPts :: GeometryGeography.BoundingBoxPts
+lineClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
 
 linesTst :: Vector.Vector VectorTile.LineString
 linesTst = Vector.fromList
@@ -97,6 +49,18 @@ resultLines = Vector.fromList
   , VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
   ]
 
+resultPolyPts :: [(Int, Int)]
+resultPolyPts = [(100,200),(100,116),(124,100),(275,100),(300,116),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+
+innerPolyResultPts :: [(Int, Int)]
+innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
+
+resultPolyWithInner :: VectorTile.Polygon
+resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
+
+geoLineTst :: Geospatial.GeoLine
+geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
+
 geoLinesTst :: Geospatial.GeoMultiLine
 geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
   [ SpecHelper.mkLineString (11, 11) (59, 59) []
@@ -110,23 +74,38 @@ geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
 geoResultLine :: Geospatial.GeoLine
 geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 10.625) (45, 50) [(50, 60)])
 
-geoLineTst :: Geospatial.GeoLine
-geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
+geoLinearRingTst1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoLinearRingTst1 = SpecHelper.mkLinearRing (50,150) (200, 50) (350,150) [(350,300), (250,300), (200,250), (150,350), (100,250), (100,200)]
 
-geoLinearRingTst_1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoLinearRingTst_1 = SpecHelper.mkLinearRing (50,150) (200, 50) (350,150) [(350,300), (250,300), (200,250), (150,350), (100,250), (100,200)]
+geoLinearRingTst2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoLinearRingTst2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
 
-geoLinearRingTst_2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoLinearRingTst_2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
+geoBrokenLinearRingTst :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoBrokenLinearRingTst = SpecHelper.mkLinearRing (-512,-400) (96,-400) (96,-904) [(-512,-904),(-512,-400)]
+
+geoGiantLinearRingTst :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoGiantLinearRingTst = SpecHelper.mkLinearRing (-128,-128) (2176,-128) (2176,2176) [(-128,2176), (-128,-128)]
+
+geoTurningLinearRingTst :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoTurningLinearRingTst = SpecHelper.mkLinearRing (125,125) (175,175) (75,225) [(25,175), (125,125)]
 
 geoPolyTst :: Geospatial.GeoPolygon
-geoPolyTst = Geospatial.GeoPolygon (Vector.singleton geoLinearRingTst_1)
+geoPolyTst = Geospatial.GeoPolygon (Vector.singleton geoLinearRingTst1)
 
 geoPolysTst :: Geospatial.GeoMultiPolygon
 geoPolysTst = Geospatial.GeoMultiPolygon (Vector.fromList [
-    Vector.singleton geoLinearRingTst_1,
-    Vector.singleton geoLinearRingTst_2
+    Vector.singleton geoLinearRingTst1,
+    Vector.singleton geoLinearRingTst2
   ])
+
+geoBrokenPolyTst :: Geospatial.GeoPolygon
+geoBrokenPolyTst = Geospatial.GeoPolygon (Vector.singleton geoBrokenLinearRingTst)
+
+geoGiantPolyTst :: Geospatial.GeoPolygon
+geoGiantPolyTst = Geospatial.GeoPolygon (Vector.singleton geoGiantLinearRingTst)
+
+geoTurningPolyTst :: Geospatial.GeoPolygon
+geoTurningPolyTst = Geospatial.GeoPolygon (Vector.singleton geoTurningLinearRingTst)
 
 geoLineFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoLineFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Line geoLineTst) Aeson.Null Nothing
@@ -136,6 +115,15 @@ geoLinesFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoLine
 
 geoPolygonFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoPolygonFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoPolyTst) Aeson.Null Nothing
+
+geoBrokenPolyFeatureTst :: Geospatial.GeoFeature Aeson.Value
+geoBrokenPolyFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoBrokenPolyTst) Aeson.Null Nothing
+
+geoGiantPolyFeatureTst :: Geospatial.GeoFeature Aeson.Value
+geoGiantPolyFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoGiantPolyTst) Aeson.Null Nothing
+
+geoTurningPolyFeatureTst :: Geospatial.GeoFeature Aeson.Value
+geoTurningPolyFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoTurningPolyTst) Aeson.Null Nothing
 
 geoResultLines :: Geospatial.GeoMultiLine
 geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
@@ -152,17 +140,29 @@ geoResultLineFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geos
 geoResultLinesFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
-geoResultLinearRing_1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoResultLinearRing_1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+geoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
 
-geoResultLinearRing_2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoResultLinearRing_2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
+geoResultLinearRing2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultLinearRing2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
+
+geoResultGiantLinearRing :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultGiantLinearRing = SpecHelper.mkLinearRing (-128, -128) (2176, -128) (2176, 2176) [(-128, 2176), (-128, -128)]
+
+geoResultTurningRing :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+geoResultTurningRing = SpecHelper.mkLinearRing (125,125) (175,175) (125,200) [(100,200),(100,137.5),(125,125)]
 
 geoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultLinearRing_1))) Aeson.Null Nothing
+geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultLinearRing1))) Aeson.Null Nothing
 
 geoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing_1, Vector.singleton geoResultLinearRing_2]))) Aeson.Null Nothing
+geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+
+geoResultGiantPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultGiantPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultGiantLinearRing))) Aeson.Null Nothing
+
+geoResultTurningPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+geoResultTurningPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultTurningRing))) Aeson.Null Nothing
 
 lineClip :: GeometryGeography.BoundingBox
 lineClip = GeometryGeography.BoundingBox 10 10 60 60
@@ -170,14 +170,19 @@ lineClip = GeometryGeography.BoundingBox 10 10 60 60
 polyClip :: GeometryGeography.BoundingBox
 polyClip = GeometryGeography.BoundingBox 100 100 300 300
 
-lineClipPts :: GeometryGeography.BoundingBoxPts
-lineClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
+brokenClip :: GeometryGeography.BoundingBox
+brokenClip = GeometryGeography.BoundingBox (-128) (-128) 2176 2176
+
+giantClip :: GeometryGeography.BoundingBox
+giantClip = GeometryGeography.BoundingBox (-128) (-128) 2176 2176
+
+turningClip :: GeometryGeography.BoundingBox
+turningClip = GeometryGeography.BoundingBox 100 100 200 200
 
 spec :: Spec
 spec = do
   testClipLine
   testClipPolygon
-  testClipPolygonWithInterior
 
 testClipLine :: Spec
 testClipLine =
@@ -192,31 +197,25 @@ testClipLine =
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
       actual `shouldBe` resultLines
     it "QuickClip returns clipped line" $ do
-      let
-        actual = GeometryClip.clipLinesQc lineClipPts linesTst
+      let actual = GeometryClip.clipLinesQc lineClipPts linesTst
       actual `shouldBe` resultLines
     it "Nicholl-Lee-Nicholl returns clipped line" $ do
-      let
-        actual = GeometryClip.clipLinesNLN lineClipPts linesTst
+      let actual = GeometryClip.clipLinesNLN lineClipPts linesTst
       actual `shouldBe` resultLines
 
 testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Simple - Returns clipped polygon" $
-      GeometryClip.newClipPolygon polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
+      GeometryClip.clipPolygon polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
     it "Simple - Returns clipped multipolygon" $
-      GeometryClip.newClipPolygons polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
-    it "Simple - Negative polygon" $ do
-      let actual = GeometryClip.clipPolygon brokenClipPts brokenPoly
-      actual `shouldBe` Nothing
-    it "Simple - Maximum polygon" $ do
-      let actual = GeometryClip.clipPolygon giantClipPts giantPoly
-          resultPts = [(-128, -128), (2176, -128), (2176, 2176), (-128, 2176), (-128, -128)]
-          result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
-      actual `shouldBe` Just result
+      GeometryClip.clipPolygons polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
+    it "Simple - Negative polygon" $
+      GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Vector.empty `shouldBe` Vector.empty
+    it "Simple - Maximum polygon" $
+      GeometryClip.clipPolygon giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "Simple - Turning point test" $
-      GeometryClip.clipPolygon myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
+      GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
     -- it "QC - Returns clipped polygon" $
     --   GeometryClip.clipPolygonNLN polyClipPts poly `shouldBe` Just resultPoly
     -- it "QC - Negative polygon" $ do
@@ -229,9 +228,3 @@ testClipPolygon =
     --   actual `shouldBe` Just result
     -- it "QC - Turning point test" $
     --   GeometryClip.clipPolygonNLN myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
-
-testClipPolygonWithInterior :: Spec
-testClipPolygonWithInterior =
-  describe "simple polygon with inner test" $
-    it "Returns clipped polygon and inner polygon" $
-      GeometryClip.clipPolygon polyClipPts polyWithInner `shouldBe` Just resultPolyWithInner
