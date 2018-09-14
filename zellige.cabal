@@ -27,12 +27,12 @@ library
                      , Data.Geometry.Clip.Internal.PolygonNichollLeeNicholl
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
+                     , Data.Geometry.Simplify
                      , Data.Geometry.SphericalMercator
                      , Data.Geometry.Types.Config
                      , Data.Geometry.Types.Geography
                      , Data.Geometry.Types.LayerConfig
                      , Data.Geometry.Types.MvtFeatures
-                     , Data.Geometry.Types.Simplify
                      , Data.Geometry.Simplify.DouglasPeucker
 
   build-depends:       base >= 4.8 && < 5

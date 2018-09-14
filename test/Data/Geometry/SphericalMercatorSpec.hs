@@ -14,7 +14,6 @@ import qualified Test.QuickCheck.Gen             as GA
 
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.Config
-import           Data.Geometry.Types.Simplify
 
 import           Data.Geometry.SpecHelper
 

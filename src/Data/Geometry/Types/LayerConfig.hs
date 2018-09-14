@@ -8,8 +8,8 @@ import           Data.Semigroup                ((<>))
 import qualified Data.Text                     as DataText
 import qualified Options.Applicative           as OA
 
+import qualified Data.Geometry.Types.Config    as TypesConfig
 import qualified Data.Geometry.Types.Geography as TypesGeography
-import qualified Data.Geometry.Types.Simplify  as TypesSimplify
 
 data LayerConfig = LayerConfig
   { _layerInput          :: FilePath
@@ -21,7 +21,7 @@ data LayerConfig = LayerConfig
   , _layerBuffer         :: TypesGeography.Pixels
   , _layerExtent         :: TypesGeography.Pixels
   , _layerQuantizePixels :: TypesGeography.Pixels
-  , _layerSimplification :: TypesSimplify.SimplificationAlgorithm
+  , _layerSimplification :: TypesConfig.SimplificationAlgorithm
   } deriving (Show, Eq)
 
 layerConfig :: OA.Parser LayerConfig
