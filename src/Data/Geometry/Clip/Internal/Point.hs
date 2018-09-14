@@ -24,9 +24,11 @@ clipPoints bbox multiPoint feature acc =
     newPoints = Vector.filter (pointInsideExtent bbox) (Vector.map Geospatial._unGeoPoint $ Geospatial.splitGeoMultiPoint multiPoint)
 
 pointInsideExtent :: TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Bool
-pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) position = x >= minX && x <= maxX && y >= minY && y <= maxY
+pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) position =
+  case position of
+    Geospatial.GeoEmpty                                        -> False
+    (Geospatial.GeoPointXY (Geospatial.PointXY pX pY))         -> comparePt pX pY
+    (Geospatial.GeoPointXYZ (Geospatial.PointXYZ pX pY _))     -> comparePt pX pY
+    (Geospatial.GeoPointXYZM (Geospatial.PointXYZM pX pY _ _)) -> comparePt pX pY
   where
-    (x, y) = case position of
-      (Geospatial.GeoPointXY (Geospatial.PointXY pX pY))         -> (pX, pY)
-      (Geospatial.GeoPointXYZ (Geospatial.PointXYZ pX pY _))     -> (pX, pY)
-      (Geospatial.GeoPointXYZM (Geospatial.PointXYZM pX pY _ _)) -> (pX, pY)
+    comparePt x y = x >= minX && x <= maxX && y >= minY && y <= maxY
