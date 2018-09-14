@@ -19,7 +19,6 @@ import           Data.Geometry.GeoJsonToMvt
 import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.Config
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
-import           Data.Geometry.Types.Simplify
 
 import           Data.Geometry.SpecHelper
 

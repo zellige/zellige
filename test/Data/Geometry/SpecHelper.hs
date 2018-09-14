@@ -18,3 +18,6 @@ mkLinearRing p1 p2 p3 rest = LinearRing.makeLinearRing (tupleToGeoPts p1) (tuple
 
 tupleToGeoPts :: (Double, Double) -> Geospatial.GeoPositionWithoutCRS
 tupleToGeoPts (x, y) = Geospatial.GeoPointXY (Geospatial.PointXY x y)
+
+listToVectorGeo :: [(Double, Double)] -> Vector.Vector Geospatial.PointXY
+listToVectorGeo pts = Vector.fromList $ fmap (uncurry Geospatial.PointXY) pts
