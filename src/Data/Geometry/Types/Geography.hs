@@ -28,10 +28,10 @@ defaultBuffer = 128
 -- BoundingBox
 
 data BoundingBox = BoundingBox
-  { _bbMinX :: Double
-  , _bbMinY :: Double
-  , _bbMaxX :: Double
-  , _bbMaxY :: Double
+  { _bbMinX :: !Double
+  , _bbMinY :: !Double
+  , _bbMaxX :: !Double
+  , _bbMaxY :: !Double
   } deriving (Show, Eq)
 
 data BoundingBoxPts = BoundingBoxPts
