@@ -62,13 +62,6 @@ clipOrDiscard bb line acc =
     Nothing          -> acc
     Just clippedLine -> Vector.cons clippedLine acc
 
-data Line = Line
-  { _x1 :: !Double
-  , _y1 :: !Double
-  , _x2 :: !Double
-  , _y2 :: !Double
-  } deriving (Show, Eq)
-
 -- Clip line to bounding box
 -- Assumes y axis is pointing up
 reverseAndClipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine

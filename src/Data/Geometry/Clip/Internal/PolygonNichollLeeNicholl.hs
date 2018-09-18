@@ -78,13 +78,6 @@ clipOrDiscard bb line acc =
     Nothing          -> acc
     Just clippedLine -> (Vector.++) clippedLine acc
 
-data Line = Line
-  { _x1 :: !Double
-  , _y1 :: !Double
-  , _x2 :: !Double
-  , _y2 :: !Double
-  } deriving (Show, Eq)
-
 -- Clip line to bounding box
 -- Assumes y axis is pointing up
 foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (Vector.Vector Geospatial.PointXY)
