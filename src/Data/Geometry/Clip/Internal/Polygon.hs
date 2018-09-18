@@ -49,7 +49,7 @@ clipLinearRing bb linearRing =
 clipPolyPoints :: TypesGeography.BoundingBox -> Vector.Vector Geospatial.PointXY -> Maybe (Vector.Vector Geospatial.PointXY)
 clipPolyPoints bb polyPoints = checkLength (Vector.uniq newClippedPoly)
   where
-    newClippedPoly = Vector.foldl' foo polyPoints (TypesGeography.newMkBBoxPoly bb)
+    newClippedPoly = Vector.foldl' foo polyPoints (TypesGeography.mkBBoxPoly bb)
     checkLength newPoly =
       if Vector.length newPoly <= 2
         then Nothing
@@ -67,7 +67,7 @@ closeIfNot poly =
 foo :: Vector.Vector Geospatial.PointXY -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
 foo polyPts bbLine = if Vector.length polyPts <= 2 then Vector.empty else newPoints
   where
-    newPoints = Vector.foldl' (\acc line -> clipEdges line bbLine acc) Vector.empty (TypesGeography.newPointsToLines polyPts)
+    newPoints = Vector.foldl' (\acc line -> clipEdges line bbLine acc) Vector.empty (TypesGeography.pointsToLines polyPts)
 
 clipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
 clipEdges polyLine@(TypesGeography.GeoStorableLine s e) line acc =

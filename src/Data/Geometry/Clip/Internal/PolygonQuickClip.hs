@@ -50,7 +50,7 @@ closeIfNot poly =
 foo ::  TypesGeography.BoundingBox -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
 foo _ polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
-    newPoints = undefined -- lineToClippedPoints bb (TypesGeography.newPointsToLines polyPts)
+    newPoints = undefined -- lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
     -- newPoints = VectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
 -- lineToClippedPoints :: TypesGeography.BoundingBox -> Vector.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector VectorTile.Point
