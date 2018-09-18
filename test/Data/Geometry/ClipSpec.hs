@@ -183,6 +183,8 @@ spec :: Spec
 spec = do
   testClipLine
   testClipPolygon
+  testClipPolygonWithInterior
+  testManyClipPolygon
 
 testClipLine :: Spec
 testClipLine =
@@ -218,16 +220,52 @@ testClipPolygon =
     it "Simple - Maximum polygon" $
       GeometryClip.clipPolygon giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "Simple - Turning point test" $
+      GeometryClip.clipPolygon myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
+    -- it "NLN - Returns clipped polygon" $
       GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
     -- it "QC - Returns clipped polygon" $
     --   GeometryClip.clipPolygonNLN polyClipPts poly `shouldBe` Just resultPoly
-    -- it "QC - Negative polygon" $ do
-    --   let actual = GeometryClip.clipPolygonNLN brokenClipPts brokenPoly
-    --   actual `shouldBe` Nothing
-    -- it "QC - Maximum polygon" $ do
-    --   let actual = GeometryClip.clipPolygonNLN giantClipPts giantPoly
-    --       resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
-    --       result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
-    --   actual `shouldBe` Just result
-    -- it "QC - Turning point test" $
+    it "NLN - Negative polygon" $ do
+      let actual = GeometryClip.clipPolygonNLN brokenClipPts brokenPoly
+      actual `shouldBe` Nothing
+    it "NLN - Maximum polygon" $ do
+      let actual = GeometryClip.clipPolygonNLN giantClipPts giantPoly
+          resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
+          result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
+      actual `shouldBe` Just result
+    -- it "NLN - Turning point test" $
     --   GeometryClip.clipPolygonNLN myClipPts turningPointTestPoly `shouldBe` Just turningPointTestClippedPoly
+
+
+testClipPolygonWithInterior :: Spec
+testClipPolygonWithInterior =
+  describe "simple polygon with inner test" $
+    it "Returns clipped polygon and inner polygon" $
+      GeometryClip.clipPolygon polyClipPts polyWithInner `shouldBe` Just resultPolyWithInner
+
+
+manyClipPts :: GeometryGeography.BoundingBoxPts
+manyClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 100 100) (VectorTile.Point 200 200)
+    
+poly1 :: VectorTile.Polygon
+poly1 = VectorTile.Polygon (SpecHelper.tupleToPts a) mempty
+  where
+    a = [(125,125),(175,175),(75,225),(25,175),(125,125)]
+
+result1 :: VectorTile.Polygon
+result1 = VectorTile.Polygon (SpecHelper.tupleToPts a) mempty
+  where
+    a = [(125,125),(175,175),(124,200),(100,200),(100,137),(125,125)]
+
+result1b :: VectorTile.Polygon
+result1b = VectorTile.Polygon (SpecHelper.tupleToPts a) mempty
+  where
+    a = [(125,125),(175,175),(125,200),(100,200),(100,137),(125,125)]
+  
+testManyClipPolygon :: Spec
+testManyClipPolygon = 
+  describe "many polygon test" $ do
+    it "Simple - polygon 1" $
+      GeometryClip.clipPolygon manyClipPts poly1 `shouldBe` Just result1
+    it "NLN - polygon 1" $
+      GeometryClip.clipPolygonNLN manyClipPts poly1 `shouldBe` Just result1b
