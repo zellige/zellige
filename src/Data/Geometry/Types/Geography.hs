@@ -111,22 +111,6 @@ word8ToOutCode w =
       4 -> Bottom
       _ -> Top
 
-instance Storable (Double, Double) where
-  sizeOf _ = 8 * 2
-  alignment _ = 8
-  peek p = (,) <$> peekByteOff p 0 <*> peekByteOff p 8
-  poke p (a, b) = pokeByteOff p 0 a *> pokeByteOff p 8 b
-
-data ClipPoint = ClipPoint
-  { _clipPointCode  :: !OutCode
-  , _clipPointPoint :: !VectorTile.Point
-  } deriving (Eq, Show)
-
-data ClipLine = ClipLine
-  { _clipLine1 :: !ClipPoint
-  , _clipLine2 :: !ClipPoint
-  }
-
 data GeoClipPoint = GeoClipPoint
   { _geoClipPointCode  :: !OutCode
   , _geoClipPointPoint :: !Geospatial.PointXY
@@ -136,17 +120,6 @@ data GeoClipLine = GeoClipLine
   { _geoClipLine1 :: !GeoClipPoint
   , _geoClipLine2 :: !GeoClipPoint
   } deriving (Eq, Show)
-
-instance VectorStorable.Storable ClipLine where
-  sizeOf _ = (16 * 2) + (1 * 2)
-  alignment _ = 8 + 2
-  peek p = do
-    p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
-    p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
-    o1 <- peekByteOff p 32
-    o2 <- peekByteOff p 33
-    pure (ClipLine (ClipPoint (word8ToOutCode o1) p1) (ClipPoint (word8ToOutCode o2) p2))
-  poke p (ClipLine (ClipPoint o1 (VectorTile.Point a1 b1)) (ClipPoint o2 (VectorTile.Point a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
 
 data GeoStorableLine = GeoStorableLine
   { _geoStorableLinePt1 :: !Geospatial.PointXY
