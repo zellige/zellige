@@ -17,11 +17,11 @@ import qualified Geography.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
 import qualified Data.Geometry.GeoJsonToMvt      as GeoJsonToMvt
+import qualified Data.Geometry.Simplify          as Simplify
 import qualified Data.Geometry.SphericalMercator as SphericalMercator
 import qualified Data.Geometry.Types.Config      as Config
 import qualified Data.Geometry.Types.LayerConfig as LayerConfig
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
-
 
 -- Command line
 
@@ -63,7 +63,8 @@ createMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoF
         sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
         clipBb = Clip.createBoundingBox _buffer _extents
         clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
-        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox clippedFeatures)
+        simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
+        MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
         layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
