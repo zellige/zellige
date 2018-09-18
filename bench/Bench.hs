@@ -9,7 +9,6 @@ import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Text                       as DataText
 import qualified Data.Vector                     as Vector
-import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
