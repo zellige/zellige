@@ -180,9 +180,9 @@ turningClip :: GeometryGeography.BoundingBox
 turningClip = GeometryGeography.BoundingBox 100 100 200 200
 
 spec :: Spec
-spec =
+spec = do
   testClipLine
-  -- testClipPolygon
+  testClipPolygon
   -- testClipPolygonWithInterior
   -- testManyClipPolygon
 
@@ -207,9 +207,12 @@ testClipLine =
     it "QuickClip returns clipped lines" $ do
       let actual = GeometryClip.clipLinesQc lineClip geoLinesTst geoLinesFeatureTst Vector.empty
       actual `shouldBe` geoResultLinesFeatureTst
-    it "Nicholl-Lee-Nicholl returns clipped line" $ do
-      let actual = GeometryClip.clipLinesNLN lineClipPts linesTst
-      actual `shouldBe` resultLines
+    it "NLN returns clipped line" $ do
+      let actual = GeometryClip.clipLineNLN lineClip geoLineTst geoLineFeatureTst Vector.empty
+      actual `shouldBe` geoResultLineFeatureTst
+    it "NLN returns clipped lines" $ do
+      let actual = GeometryClip.clipLinesNLN lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      actual `shouldBe` geoResultLinesFeatureTst
 
 testClipPolygon :: Spec
 testClipPolygon =
