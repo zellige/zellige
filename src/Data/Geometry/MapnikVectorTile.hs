@@ -59,8 +59,7 @@ encodeMvt = VectorTile.untile
 
 createMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
 createMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
-    let --zConfig = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) _simplify
-        sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
+    let sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
         clipBb = Clip.createBoundingBox _buffer _extents
         clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
         simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
