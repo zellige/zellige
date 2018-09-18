@@ -2,6 +2,7 @@ module Main where
 
 import           Criterion.Main
 
+import qualified Data.Geospatial                 as Geospatial
 import qualified Data.Text                       as DataText
 import qualified Data.Vector                     as Vector
 import qualified Data.Vector.Storable            as VectorStorable
@@ -10,9 +11,9 @@ import qualified Geography.VectorTile            as VectorTile
 import qualified Data.Geometry.Clip              as Clip
 import qualified Data.Geometry.MapnikVectorTile  as MapnikVectorTile
 import qualified Data.Geometry.Types.Config      as Config
+import qualified Data.Geometry.Types.Config      as TypesConfig
 import qualified Data.Geometry.Types.Geography   as TypesGeography
 import qualified Data.Geometry.Types.LayerConfig as LayerConfig
-import qualified Data.Geometry.Types.Simplify    as TypesSimplify
 
 
 main :: IO ()
@@ -154,7 +155,7 @@ simpleLineString :: (Floating a, RealFrac a) => a -> a -> VectorTile.LineString
 simpleLineString radius total = VectorTile.LineString (VectorStorable.fromList (getPoints radius total))
 
 testPoly :: (TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon) -> Integer -> TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> [Maybe VectorTile.Polygon] -> [Maybe VectorTile.Polygon]
-testPoly _ 0 _ _ d = d
+testPoly _ 0 _ _ d    = d
 testPoly algo a b c d = d ++ testPoly algo (a - 1) b c [algo b c]
 
 testLineString :: (TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString) -> Integer -> TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> [Vector.Vector VectorTile.LineString] -> [Vector.Vector VectorTile.LineString]
@@ -173,30 +174,30 @@ generateArrayLineString :: Integer -> VectorTile.LineString -> [VectorTile.LineS
 generateArrayLineString 0 _ c = c
 generateArrayLineString a b c = c ++ generateArrayLineString (a - 1) b [b]
 
-getPoints :: (RealFrac a, Floating a) => a -> a -> [VectorTile.Point]
+getPoints :: Double -> Double -> [Geospatial.PointXY]
 getPoints radius total = getPoints' radius total total []
 
-getPoints' :: (RealFrac a, Floating a) => a -> a -> a -> [VectorTile.Point] -> [VectorTile.Point]
+getPoints' :: Double -> Double -> Double -> [Geospatial.PointXY] -> [Geospatial.PointXY]
 getPoints' _ 0 _ b = b
 getPoints' radius current total b = b ++ getPoints' radius (current - 1) total [getCoord radius current total]
 
-getCoord :: (RealFrac a, Floating a) => a -> a -> a -> VectorTile.Point
-getCoord radius current total = VectorTile.Point (round $ getX radius current total)  (round $ getY radius current total)
+getCoord :: Double -> Double -> Double -> Geospatial.PointXY
+getCoord radius current total = Geospatial.PointXY (getX radius current total)  (getY radius current total)
 
-getX :: (RealFrac a, Floating a) => a -> a -> a -> a
+getX :: Double -> Double -> Double -> Double
 getX radius current total = radius * sin ((360 / total) * current)
 
-getY :: (RealFrac a, Floating a) => a -> a -> a -> a
+getY :: Double -> Double -> Double -> Double
 getY radius current total = radius * cos ((360 / total) * current)
 
-boundBox :: TypesGeography.BoundingBoxPts
-boundBox = TypesGeography.BoundingBoxPts (VectorTile.Point 0 0) (VectorTile.Point 1 1)
+boundBox :: TypesGeography.BoundingBox
+boundBox = TypesGeography.bboxPtsToBbox $ TypesGeography.BoundingBoxPts (VectorTile.Point 0 0) (VectorTile.Point 1 1)
 
 testConf :: Config.Config
-testConf = Config.mkConfig (DataText.pack "demo") 15 (28999,19781) 128 2048 1 TypesSimplify.NoAlgorithm
+testConf = Config.mkConfig (DataText.pack "demo") 15 (28999,19781) 128 2048 1 TypesConfig.NoAlgorithm
 
 smallFC :: LayerConfig.LayerConfig
-smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (DataText.pack "demo") 15 28999 19781 128 2048 1 TypesSimplify.NoAlgorithm
+smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (DataText.pack "demo") 15 28999 19781 128 2048 1 TypesConfig.NoAlgorithm
 
 testMain :: IO ()
 testMain = MapnikVectorTile.writeLayer smallFC
