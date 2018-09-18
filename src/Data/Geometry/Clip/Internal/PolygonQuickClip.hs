@@ -70,34 +70,6 @@ foo ::  TypesGeography.BoundingBox-> Vector.Vector Geospatial.PointXY -> Vector.
 foo bb polyPts = if Vector.length polyPts <= 2 then Vector.empty else newPoints
   where
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
-    -- newPoints = Vector.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) Vector.empty (TypesGeography.pointsToLines polyPts)
-
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
 lineToClippedPoints bb l = ClipLine.foldPointsToLine $ Vector.foldr (ClipLineQuickClip.clipOrDiscard bb) Vector.empty l
-
-clipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
-clipEdges polyLine@(TypesGeography.GeoStorableLine s e) line acc =
-  case (inside e line, inside s line) of
-    (True, True)   -> Vector.cons e acc
-    (True, False)  -> Vector.cons e $ Vector.cons (lineIntersectPoint line polyLine) acc
-    (False, True)  -> Vector.cons (lineIntersectPoint line polyLine) acc
-    (False, False) -> acc
-
-lineIntersectPoint :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Geospatial.PointXY
-lineIntersectPoint (TypesGeography.GeoStorableLine (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2)) (TypesGeography.GeoStorableLine (Geospatial.PointXY x1' y1') (Geospatial.PointXY x2' y2')) =
-  let
-    (dx, dy) = (x1 - x2, y1 - y2)
-    (dx', dy') = (x1' - x2', y1' - y2')
-    n1 = (x1 * y2) - (y1 * x2)
-    n2 = (x1' * y2') - (y1' * x2')
-    d = (dx * dy') - (dy * dx')
-    x = ((n1 * dx') - (n2 * dx)) / d
-    y = ((n1 * dy') - (n2 * dy)) / d
-  in Geospatial.PointXY x y
-
--- Is point of RHS of Line
-inside :: Geospatial.PointXY -> TypesGeography.GeoStorableLine -> Bool
-inside (Geospatial.PointXY x y) (TypesGeography.GeoStorableLine (Geospatial.PointXY x1 y1) (Geospatial.PointXY x2 y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
-
-
