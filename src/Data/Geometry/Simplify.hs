@@ -40,7 +40,7 @@ simplifyFeature algo geometry feature acc =
       Geospatial.Line l                       -> simplifyLine algo l feature acc
       Geospatial.MultiLine ls                 -> simplifyLines algo ls feature acc
       Geospatial.Polygon p                    -> simplifyPolygon algo p feature acc
-      Geospatial.MultiPolygon _               -> Vector.cons feature acc
+      Geospatial.MultiPolygon ps              -> simplifyPolygons algo ps feature acc
       Geospatial.Collection gs                -> Foldable.foldMap (\x -> simplifyFeature algo x feature acc) gs
 
 simplifyLine :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Geospatial.GeoFeature a -> Vector.Vector (Geospatial.GeoFeature a) -> Vector.Vector (Geospatial.GeoFeature a)
@@ -66,6 +66,15 @@ simplifyPolygon algo (Geospatial.GeoPolygon polygon) (Geospatial.GeoFeature bbox
   where
     validationToEither = traverse (Validation.toEither . LinearRing.fromVector) simplifyGeoPolygon
     simplifyGeoPolygon = fmap (createSimplifiedLinearRing algo) polygon
+
+simplifyPolygons :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature a -> Vector.Vector (Geospatial.GeoFeature a) -> Vector.Vector (Geospatial.GeoFeature a)
+simplifyPolygons algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFeature bbox _ props fId) acc =
+  case validationToEither of
+    Right res -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon res)) props fId) acc
+    Left _    -> acc
+  where
+    validationToEither = traverse (traverse (Validation.toEither . LinearRing.fromVector)) simplifyGeoPolygons
+    simplifyGeoPolygons = (fmap . fmap) (createSimplifiedLinearRing algo) polygons
 
 createSimplifiedLineString :: TypesConfig.SimplificationAlgorithm -> LineString.LineString Geospatial.GeoPositionWithoutCRS -> Vector.Vector Geospatial.GeoPositionWithoutCRS
 createSimplifiedLineString algo lineString = Geospatial.GeoPointXY <$> simplifyUsing algo (fmap Geospatial.retrieveXY (LineString.toVector lineString))
