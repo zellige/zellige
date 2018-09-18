@@ -197,8 +197,11 @@ testClipLine =
       let actual = GeometryClip.clipLinesLb lineClipPts linesTst
       actual `shouldBe` resultLines
     it "QuickClip returns clipped line" $ do
-      let actual = GeometryClip.clipLinesQc lineClipPts linesTst
-      actual `shouldBe` resultLines
+      let actual = GeometryClip.clipLineQc lineClip geoLineTst geoLineFeatureTst Vector.empty
+      actual `shouldBe` geoResultLineFeatureTst
+    it "QuickClip returns clipped lines" $ do
+      let actual = GeometryClip.clipLinesQc lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      actual `shouldBe` geoResultLinesFeatureTst
     it "Nicholl-Lee-Nicholl returns clipped line" $ do
       let actual = GeometryClip.clipLinesNLN lineClipPts linesTst
       actual `shouldBe` resultLines
