@@ -56,9 +56,9 @@ clipFeature bbox geometry feature acc =
     Geospatial.NoGeometry     -> acc
     Geospatial.Point g        -> clipPoint bbox g feature acc
     Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
-    Geospatial.Line g         -> clipLineCs bbox g feature acc
-    Geospatial.MultiLine g    -> clipLinesCs bbox g feature acc
-    Geospatial.Polygon g      -> clipPolygon bbox g feature acc
-    Geospatial.MultiPolygon g -> clipPolygons bbox g feature acc
+    Geospatial.Line g         -> clipLineQc bbox g feature acc
+    Geospatial.MultiLine g    -> clipLinesQc bbox g feature acc
+    Geospatial.Polygon g      -> clipPolygonNLN bbox g feature acc
+    Geospatial.MultiPolygon g -> clipPolygonsNLN bbox g feature acc
     Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
 
