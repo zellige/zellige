@@ -20,24 +20,6 @@ import qualified Data.Validation                  as Validation
 import qualified Data.Vector                      as Vector
 import           Prelude                          hiding (lines)
 
--- clipLinesNLN :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.LineString -> Vector.Vector VectorTile.LineString
--- clipLinesNLN bb = Vector.foldl' (\acc lineString -> maybeAddLine acc (lineToClippedPoints (TypesGeography.bboxPtsToBboxRect bb) lineString)) Vector.empty
-
--- maybeAddLine :: Vector.Vector VectorTile.LineString -> VectorStorable.Vector Geospatial.PointXY -> Vector.Vector VectorTile.LineString
--- maybeAddLine acc pts =
---     case ClipLine.checkValidLineString pts of
---       Nothing  -> acc
---       Just res -> Vector.cons res acc
-
--- lineToClippedPoints :: TypesGeography.BoundingBox -> VectorTile.LineString -> VectorStorable.Vector Geospatial.PointXY
--- lineToClippedPoints bb lineString = ClipLine.foldPointsToLine $ VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines lineString)
-
--- clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
--- clipOrDiscard bb line acc =
---   case foldLine bb line of
---     Nothing          -> acc
---     Just clippedLine -> VectorStorable.cons clippedLine acc
-
 clipLineNLN :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipLineNLN bb line feature acc =
   case LineString.fromVector clippedLine of
