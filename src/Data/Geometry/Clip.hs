@@ -8,6 +8,7 @@ module Data.Geometry.Clip (
   createBoundingBox
 , clipPoint
 , clipPoints
+, clipLineLb
 , clipLinesLb
 , clipLineCs
 , clipLinesCs
