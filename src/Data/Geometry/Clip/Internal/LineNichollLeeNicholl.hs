@@ -18,6 +18,7 @@ import qualified Data.Geospatial                  as Geospatial
 import qualified Data.LineString                  as LineString
 import qualified Data.Validation                  as Validation
 import qualified Data.Vector                      as Vector
+import qualified Data.Vector.Storable             as VectorStorable
 import           Prelude                          hiding (lines)
 
 clipLineNLN :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
@@ -37,7 +38,7 @@ clipLinesNLN bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesA
 
 maybeAddLine :: Vector.Vector
                (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-             -> Vector.Vector TypesGeography.GeoStorableLine
+             -> VectorStorable.Vector TypesGeography.GeoStorableLine
              -> Vector.Vector
                   (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 maybeAddLine acc pp =
@@ -45,22 +46,22 @@ maybeAddLine acc pp =
     Validation.Success res -> Vector.cons res acc
     Validation.Failure _   -> acc
 
-clipLineToValidationLineString :: Vector.Vector TypesGeography.GeoStorableLine
+clipLineToValidationLineString :: VectorStorable.Vector TypesGeography.GeoStorableLine
              -> Validation.Validation
                   LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 clipLineToValidationLineString lines = LineString.fromVector (ClipLine.newNewFoldPointsToLine lines)
 
-lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Vector.Vector TypesGeography.GeoStorableLine
-lineToClippedPoints bb geoLine = Vector.foldr (clipOrDiscard bb) Vector.empty (ClipLine.newGetLines geoLine)
+lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
+lineToClippedPoints bb geoLine = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.newGetLines geoLine)
 
-linesToClippedPoints :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Vector.Vector TypesGeography.GeoStorableLine)
+linesToClippedPoints :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (VectorStorable.Vector TypesGeography.GeoStorableLine)
 linesToClippedPoints bb = fmap (lineToClippedPoints bb)
 
-clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector TypesGeography.GeoStorableLine
+clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
 clipOrDiscard bb line acc =
   case reverseAndClipLine bb line of
     Nothing          -> acc
-    Just clippedLine -> Vector.cons clippedLine acc
+    Just clippedLine -> VectorStorable.cons clippedLine acc
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up

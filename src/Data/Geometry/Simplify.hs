@@ -16,6 +16,7 @@ import qualified Data.LinearRing                       as LinearRing
 import qualified Data.LineString                       as LineString
 import qualified Data.Validation                       as Validation
 import qualified Data.Vector                           as Vector
+import qualified Data.Vector.Storable                  as VectorStorable
 
 import qualified Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPeucker
 import qualified Data.Geometry.Types.Config            as TypesConfig
@@ -24,6 +25,11 @@ simplifyUsing :: TypesConfig.SimplificationAlgorithm -> Vector.Vector Geospatial
 simplifyUsing TypesConfig.NoAlgorithm    = id
 simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 10.0
 simplifyUsing TypesConfig.Visvalingam    = id
+
+newSimplifyUsing :: TypesConfig.SimplificationAlgorithm -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+newSimplifyUsing TypesConfig.NoAlgorithm    = id
+newSimplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.newDouglasPeucker 10.0
+newSimplifyUsing TypesConfig.Visvalingam    = id
 
 simplifyFeatures :: TypesConfig.SimplificationAlgorithm -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 simplifyFeatures algo = Vector.foldr (\x acc -> simplifyFeature algo (Geospatial._geometry x) x acc) Vector.empty
@@ -76,8 +82,8 @@ simplifyPolygons algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFeatu
     validationToEither = traverse (traverse (Validation.toEither . LinearRing.fromVector)) simplifyGeoPolygons
     simplifyGeoPolygons = (fmap . fmap) (createSimplifiedLinearRing algo) polygons
 
-createSimplifiedLineString :: TypesConfig.SimplificationAlgorithm -> LineString.LineString Geospatial.GeoPositionWithoutCRS -> Vector.Vector Geospatial.GeoPositionWithoutCRS
-createSimplifiedLineString algo lineString = Geospatial.GeoPointXY <$> simplifyUsing algo (fmap Geospatial.retrieveXY (LineString.toVector lineString))
+createSimplifiedLineString :: TypesConfig.SimplificationAlgorithm -> LineString.LineString Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector Geospatial.GeoPositionWithoutCRS
+createSimplifiedLineString algo lineString = VectorStorable.map Geospatial.GeoPointXY (newSimplifyUsing algo (VectorStorable.map Geospatial.retrieveXY (LineString.toVector lineString)))
 
 createSimplifiedLinearRing :: TypesConfig.SimplificationAlgorithm -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Vector.Vector Geospatial.GeoPositionWithoutCRS
 createSimplifiedLinearRing algo linearRing = Geospatial.GeoPointXY <$> simplifyUsing algo (fmap Geospatial.retrieveXY (LinearRing.toVector linearRing))

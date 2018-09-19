@@ -16,7 +16,7 @@ import qualified Data.LinearRing                           as LinearRing
 import qualified Data.List.NonEmpty                        as ListNonEmpty
 import qualified Data.Validation                           as Validation
 import qualified Data.Vector                               as Vector
-
+import qualified Data.Vector.Storable                      as VectorStorable
 
 clipPolygonsQc :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsQc bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -72,4 +72,4 @@ foo bb polyPts = if Vector.length polyPts <= 2 then Vector.empty else newPoints
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-lineToClippedPoints bb l = ClipLine.foldPointsToLine $ Vector.foldr (ClipLineQuickClip.clipOrDiscard bb) Vector.empty l
+lineToClippedPoints bb l = ClipLine.foldPointsToLine . Vector.convert $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)

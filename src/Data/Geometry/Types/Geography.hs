@@ -59,7 +59,6 @@ mkBBoxPoly (BoundingBox x1 y1 x2 y2) = pointsToLines $ Vector.fromList [Geospati
 pointsToLines :: Vector.Vector Geospatial.PointXY -> Vector.Vector GeoStorableLine
 pointsToLines pts = (Vector.zipWith GeoStorableLine <*> Vector.tail) $ Vector.cons (Vector.last pts) pts
 
-
 -- Coords types
 
 data LatLon = LatLon
@@ -111,6 +110,15 @@ word8ToOutCode w =
       4 -> Bottom
       _ -> Top
 
+sizeOfPointXy :: Int
+sizeOfPointXy = sizeOf (undefined :: Geospatial.PointXY)
+
+sizeOfDouble :: Int
+sizeOfDouble = sizeOf (undefined :: Double)
+
+sizeOfWord8 :: Int
+sizeOfWord8 = sizeOf (undefined :: DataWord.Word8)
+
 data GeoClipPoint = GeoClipPoint
   { _geoClipPointCode  :: !OutCode
   , _geoClipPointPoint :: !Geospatial.PointXY
@@ -121,10 +129,28 @@ data GeoClipLine = GeoClipLine
   , _geoClipLine2 :: !GeoClipPoint
   } deriving (Eq, Show)
 
+instance VectorStorable.Storable GeoClipLine where
+  sizeOf _ = (sizeOfPointXy * 2) + (sizeOfWord8 * 2)
+  alignment _ = alignment (undefined :: Double)
+  peek p = do
+    p1 <- Geospatial.PointXY <$> peekByteOff p 0 <*> peekByteOff p (1 * sizeOfDouble)
+    p2 <- Geospatial.PointXY <$> peekByteOff p (2 * sizeOfDouble) <*> peekByteOff p (3 * sizeOfDouble)
+    o1 <- peekByteOff p (4 * sizeOfDouble)
+    o2 <- peekByteOff p ((4 * sizeOfDouble) + sizeOfWord8)
+    pure (GeoClipLine (GeoClipPoint (word8ToOutCode o1) p1) (GeoClipPoint (word8ToOutCode o2) p2))
+  poke p (GeoClipLine (GeoClipPoint o1 (Geospatial.PointXY a1 b1)) (GeoClipPoint o2 (Geospatial.PointXY a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p (1 * sizeOfDouble) b1 *> pokeByteOff p (2 * sizeOfDouble) a2 *> pokeByteOff p (3 * sizeOfDouble) b2 *> pokeByteOff p (4 * sizeOfDouble) (outCodeToWord8 o1) *> pokeByteOff p ((4 * sizeOfDouble) + sizeOfWord8) (outCodeToWord8 o2)
+
+
 data GeoStorableLine = GeoStorableLine
   { _geoStorableLinePt1 :: !Geospatial.PointXY
   , _geoStorableLinePt2 :: !Geospatial.PointXY
   } deriving (Eq, Show)
+
+instance VectorStorable.Storable GeoStorableLine where
+  sizeOf _ = 2 * sizeOfPointXy
+  alignment _ = alignment (undefined :: Double)
+  peek p = GeoStorableLine <$> peekByteOff p 0 <*> peekByteOff p (1 * sizeOfPointXy)
+  poke p (GeoStorableLine (Geospatial.PointXY a1 b1) (Geospatial.PointXY a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p (1 * sizeOfDouble) b1 *> pokeByteOff p (2 * sizeOfDouble) a2 *> pokeByteOff p (3 * sizeOfDouble) b2
 
 data StorableLine = StorableLine
   { _storableLinePt1 :: !VectorTile.Point

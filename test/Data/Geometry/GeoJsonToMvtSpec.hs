@@ -9,6 +9,7 @@ import qualified Data.HashMap.Strict             as HM
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
@@ -65,7 +66,7 @@ testLines =
     it "Returns mapnik lines feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing line AT.Null (mkFeatureID x)
-          line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) Vector.empty
+          line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) VectorStorable.empty
           pts = tupleToPts [(840, 2194), (23, 2098)]
           result = MvtFeatures.MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])

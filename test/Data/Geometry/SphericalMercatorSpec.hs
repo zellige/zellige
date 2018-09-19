@@ -7,6 +7,7 @@ import qualified Data.Geospatial                 as Geospatial
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
 import qualified Test.QuickCheck.Arbitrary       as QA
@@ -33,7 +34,7 @@ pt3 :: Geospatial.GeoPoint
 pt3 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960599 (-37.799549)))
 
 testLine :: Geospatial.GeospatialGeometry
-testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) Vector.empty))
+testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) VectorStorable.empty))
 
 testPolygon :: Geospatial.GeospatialGeometry
 testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) Vector.empty]))
