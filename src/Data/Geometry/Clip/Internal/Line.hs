@@ -34,8 +34,8 @@ newLinesFromPoints :: LineString.LineString Geospatial.GeoPositionWithoutCRS -> 
 newLinesFromPoints = LineString.combineToVector (\x y -> TypesGeography.GeoStorableLine (Geospatial.retrieveXY x) (Geospatial.retrieveXY y))
 {-# INLINE newLinesFromPoints #-}
 
-pointsFromLine :: TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-pointsFromLine (TypesGeography.GeoStorableLine p1 p2) = Vector.fromList [p1, p2]
+pointsFromLine :: TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+pointsFromLine (TypesGeography.GeoStorableLine p1 p2) = VectorStorable.fromList [p1, p2]
 {-# INLINE pointsFromLine #-}
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
@@ -59,8 +59,8 @@ newNewFoldPointsToLine :: VectorStorable.Vector TypesGeography.GeoStorableLine -
 newNewFoldPointsToLine = newSegmentToLine . VectorStorable.foldr (mappend . (\(TypesGeography.GeoStorableLine p1 p2) -> VectorStorable.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2])) mempty
 {-# INLINE newNewFoldPointsToLine #-}
 
-foldPointsToLine :: Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-foldPointsToLine = Vector.foldr (mappend . (\(TypesGeography.GeoStorableLine p1 p2) -> Vector.fromList [p1, p2])) mempty
+foldPointsToLine :: VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+foldPointsToLine = VectorStorable.foldr (mappend . (\(TypesGeography.GeoStorableLine p1 p2) -> VectorStorable.fromList [p1, p2])) mempty
 {-# INLINE foldPointsToLine #-}
 
 newFoldPointsToLine :: Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY

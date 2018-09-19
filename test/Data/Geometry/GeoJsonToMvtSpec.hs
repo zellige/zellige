@@ -80,7 +80,7 @@ testPolygons =
     it "Returns mapnik polygon feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
-          polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) Vector.empty]
+          polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) mempty]
           pts = tupleToPts [(840, 2194), (23, 2098), (178, 1162), (840, 2194)]
           result = MvtFeatures.MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
           actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])

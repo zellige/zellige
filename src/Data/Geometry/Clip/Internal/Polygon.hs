@@ -13,6 +13,7 @@ import qualified Data.LinearRing               as LinearRing
 import qualified Data.List.NonEmpty            as ListNonEmpty
 import qualified Data.Validation               as Validation
 import qualified Data.Vector                   as Vector
+import qualified Data.Vector.Storable          as VectorStorable
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
@@ -43,38 +44,38 @@ clipLinearRing bb linearRing =
         Validation.Failure _ -> Nothing
         Validation.Success b -> Just b
   where
-    newLinearRing x = LinearRing.fromVector (fmap Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-    createNewClipPts = clipPolyPoints bb (fmap Geospatial.retrieveXY (LinearRing.toVector linearRing))
+    newLinearRing x = LinearRing.fromVector (VectorStorable.map Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+    createNewClipPts = clipPolyPoints bb (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing))
 
-clipPolyPoints :: TypesGeography.BoundingBox -> Vector.Vector Geospatial.PointXY -> Maybe (Vector.Vector Geospatial.PointXY)
-clipPolyPoints bb polyPoints = checkLength (Vector.uniq newClippedPoly)
+clipPolyPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+clipPolyPoints bb polyPoints = checkLength newClippedPoly
   where
-    newClippedPoly = Vector.foldl' foo polyPoints (TypesGeography.mkBBoxPoly bb)
+    newClippedPoly = VectorStorable.foldl' foo polyPoints (TypesGeography.mkBBoxPoly bb)
     checkLength newPoly =
-      if Vector.length newPoly <= 2
+      if VectorStorable.length newPoly <= 2
         then Nothing
         else Just (closeIfNot newPoly)
 
-closeIfNot :: Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+closeIfNot :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 closeIfNot poly =
   if lastPt /= firstPt
-    then Vector.cons lastPt poly
+    then VectorStorable.cons lastPt poly
     else poly
   where
-    lastPt = Vector.last poly
-    firstPt = Vector.head poly
+    lastPt = VectorStorable.last poly
+    firstPt = VectorStorable.head poly
 
-foo :: Vector.Vector Geospatial.PointXY -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-foo polyPts bbLine = if Vector.length polyPts <= 2 then Vector.empty else newPoints
+foo :: VectorStorable.Vector Geospatial.PointXY -> TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+foo polyPts bbLine = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
-    newPoints = Vector.foldl' (\acc line -> clipEdges line bbLine acc) Vector.empty (TypesGeography.pointsToLines polyPts)
+    newPoints = VectorStorable.foldl' (\acc line -> clipEdges line bbLine acc) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
-clipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+clipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 clipEdges polyLine@(TypesGeography.GeoStorableLine s e) line acc =
   case (inside e line, inside s line) of
-    (True, True)   -> Vector.cons e acc
-    (True, False)  -> Vector.cons e $ Vector.cons (lineIntersectPoint line polyLine) acc
-    (False, True)  -> Vector.cons (lineIntersectPoint line polyLine) acc
+    (True, True)   -> VectorStorable.cons e acc
+    (True, False)  -> VectorStorable.cons e $ VectorStorable.cons (lineIntersectPoint line polyLine) acc
+    (False, True)  -> VectorStorable.cons (lineIntersectPoint line polyLine) acc
     (False, False) -> acc
 
 lineIntersectPoint :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Geospatial.PointXY

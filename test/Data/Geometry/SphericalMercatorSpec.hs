@@ -37,7 +37,7 @@ testLine :: Geospatial.GeospatialGeometry
 testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) VectorStorable.empty))
 
 testPolygon :: Geospatial.GeospatialGeometry
-testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) Vector.empty]))
+testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) VectorStorable.empty]))
 
 point1 :: Geospatial.GeospatialGeometry
 point1 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (839.9996700223613, 2194.1081715809173)))

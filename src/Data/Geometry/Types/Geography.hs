@@ -53,11 +53,11 @@ bboxPtsToBbox (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point max
 bboxPtsToBboxRect :: BoundingBoxPts -> BoundingBoxRect
 bboxPtsToBboxRect (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)) = BoundingBoxRect minX minY maxX maxY
 
-mkBBoxPoly :: BoundingBox -> Vector.Vector GeoStorableLine
-mkBBoxPoly (BoundingBox x1 y1 x2 y2) = pointsToLines $ Vector.fromList [Geospatial.PointXY x1 y1, Geospatial.PointXY x2 y1, Geospatial.PointXY x2 y2, Geospatial.PointXY x1 y2]
+mkBBoxPoly :: BoundingBox -> VectorStorable.Vector GeoStorableLine
+mkBBoxPoly (BoundingBox x1 y1 x2 y2) = pointsToLines $ VectorStorable.fromList [Geospatial.PointXY x1 y1, Geospatial.PointXY x2 y1, Geospatial.PointXY x2 y2, Geospatial.PointXY x1 y2]
 
-pointsToLines :: Vector.Vector Geospatial.PointXY -> Vector.Vector GeoStorableLine
-pointsToLines pts = (Vector.zipWith GeoStorableLine <*> Vector.tail) $ Vector.cons (Vector.last pts) pts
+pointsToLines :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector GeoStorableLine
+pointsToLines pts = (VectorStorable.zipWith GeoStorableLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
 
 -- Coords types
 

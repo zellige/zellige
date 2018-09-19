@@ -3,6 +3,7 @@ module Data.Geometry.SphericalMercator where
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Foldable                 as Foldable
 import qualified Data.Geospatial               as Geospatial
+import qualified Data.LinearRing               as LinearRing
 import qualified Data.LineString               as LineString
 import qualified Data.Vector                   as Vector
 
@@ -67,12 +68,12 @@ convertLines extents qt bb (Geospatial.GeoMultiLine mLines) = Geospatial.MultiLi
 convertPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeospatialGeometry
 convertPolygon extents qt bb (Geospatial.GeoPolygon poly) = Geospatial.Polygon (Geospatial.GeoPolygon newPoly)
   where
-    newPoly = (fmap . fmap) (latLonToXYInTile extents qt bb) poly
+    newPoly = (fmap . LinearRing.map) (latLonToXYInTile extents qt bb) poly
 
 convertMultiPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeospatialGeometry
 convertMultiPolygon extents qt bb (Geospatial.GeoMultiPolygon polys) = Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)
   where
-    newPolys = (fmap . fmap . fmap) (latLonToXYInTile extents qt bb) polys
+    newPolys = (fmap . fmap . LinearRing.map) (latLonToXYInTile extents qt bb) polys
 
 convertCollection :: Int -> Int -> TypesGeography.BoundingBox -> Vector.Vector Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 convertCollection extents qt bb gs = Geospatial.Collection newCollection

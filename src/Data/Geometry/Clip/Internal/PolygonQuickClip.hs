@@ -45,31 +45,30 @@ clipLinearRing bb linearRing =
         Validation.Failure _ -> Nothing
         Validation.Success b -> Just b
   where
-    newLinearRing x = LinearRing.fromVector (fmap Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-    createNewClipPts = clipPolyPoints bb (fmap Geospatial.retrieveXY (LinearRing.toVector linearRing))
+    newLinearRing x = LinearRing.fromVector (VectorStorable.map Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+    createNewClipPts = clipPolyPoints bb (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing))
 
-clipPolyPoints :: TypesGeography.BoundingBox -> Vector.Vector Geospatial.PointXY -> Maybe (Vector.Vector Geospatial.PointXY)
-clipPolyPoints bb polyPoints = checkLength (Vector.uniq newClippedPoly)
+clipPolyPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+clipPolyPoints bb polyPoints =
+  if VectorStorable.length newClippedPoly <= 2
+  then Nothing
+  else Just (closeIfNot newClippedPoly)
   where
     newClippedPoly = foo bb polyPoints
-    checkLength newPoly =
-      if Vector.length newPoly <= 2
-        then Nothing
-        else Just (closeIfNot newPoly)
 
-closeIfNot :: Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+closeIfNot :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 closeIfNot poly =
   if lastPt /= firstPt
-    then Vector.cons lastPt poly
+    then VectorStorable.cons lastPt poly
     else poly
   where
-    lastPt = Vector.last poly
-    firstPt = Vector.head poly
+    lastPt = VectorStorable.last poly
+    firstPt = VectorStorable.head poly
 
-foo ::  TypesGeography.BoundingBox-> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
-foo bb polyPts = if Vector.length polyPts <= 2 then Vector.empty else newPoints
+foo ::  TypesGeography.BoundingBox-> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
-lineToClippedPoints :: TypesGeography.BoundingBox -> Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-lineToClippedPoints bb l = ClipLine.foldPointsToLine . Vector.convert $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)
+lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+lineToClippedPoints bb l = ClipLine.foldPointsToLine $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)

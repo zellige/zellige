@@ -15,6 +15,7 @@ import qualified Data.LinearRing                  as LinearRing
 import qualified Data.List.NonEmpty               as ListNonEmpty
 import qualified Data.Validation                  as Validation
 import qualified Data.Vector                      as Vector
+import qualified Data.Vector.Storable             as VectorStorable
 
 clipPolygonsNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsNLN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -43,58 +44,56 @@ clipLinearRing bb linearRing =
         Validation.Failure _ -> Nothing
         Validation.Success b -> Just b
   where
-    newLinearRing x = LinearRing.fromVector (fmap Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-    createNewClipPts = clipPolyPoints bb (fmap Geospatial.retrieveXY (LinearRing.toVector linearRing))
+    newLinearRing x = LinearRing.fromVector (VectorStorable.map Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+    createNewClipPts = clipPolyPoints bb (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing))
 
-clipPolyPoints :: TypesGeography.BoundingBox -> Vector.Vector Geospatial.PointXY -> Maybe (Vector.Vector Geospatial.PointXY)
-clipPolyPoints bb polyPoints = checkLength (Vector.uniq newClippedPoly)
+clipPolyPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+clipPolyPoints bb polyPoints =
+  if VectorStorable.length newClippedPoly <= 2
+  then Nothing
+  else Just (closeIfNot newClippedPoly)
   where
     newClippedPoly = foo bb polyPoints
-    checkLength newPoly =
-      if Vector.length newPoly <= 2
-        then Nothing
-        else Just (closeIfNot newPoly)
 
-closeIfNot :: Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+closeIfNot :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 closeIfNot poly =
   if lastPt /= firstPt
-    then Vector.cons lastPt poly
+    then VectorStorable.cons lastPt poly
     else poly
   where
-    lastPt = Vector.last poly
-    firstPt = Vector.head poly
+    lastPt = VectorStorable.last poly
+    firstPt = VectorStorable.head poly
 
-foo :: TypesGeography.BoundingBox-> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
-foo bb polyPts = if Vector.length polyPts <= 2 then Vector.empty else newPoints
+foo :: TypesGeography.BoundingBox-> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
-lineToClippedPoints :: TypesGeography.BoundingBox -> Vector.Vector TypesGeography.GeoStorableLine -> Vector.Vector Geospatial.PointXY
-lineToClippedPoints bb = Vector.foldr (clipOrDiscard bb) Vector.empty
+lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+lineToClippedPoints bb = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty
 
-clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
+clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 clipOrDiscard bb line acc =
   case foldLine bb line of
     Nothing          -> acc
-    Just clippedLine -> (Vector.++) clippedLine acc
+    Just clippedLine -> (VectorStorable.++) clippedLine acc
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up
-foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (Vector.Vector Geospatial.PointXY)
+foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 foldLine r = clipLine (reverseRectYAxis r)
 
-clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (Vector.Vector Geospatial.PointXY)
+clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 clipLine r@(TypesGeography.BoundingBox left _ right _) l@(TypesGeography.GeoStorableLine  (Geospatial.PointXY p1x _) _)
   | p1x < left  = toPoints $ _p1Left r l
   | p1x > right = toPoints $ rotateLine180c <$> _p1Left (rotateRect180c r) (rotateLine180c l)
   | otherwise   = toPoints $ _p1Centre r l
 
-toPoints :: Maybe TypesGeography.GeoStorableLine -> Maybe (Vector.Vector Geospatial.PointXY)
+toPoints :: Maybe TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 toPoints a =
     case a of
         Just line -> Just $ ClipLine.pointsFromLine line
         Nothing   -> Nothing
-
 
 makeLineFromSinglePoint :: Double -> Double -> TypesGeography.GeoStorableLine
 makeLineFromSinglePoint a b =

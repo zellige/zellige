@@ -85,5 +85,5 @@ simplifyPolygons algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFeatu
 createSimplifiedLineString :: TypesConfig.SimplificationAlgorithm -> LineString.LineString Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector Geospatial.GeoPositionWithoutCRS
 createSimplifiedLineString algo lineString = VectorStorable.map Geospatial.GeoPointXY (newSimplifyUsing algo (VectorStorable.map Geospatial.retrieveXY (LineString.toVector lineString)))
 
-createSimplifiedLinearRing :: TypesConfig.SimplificationAlgorithm -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Vector.Vector Geospatial.GeoPositionWithoutCRS
-createSimplifiedLinearRing algo linearRing = Geospatial.GeoPointXY <$> simplifyUsing algo (fmap Geospatial.retrieveXY (LinearRing.toVector linearRing))
+createSimplifiedLinearRing :: TypesConfig.SimplificationAlgorithm -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector Geospatial.GeoPositionWithoutCRS
+createSimplifiedLinearRing algo linearRing = VectorStorable.map Geospatial.GeoPointXY (newSimplifyUsing algo (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing)))

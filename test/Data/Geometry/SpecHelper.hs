@@ -14,7 +14,7 @@ mkLineString :: (Double, Double) -> (Double, Double) -> [(Double, Double)] -> Li
 mkLineString p1 p2 rest = LineString.makeLineString (tupleToGeoPts p1) (tupleToGeoPts p2) (VectorStorable.fromList $ fmap tupleToGeoPts rest)
 
 mkLinearRing :: (Double, Double) -> (Double, Double) -> (Double, Double) -> [(Double, Double)] -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-mkLinearRing p1 p2 p3 rest = LinearRing.makeLinearRing (tupleToGeoPts p1) (tupleToGeoPts p2) (tupleToGeoPts p3) (Vector.fromList $ fmap tupleToGeoPts rest)
+mkLinearRing p1 p2 p3 rest = LinearRing.makeLinearRing (tupleToGeoPts p1) (tupleToGeoPts p2) (tupleToGeoPts p3) (VectorStorable.fromList $ fmap tupleToGeoPts rest)
 
 tupleToGeoPts :: (Double, Double) -> Geospatial.GeoPositionWithoutCRS
 tupleToGeoPts (x, y) = Geospatial.GeoPointXY (Geospatial.PointXY x y)
