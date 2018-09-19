@@ -75,6 +75,7 @@ convertLineString :: Geospatial.GeoLine -> Vector.Vector VectorTile.LineString
 convertLineString =
   Vector.singleton .
   VectorTile.LineString .
+  VectorStorable.uniq .
   Vector.convert .
   Foldable.foldMap coordsToPoints .
   LineString.fromLineString .
@@ -104,7 +105,7 @@ mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.P
 mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
 
 mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
-mkPolyPoints = Vector.convert . Foldable.foldMap coordsToPoints
+mkPolyPoints = VectorStorable.uniq . Vector.convert . Foldable.foldMap coordsToPoints
 
 convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Vector.Vector VectorTile.Polygon
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
