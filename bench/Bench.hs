@@ -9,6 +9,7 @@ import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Text                       as DataText
 import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
 import qualified Geography.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
@@ -168,7 +169,7 @@ simpleLineString :: Double -> Double -> LineString.LineString Geospatial.GeoPosi
 simpleLineString radius total = LineString.makeLineString p1 p2 rest
   where p1 = getCoord radius 0 total
         p2 = getCoord radius 1 total
-        rest = Vector.fromList $ map (\i -> getCoord radius i total) [2..total-1]
+        rest = VectorStorable.fromList $ map (\i -> getCoord radius i total) [2..total-1]
 
 testLineString :: (TypesGeography.BoundingBox
     -> Geospatial.GeoMultiLine
