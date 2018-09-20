@@ -8,6 +8,7 @@ clipPolygonNLNN
 ) where
 
 import qualified Data.Aeson                    as Aeson
+-- import qualified Data.Geometry.Clip.Internal.Line as ClipLine
 import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
@@ -75,66 +76,66 @@ clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -
 clipOrDiscard bb line acc =
   case foldLine bb line of
     Nothing          -> acc
-    Just clippedLine -> toPoints clippedLine acc   -- ++ line acc
+    Just clippedLine -> (VectorStorable.++) clippedLine acc   -- ++ line acc
 
-toPoints :: TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
-toPoints (TypesGeography.GeoStorableLine p1 p2) acc =
-  if p1 == p2 then VectorStorable.snoc acc p1  else VectorStorable.snoc (VectorStorable.snoc acc p2 ) p1
+-- toPoints :: TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+-- toPoints (TypesGeography.GeoStorableLine p1 p2) acc =
+--   if p1 == p2 then VectorStorable.snoc acc p1  else VectorStorable.snoc (VectorStorable.snoc acc p2 ) p1
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up
-foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe TypesGeography.GeoStorableLine
+foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 foldLine r = clipLine (reverseRectYAxis r)
 
-clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe TypesGeography.GeoStorableLine
+clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 clipLine r@(TypesGeography.BoundingBox left _ right _) l@(TypesGeography.GeoStorableLine  (Geospatial.PointXY p1x _) _)
   | p1x < left  = _p1Left r l
-  | p1x > right = rotateLine180c <$> _p1Left (rotateRect180c r) (rotateLine180c l)
+  | p1x > right = rotateVector180c <$> _p1Left (rotateRect180c r) (rotateLine180c l)
   | otherwise   = _p1Centre r l
 
-makeLineFromSinglePoint :: Double -> Double -> TypesGeography.GeoStorableLine
+makeLineFromSinglePoint :: Double -> Double -> VectorStorable.Vector Geospatial.PointXY
 makeLineFromSinglePoint a b =
-  TypesGeography.GeoStorableLine  point point
+  VectorStorable.fromList [point]
   where
     point = Geospatial.PointXY a b
 
-makeLine :: Double -> Double -> Double -> Double -> TypesGeography.GeoStorableLine
+makeLine :: Double -> Double -> Double -> Double -> VectorStorable.Vector Geospatial.PointXY
 makeLine a b c d =
-  TypesGeography.GeoStorableLine  point1 point2
+  VectorStorable.fromList [point1, point2]
   where
     point1 = Geospatial.PointXY a b
     point2 = Geospatial.PointXY c d
 
 -- 1. "leftcolumn"
 -- P1 is in one of the left regions
-_p1Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1Left r@(TypesGeography.BoundingBox left top _ bottom) l@(TypesGeography.GeoStorableLine  (Geospatial.PointXY _ p1y) (Geospatial.PointXY p2x _))
   | p2x < left   = _p1Left_p2Left r l
   | p1y > top    = _p1LeftTop_p2NotLeft r l
-  | p1y < bottom = reflectLineXAxis <$> _p1LeftTop_p2NotLeft (reflectRectXAxis r) (reflectLineXAxis l)
+  | p1y < bottom = _p1LeftTop_p2NotLeft (reflectRectXAxis r) (reflectLineXAxis l)
   | otherwise    = _p1LeftMiddle_p2NotLeft r l
 
 
 -- Handle turning point if in left column
-_p1Left_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1Left_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1Left_p2Left r@(TypesGeography.BoundingBox _ top _ bottom) l@(TypesGeography.GeoStorableLine  (Geospatial.PointXY _ p1y) (Geospatial.PointXY _ _))
     | p1y > top = _p1LeftTop_p2Left r l
     | p1y < bottom = _p1LeftBottom_p2Left r l
     | otherwise = _p1LeftMiddle_p2Left r l
 
-_p1LeftTop_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftTop_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftTop_p2Left (TypesGeography.BoundingBox left top _ bottom) (TypesGeography.GeoStorableLine  (Geospatial.PointXY _ _) (Geospatial.PointXY _ p2y))
     | p2y > top = Nothing
     | p2y < bottom = Just (makeLine left top left bottom)
     | otherwise = Just (makeLineFromSinglePoint left top)
 
-_p1LeftBottom_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftBottom_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftBottom_p2Left (TypesGeography.BoundingBox left top _ bottom) (TypesGeography.GeoStorableLine  (Geospatial.PointXY _ _) (Geospatial.PointXY _ p2y))
     | p2y > top = Just (makeLine left bottom left top)
     | p2y < bottom = Nothing
     | otherwise = Just (makeLineFromSinglePoint left bottom)
 
-_p1LeftMiddle_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftMiddle_p2Left :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftMiddle_p2Left (TypesGeography.BoundingBox left top _ bottom) (TypesGeography.GeoStorableLine  (Geospatial.PointXY _ _) (Geospatial.PointXY _ p2y))
     | p2y > top = Just (makeLineFromSinglePoint left top)
     | p2y < bottom = Just (makeLineFromSinglePoint left bottom)
@@ -142,7 +143,7 @@ _p1LeftMiddle_p2Left (TypesGeography.BoundingBox left top _ bottom) (TypesGeogra
 
 -- 1.1. "topleftcorner"
 -- P1 is in the left-top region, and P2 is not in any of the left regions
-_p1LeftTop_p2NotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftTop_p2NotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftTop_p2NotLeft r@(TypesGeography.BoundingBox left top _ _) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y))
   | p2y > top = Just (makeLineFromSinglePoint left top)
   | otherwise = _p1LeftTop_p2NotLeftTop r l d
@@ -150,10 +151,10 @@ _p1LeftTop_p2NotLeft r@(TypesGeography.BoundingBox left top _ _) l@(TypesGeograp
     d = delta l
 
 -- P1 is in the left-top region, and P2 is not in any of the left or top regions
-_p1LeftTop_p2NotLeftTop :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Geospatial.PointXY -> Maybe TypesGeography.GeoStorableLine
+_p1LeftTop_p2NotLeftTop :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftTop_p2NotLeftTop r l d
   | topP > leftP = _p1LeftTop_p2NotLeftTop' r l d leftP
-  | otherwise    = reflectLineXMinusY <$> _p1LeftTop_p2NotLeftTop' (reflectRectXMinusY r) (reflectLineXMinusY l) (reflectPointXMinusY d) topP
+  | otherwise    = reflectVectorXMinusY <$> _p1LeftTop_p2NotLeftTop' (reflectRectXMinusY r) (reflectLineXMinusY l) (reflectPointXMinusY d) topP
   where
     topP  = topProduct r l d
     leftP = leftProduct r l d
@@ -161,10 +162,10 @@ _p1LeftTop_p2NotLeftTop r l d
 
 -- 1.1.1. "leftbottomregion"
 -- P1 is in the left-top region, and P2 is not in any of the left or top regions, and above the vector from P1 to the left-top corner
-_p1LeftTop_p2NotLeftTop' :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Geospatial.PointXY -> Double -> Maybe TypesGeography.GeoStorableLine
+_p1LeftTop_p2NotLeftTop' :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Geospatial.PointXY -> Double -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftTop_p2NotLeftTop' r@(TypesGeography.BoundingBox _ _ _ bottom) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y)) d leftP
   | p2y < bottom = _p1LeftTop_p2Bottom r l d leftP
-  | otherwise    = Just (TypesGeography.GeoStorableLine  (clipLeft r l d leftP) (_p1LeftTop_p2Middle r l d))
+  | otherwise    = Just (VectorStorable.fromList [clipLeft r l d leftP, _p1LeftTop_p2Middle r l d])
 
 -- P1 is in the left-top region, and P2 is the centre-middle or right-middle region
 _p1LeftTop_p2Middle :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine   -> Geospatial.PointXY -> Geospatial.PointXY
@@ -175,10 +176,10 @@ _p1LeftTop_p2Middle r@(TypesGeography.BoundingBox _ _ right _) l@(TypesGeography
     rightP = rightProduct r l d
 
 -- P1 is in the left-top region, and P2 is in the centre-bottom or right-bottom region
-_p1LeftTop_p2Bottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine   -> Geospatial.PointXY -> Double -> Maybe TypesGeography.GeoStorableLine
+_p1LeftTop_p2Bottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine   -> Geospatial.PointXY -> Double -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftTop_p2Bottom r@(TypesGeography.BoundingBox left top _ bottom) l d leftP
   | bottomP > leftP = Just (makeLine left top left bottom)
-  | otherwise       = Just (TypesGeography.GeoStorableLine  (clipLeft r l d leftP) (_p1LeftTop_p2Bottom' r l d bottomP))
+  | otherwise       = Just (VectorStorable.fromList [clipLeft r l d leftP, _p1LeftTop_p2Bottom' r l d bottomP])
   where
     bottomP = bottomProduct r l d
 
@@ -198,11 +199,11 @@ _p1LeftTop_p2BottomRight r l d bottomP
 
 -- 1.2. "leftedge"
 -- P1 is in the left-middle region, and P2 is not in any of the left regions
-_p1LeftMiddle_p2NotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftMiddle_p2NotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftMiddle_p2NotLeft r@(TypesGeography.BoundingBox _ top _ bottom) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y))
   | p2y < bottom = _p1LeftMiddle_p2BottomNotLeft r l
-  | p2y > top    = reflectLineXAxis <$> _p1LeftMiddle_p2BottomNotLeft (reflectRectXAxis r) (reflectLineXAxis l)
-  | otherwise    = Just (TypesGeography.GeoStorableLine  (clipLeft r l d leftP) (_p1LeftMiddle_p2MiddleNotLeft r l d))
+  | p2y > top    = reflectVectorXAxis <$> _p1LeftMiddle_p2BottomNotLeft (reflectRectXAxis r) (reflectLineXAxis l)
+  | otherwise    = Just (VectorStorable.fromList [clipLeft r l d leftP, _p1LeftMiddle_p2MiddleNotLeft r l d])
   where
     d     = delta l
     leftP = leftProduct r l d
@@ -218,10 +219,10 @@ _p1LeftMiddle_p2MiddleNotLeft r@(TypesGeography.BoundingBox _ _ right _) l@(Type
 
 -- 1.2.1. "p2bottom"
 -- P1 is in the left-middle region, and P2 is in the centre-bottom or right-bottom region
-_p1LeftMiddle_p2BottomNotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1LeftMiddle_p2BottomNotLeft :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1LeftMiddle_p2BottomNotLeft r@(TypesGeography.BoundingBox left _ _ bottom) l
   | bottomP > leftP = Just (makeLineFromSinglePoint left bottom)
-  | otherwise       = Just (TypesGeography.GeoStorableLine  (clipLeft r l d leftP) (_p1LeftMiddle_p2BottomNotLeft' r l d bottomP))
+  | otherwise       = Just (VectorStorable.fromList [clipLeft r l d leftP, _p1LeftMiddle_p2BottomNotLeft' r l d bottomP])
   where
     d       = delta l
     leftP   = leftProduct r l d
@@ -243,32 +244,32 @@ _p1LeftMiddle_p2RightBottom r l d bottomP
 
 -- 2. "centrecolumn"
 -- P1 is in one of the centre regions
-_p1Centre :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1Centre :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1Centre r@(TypesGeography.BoundingBox _ top _ bottom) l@(TypesGeography.GeoStorableLine  p1@(Geospatial.PointXY _ p1y) _)
   | p1y < bottom = _p1CentreBottom r l
   | p1y > top    = _p1CentreTop r l
-  | otherwise    = Just (TypesGeography.GeoStorableLine  p1 ( _p1CentreMiddle r l))
+  | otherwise    = Just (VectorStorable.fromList [p1, _p1CentreMiddle r l])
 
 -- P1 is in the centre-bottom region
-_p1CentreBottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1CentreBottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1CentreBottom r@(TypesGeography.BoundingBox _ _ _ bottom) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y))
   | p2y < bottom = _p1CentreBottom_p2Bottom r l
-  | otherwise    = rotateLine270c <$> _p1LeftMiddle_p2NotLeft (rotateRect90c r) (rotateLine90c l)
+  | otherwise    = rotateVector90c <$> _p1LeftMiddle_p2NotLeft (rotateRect90c r) (rotateLine90c l)
 
 -- P1 is in the centre-top region
-_p1CentreTop :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1CentreTop :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1CentreTop r@(TypesGeography.BoundingBox _ top _ _) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y))
   | p2y > top = _p1CentreTop_p2Top r l
-  | otherwise = rotateLine90c <$> _p1LeftMiddle_p2NotLeft (rotateRect270c r) (rotateLine270c l)
+  | otherwise = rotateVector90c <$> _p1LeftMiddle_p2NotLeft (rotateRect270c r) (rotateLine270c l)
 
 -- Handle turning point if in centre column
-_p1CentreBottom_p2Bottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1CentreBottom_p2Bottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1CentreBottom_p2Bottom (TypesGeography.BoundingBox left _ right bottom) (TypesGeography.GeoStorableLine  (Geospatial.PointXY _ _) (Geospatial.PointXY p2x _))
     | p2x > right = Just $ makeLineFromSinglePoint right bottom
     | p2x < left = Just $ makeLineFromSinglePoint left bottom
     | otherwise = Nothing
 
-_p1CentreTop_p2Top :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
+_p1CentreTop_p2Top :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe (VectorStorable.Vector Geospatial.PointXY)
 _p1CentreTop_p2Top (TypesGeography.BoundingBox left top right _) (TypesGeography.GeoStorableLine  (Geospatial.PointXY _ _) (Geospatial.PointXY p2x _))
     | p2x > right = Just $ makeLineFromSinglePoint right top
     | p2x < left = Just $ makeLineFromSinglePoint left top
@@ -369,6 +370,24 @@ reflectLineXAxis :: TypesGeography.GeoStorableLine  -> TypesGeography.GeoStorabl
 reflectLineXAxis (TypesGeography.GeoStorableLine  p1 p2) =
   TypesGeography.GeoStorableLine  (reflectPointXAxis p1) (reflectPointXAxis p2)
 
+rotateVector90c :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+rotateVector90c = VectorStorable.map rotatePoint90c
+
+-- Rotate vector 180° clockwise about the origin
+rotateVector180c :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+rotateVector180c = VectorStorable.map rotatePoint180c
+
+-- Rotate vector 270° clockwise about the origin
+-- rotateVector270c :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+-- rotateVector270c = VectorStorable.map rotatePoint270c
+
+-- Reflect vector about the line x = -y
+reflectVectorXMinusY :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+reflectVectorXMinusY = VectorStorable.map reflectPointXMinusY
+
+-- Reflect vector about the x axis
+reflectVectorXAxis :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+reflectVectorXAxis = VectorStorable.map reflectPointXAxis
 
 -- Rotate point 90° clockwise about the origin
 rotatePoint90c :: Geospatial.PointXY -> Geospatial.PointXY
