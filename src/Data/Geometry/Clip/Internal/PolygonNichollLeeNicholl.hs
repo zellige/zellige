@@ -7,15 +7,14 @@ clipPolygonNLN
 , clipPolygonsNLN
 ) where
 
-import qualified Data.Aeson                       as Aeson
-import qualified Data.Geometry.Clip.Internal.Line as ClipLine
-import qualified Data.Geometry.Types.Geography    as TypesGeography
-import qualified Data.Geospatial                  as Geospatial
-import qualified Data.LinearRing                  as LinearRing
-import qualified Data.List.NonEmpty               as ListNonEmpty
-import qualified Data.Validation                  as Validation
-import qualified Data.Vector                      as Vector
-import qualified Data.Vector.Storable             as VectorStorable
+import qualified Data.Aeson                    as Aeson
+import qualified Data.Geometry.Types.Geography as TypesGeography
+import qualified Data.Geospatial               as Geospatial
+import qualified Data.LinearRing               as LinearRing
+import qualified Data.List.NonEmpty            as ListNonEmpty
+import qualified Data.Validation               as Validation
+import qualified Data.Vector                   as Vector
+import qualified Data.Vector.Storable          as VectorStorable
 
 clipPolygonsNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsNLN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -76,24 +75,22 @@ clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -
 clipOrDiscard bb line acc =
   case foldLine bb line of
     Nothing          -> acc
-    Just clippedLine -> (VectorStorable.++) clippedLine acc
+    Just clippedLine -> toPoints clippedLine acc
+
+toPoints :: TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+toPoints (TypesGeography.GeoStorableLine p1 p2) acc =
+  if p1 == p2 then VectorStorable.cons p1 acc else VectorStorable.cons p2 (VectorStorable.cons p1 acc)
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up
-foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+foldLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe TypesGeography.GeoStorableLine
 foldLine r = clipLine (reverseRectYAxis r)
 
-clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+clipLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Maybe TypesGeography.GeoStorableLine
 clipLine r@(TypesGeography.BoundingBox left _ right _) l@(TypesGeography.GeoStorableLine  (Geospatial.PointXY p1x _) _)
-  | p1x < left  = toPoints $ _p1Left r l
-  | p1x > right = toPoints $ rotateLine180c <$> _p1Left (rotateRect180c r) (rotateLine180c l)
-  | otherwise   = toPoints $ _p1Centre r l
-
-toPoints :: Maybe TypesGeography.GeoStorableLine -> Maybe (VectorStorable.Vector Geospatial.PointXY)
-toPoints a =
-    case a of
-        Just line -> Just $ ClipLine.pointsFromLine line
-        Nothing   -> Nothing
+  | p1x < left  = _p1Left r l
+  | p1x > right = rotateLine180c <$> _p1Left (rotateRect180c r) (rotateLine180c l)
+  | otherwise   = _p1Centre r l
 
 makeLineFromSinglePoint :: Double -> Double -> TypesGeography.GeoStorableLine
 makeLineFromSinglePoint a b =
