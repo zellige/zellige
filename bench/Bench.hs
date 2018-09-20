@@ -36,10 +36,10 @@ main = do
     [ bgroup "writeFiles"
       [ bench "100 Points" $ nf (testPoly Clip.clipPolygon 100 boundBox tenPoly) Vector.empty
       ]
-    , bgroup "Quick Bench Poly"
+    , bgroup "Quick Bench Polygon"
       [ bench "Sutherland" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneThousandPoly) Vector.empty
-      , bench "Quick Clip Lines" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) Vector.empty
-      , bench "NLN Lines" $ nf (testPoly Clip.clipPolygonNLN 10000 boundBox oneThousandPoly) Vector.empty
+      , bench "Quick Clip" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) Vector.empty
+      , bench "Nicholl-Lee-Nicholl" $ nf (testPoly Clip.clipPolygonNLN 10000 boundBox oneThousandPoly) Vector.empty
       ]
     , bgroup "Quick Bench LineString"
       [ bench "Cohen Sutherland" $ nf (testLineString Clip.clipLinesCs 10000 boundBox oneHundredLineStrings) Vector.empty
