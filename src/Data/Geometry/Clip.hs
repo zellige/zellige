@@ -22,14 +22,14 @@ module Data.Geometry.Clip (
 , clipPolygonsQc
 , clipFeature
 , clipFeatures
-, clipPolygonNLN
-, clipPolygonsNLN
+, clipPolygonNLNN
+, clipPolygonsNLNN
 ) where
 
-import qualified Data.Aeson                                           as Aeson
-import qualified Data.Foldable                                        as Foldable
-import qualified Data.Geospatial                                      as Geospatial
-import qualified Data.Vector                                          as Vector
+import qualified Data.Aeson                                                as Aeson
+import qualified Data.Foldable                                             as Foldable
+import qualified Data.Geospatial                                           as Geospatial
+import qualified Data.Vector                                               as Vector
 
 import           Data.Geometry.Clip.Internal.LineCohenSutherland
 import           Data.Geometry.Clip.Internal.LineLiangBarsky
@@ -37,7 +37,7 @@ import           Data.Geometry.Clip.Internal.LineNichollLeeNicholl
 import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.Point
 import           Data.Geometry.Clip.Internal.Polygon
-import           Data.Geometry.Clip.Internal.PolygonNichollLeeNicholl
+import           Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol
 import           Data.Geometry.Clip.Internal.PolygonQuickClip
 import           Data.Geometry.Types.Geography
 
@@ -58,7 +58,7 @@ clipFeature bbox geometry feature acc =
     Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
     Geospatial.Line g         -> clipLineQc bbox g feature acc
     Geospatial.MultiLine g    -> clipLinesQc bbox g feature acc
-    Geospatial.Polygon g      -> clipPolygonNLN bbox g feature acc
-    Geospatial.MultiPolygon g -> clipPolygonsNLN bbox g feature acc
+    Geospatial.Polygon g      -> clipPolygonNLNN bbox g feature acc
+    Geospatial.MultiPolygon g -> clipPolygonsNLNN bbox g feature acc
     Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
 
