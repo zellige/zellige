@@ -2,9 +2,9 @@
 
 -- TODO Change to linear ring.
 
-module Data.Geometry.Clip.Internal.PolygonNichollLeeNicholl (
-clipPolygonNLN
-, clipPolygonsNLN
+module Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol (
+clipPolygonNLNN
+, clipPolygonsNLNN
 ) where
 
 import qualified Data.Aeson                    as Aeson
@@ -16,8 +16,8 @@ import qualified Data.Validation               as Validation
 import qualified Data.Vector                   as Vector
 import qualified Data.Vector.Storable          as VectorStorable
 
-clipPolygonsNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipPolygonsNLN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
+clipPolygonsNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPolygonsNLNN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
   case maybeNewMultiPoly bb polys of
     Nothing   -> acc
     Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId) acc
@@ -25,8 +25,8 @@ clipPolygonsNLN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbo
 maybeNewMultiPoly :: TypesGeography.BoundingBox -> Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
 maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
 
-clipPolygonNLN :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipPolygonNLN bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
+clipPolygonNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPolygonNLNN bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
     case maybeNewPoly bb poly of
       Nothing   -> acc
       Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId) acc
@@ -75,11 +75,11 @@ clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -
 clipOrDiscard bb line acc =
   case foldLine bb line of
     Nothing          -> acc
-    Just clippedLine -> toPoints clippedLine acc
+    Just clippedLine -> toPoints clippedLine acc   -- ++ line acc
 
 toPoints :: TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 toPoints (TypesGeography.GeoStorableLine p1 p2) acc =
-  if p1 == p2 then VectorStorable.cons p1 acc else VectorStorable.cons p2 (VectorStorable.cons p1 acc)
+  if p1 == p2 then VectorStorable.snoc acc p1  else VectorStorable.snoc (VectorStorable.snoc acc p2 ) p1
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up

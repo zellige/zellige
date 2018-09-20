@@ -38,8 +38,8 @@ main = do
       ]
     , bgroup "Quick Bench Poly"
       [ bench "Sutherland" $ nf (testPoly Clip.clipPolygon 10000 boundBox oneThousandPoly) Vector.empty
-      , bench "Quick Clip Lines" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) Vector.empty
-      , bench "NLN Lines" $ nf (testPoly Clip.clipPolygonNLN 10000 boundBox oneThousandPoly) Vector.empty
+      , bench "Quick Clip" $ nf (testPoly Clip.clipPolygonQc 10000 boundBox oneThousandPoly) Vector.empty
+      , bench "NLNN" $ nf (testPoly Clip.clipPolygonNLNN 10000 boundBox oneThousandPoly) Vector.empty
       ]
     , bgroup "Quick Bench LineString"
       [ bench "Cohen Sutherland" $ nf (testLineString Clip.clipLinesCs 10000 boundBox oneHundredLineStrings) Vector.empty

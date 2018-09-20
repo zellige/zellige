@@ -228,15 +228,11 @@ testClipPolygon =
     it "Simple - Turning point test" $
       GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
     it "NLN - Returns clipped polygon" $
-      GeometryClip.clipPolygonNLN polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
+      GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
     it "NLN - Returns clipped multipolygon" $
-      GeometryClip.clipPolygonsNLN polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
+      GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
     it "NLN - Negative polygon" $
       GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Vector.empty `shouldBe` Vector.empty
-    it "NLN - Maximum polygon" $ do
-      let actual = GeometryClip.clipPolygonNLN giantClipPts giantPoly
-          resultPts = [(-128,-128),(2176,-128),(2176,2176),(-128,2176),(-128,-128)]
-          result = VectorTile.Polygon (SpecHelper.tupleToPts resultPts) mempty
-      actual `shouldBe` Just result
+    it "NLN - Maximum polygon" $ GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "NLN - Turning point test" $
-      GeometryClip.clipPolygonNLN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
+      GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
