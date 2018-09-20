@@ -8,7 +8,6 @@
 module Data.Geometry.Types.Geography where
 
 import qualified Data.Geospatial      as Geospatial
-import qualified Data.Vector          as Vector
 import qualified Data.Vector.Storable as VectorStorable
 import qualified Data.Word            as DataWord
 import           Foreign.Storable

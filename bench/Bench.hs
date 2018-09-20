@@ -159,7 +159,7 @@ simpleLinearRing radius total = LinearRing.makeLinearRing p1 p2 p3 rest
   where p1 = getCoord radius 0 total
         p2 = getCoord radius 1 total
         p3 = getCoord radius 2 total
-        rest = Vector.fromList $ map (\i -> getCoord radius i total) [3..total-1]
+        rest = VectorStorable.fromList $ map (\i -> getCoord radius i total) [3..total-1]
 
 simpleMultiLine :: Double -> Double -> Geospatial.GeoMultiLine
 simpleMultiLine radius total =
