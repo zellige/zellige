@@ -3,130 +3,118 @@
 
 module Data.Geometry.GeoJsonToMvt where
 
-import qualified Control.Monad.ST                as ST
-import qualified Data.Aeson                      as A
-import qualified Data.Foldable                   as F (foldMap)
-import qualified Data.Geospatial                 as DG
-import qualified Data.LinearRing                 as DG
-import qualified Data.LineString                 as DG
-import qualified Data.List                       as DL
-import qualified Data.STRef                      as ST
-import qualified Data.Vector                     as DataVector
-import qualified Data.Vector.Storable            as DataVectorStorable
-import qualified Geography.VectorTile            as VG
-import qualified Geography.VectorTile            as GeographyVectorTile
+import qualified Control.Monad.ST                as MonadST
+import qualified Data.Aeson                      as Aeson
+import qualified Data.Foldable                   as Foldable
+import qualified Data.Geospatial                 as Geospatial
+import qualified Data.LinearRing                 as LinearRing
+import qualified Data.LineString                 as LineString
+import qualified Data.List                       as List
+import qualified Data.STRef                      as STRef
+import qualified Data.Vector                     as Vector
+import qualified Data.Vector.Storable            as VectorStorable
+import qualified Geography.VectorTile            as VectorTile
 
-import qualified Data.Geometry.SphericalMercator as DGSM
-import qualified Data.Geometry.Types.Config      as TypesConfig
-import qualified Data.Geometry.Types.Geography   as TypesGeography
-import qualified Data.Geometry.Types.MvtFeatures as DGTMF
-import qualified Data.Geometry.Types.Simplify    as DGTS
+import qualified Data.Geometry.Types.MvtFeatures as TypesMvtFeatures
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesConfig.ZoomConfig -> [DG.GeoFeature A.Value] -> ST.ST s DGTMF.MvtFeatures
-geoJsonFeaturesToMvtFeatures zConfig features = do
-  ops <- ST.newSTRef 0
-  F.foldMap (convertFeature zConfig ops) features
+geoJsonFeaturesToMvtFeatures :: TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures layer features = do
+  ops <- STRef.newSTRef 0
+  Foldable.foldMap (convertFeature layer ops) features
 
 -- Feature
 
-convertFeature :: TypesConfig.ZoomConfig -> ST.STRef s Word -> DG.GeoFeature A.Value -> ST.ST s DGTMF.MvtFeatures
-convertFeature zConfig ops (DG.GeoFeature _ geom props mfid) = do
+convertFeature :: TypesMvtFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
-  pure $ convertGeometry zConfig fid props geom
+  pure $ convertGeometry layer fid props geom
 
 -- Geometry
 
-convertGeometry :: TypesConfig.ZoomConfig -> Word -> A.Value -> DG.GeospatialGeometry -> DGTMF.MvtFeatures
-convertGeometry zConfig fid props geom =
+convertGeometry :: TypesMvtFeatures.MvtFeatures -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesMvtFeatures.MvtFeatures
+convertGeometry layer@TypesMvtFeatures.MvtFeatures{..} fid props geom =
   case geom of
-    DG.NoGeometry     -> mempty
-    DG.Point g        -> DGTMF.mkPoint fid props . convertPoint zConfig $ g
-    DG.MultiPoint g   -> DGTMF.mkPoint fid props . convertMultiPoint zConfig $ g
-    DG.Line g         -> DGTMF.mkLineString fid props . convertLineString zConfig $ g
-    DG.MultiLine g    -> DGTMF.mkLineString fid props . convertMultiLineString zConfig $ g
-    DG.Polygon g      -> DGTMF.mkPolygon fid props . convertPolygon zConfig $ g
-    DG.MultiPolygon g -> DGTMF.mkPolygon fid props . convertMultiPolygon zConfig $ g
-    DG.Collection gs  -> F.foldMap (convertGeometry zConfig fid props) gs
+    Geospatial.NoGeometry     -> mempty
+    Geospatial.Point g        -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertPoint g) mvtPoints }
+    Geospatial.MultiPoint g   -> layer { TypesMvtFeatures.mvtPoints = TypesMvtFeatures.mkPoint fid props (convertMultiPoint g) mvtPoints }
+    Geospatial.Line g         -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertLineString g) mvtLines }
+    Geospatial.MultiLine g    -> layer { TypesMvtFeatures.mvtLines = TypesMvtFeatures.mkLineString fid props (convertMultiLineString g) mvtLines }
+    Geospatial.Polygon g      -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertPolygon g) mvtPolygons }
+    Geospatial.MultiPolygon g -> layer { TypesMvtFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (convertMultiPolygon g) mvtPolygons }
+    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry layer fid props) gs
 
 -- FeatureID
 
-readFeatureID :: Maybe DG.FeatureID -> Maybe Word
+readFeatureID :: Maybe Geospatial.FeatureID -> Maybe Word
 readFeatureID mfid =
   case mfid of
-    Just (DG.FeatureIDNumber x) -> Just (fromIntegral x)
-    _                           -> Nothing
+    Just (Geospatial.FeatureIDNumber x) -> Just (fromIntegral x)
+    _                                   -> Nothing
 
-convertId :: Maybe DG.FeatureID -> ST.STRef s Word -> ST.ST s Word
+convertId :: Maybe Geospatial.FeatureID -> STRef.STRef s Word -> MonadST.ST s Word
 convertId mfid ops =
   case readFeatureID mfid of
     Just val -> pure val
     Nothing  -> do
-      ST.modifySTRef ops (+1)
-      ST.readSTRef ops
+      STRef.modifySTRef ops (+1)
+      STRef.readSTRef ops
 
 -- Points
 
-convertPoint :: TypesConfig.ZoomConfig -> DG.GeoPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
-convertPoint zConfig = coordsToPoints' zConfig . DG._unGeoPoint
+convertPoint :: Geospatial.GeoPoint -> VectorStorable.Vector VectorTile.Point
+convertPoint = coordsToPoints . Geospatial._unGeoPoint
 
-convertMultiPoint :: TypesConfig.ZoomConfig -> DG.GeoMultiPoint -> DataVectorStorable.Vector GeographyVectorTile.Point
-convertMultiPoint zConfig = F.foldMap (convertPoint zConfig) . DG.splitGeoMultiPoint
+convertMultiPoint :: Geospatial.GeoMultiPoint -> VectorStorable.Vector VectorTile.Point
+convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: TypesConfig.ZoomConfig -> DG.GeoLine -> DataVector.Vector GeographyVectorTile.LineString
-convertLineString zConfig@TypesConfig.ZoomConfig{..} =
-  DataVector.singleton .
-  VG.LineString .
-  DGTS.simplifyUsing _zcSimplify .
-  DataVector.convert .
-  F.foldMap (coordsToPoints zConfig) .
-  DG.fromLineString .
-  DG._unGeoLine
+convertLineString :: Geospatial.GeoLine -> Vector.Vector VectorTile.LineString
+convertLineString =
+  Vector.singleton .
+  VectorTile.LineString .
+  VectorStorable.uniq .
+  Vector.convert .
+  Foldable.foldMap coordsToPoints .
+  LineString.fromLineString .
+  Geospatial._unGeoLine
 
-convertMultiLineString :: TypesConfig.ZoomConfig -> DG.GeoMultiLine -> DataVector.Vector GeographyVectorTile.LineString
-convertMultiLineString zConfig = F.foldMap (convertLineString zConfig) . DG.splitGeoMultiLine
+convertMultiLineString :: Geospatial.GeoMultiLine -> Vector.Vector VectorTile.LineString
+convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: TypesConfig.ZoomConfig -> DG.GeoPolygon -> DataVector.Vector VG.Polygon
-convertPolygon zConfig poly = DataVector.singleton $
-  case DG._unGeoPolygon poly of
-    []    -> VG.Polygon mempty mempty
-    (h:t) ->
-      case t of
-        []   -> mkPoly zConfig h
-        rest -> VG.Polygon (mkPolyPoints zConfig h) (mkPolys zConfig rest)
+convertPolygon :: Geospatial.GeoPolygon -> Vector.Vector VectorTile.Polygon
+convertPolygon poly =
+  Vector.singleton $
+  if Vector.null rawPoly
+    then VectorTile.Polygon mempty mempty
+    else
+      if Vector.length rawPoly == 1
+        then mkPoly (Vector.head rawPoly)
+        else VectorTile.Polygon (mkPolyPoints (Vector.head rawPoly)) (mkPolys (Vector.tail rawPoly))
+  where
+    rawPoly = Geospatial._unGeoPolygon poly
 
-mkPolys :: Foldable t => TypesConfig.ZoomConfig -> t (DG.LinearRing [Double]) -> DataVector.Vector VG.Polygon
-mkPolys zConfig = DL.foldl' (\acc lring -> (mkPoly zConfig lring `DataVector.cons` acc)) DataVector.empty
+mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Vector.Vector VectorTile.Polygon
+mkPolys = List.foldl' (\acc lring -> (mkPoly lring `Vector.cons` acc)) Vector.empty
 
-mkPoly :: TypesConfig.ZoomConfig -> DG.LinearRing [Double] -> VG.Polygon
-mkPoly zConfig lring = VG.Polygon (mkPolyPoints zConfig lring) mempty
+mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
+mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
 
-mkPolyPoints :: TypesConfig.ZoomConfig -> DG.LinearRing [Double] -> DataVectorStorable.Vector VG.Point
-mkPolyPoints zConfig@TypesConfig.ZoomConfig{..} = DGTS.simplifyUsing _zcSimplify . DataVector.convert . F.foldMap (coordsToPoints zConfig) . DG.fromLinearRing
+mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
+mkPolyPoints = VectorStorable.uniq . Vector.convert . LinearRing.foldMap coordsToPoints
 
-convertMultiPolygon :: TypesConfig.ZoomConfig -> DG.GeoMultiPolygon -> DataVector.Vector VG.Polygon
-convertMultiPolygon zConfig = F.foldMap (convertPolygon zConfig) . DG.splitGeoMultiPolygon
+convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Vector.Vector VectorTile.Polygon
+convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
 
-createLines :: [a] -> DataVector.Vector (a, a)
-createLines = DataVector.fromList . (zip <*> tail)
-
-createLines' :: [a] -> [(a, a)]
-createLines' = zip <*> tail
-
-coordsToPoints :: TypesConfig.ZoomConfig -> [Double] -> DataVector.Vector GeographyVectorTile.Point
-coordsToPoints _ []        = mempty
-coordsToPoints _ [_]       = mempty
-coordsToPoints (TypesConfig.ZoomConfig ext q bb _) x = fmap (DGSM.latLonToXYInTile ext q bb . uncurry TypesGeography.LatLon) (createLines x)
-
-coordsToPoints' :: TypesConfig.ZoomConfig -> [Double] -> DataVectorStorable.Vector GeographyVectorTile.Point
-coordsToPoints' _ []        = mempty
-coordsToPoints' _ [_]       = mempty
-coordsToPoints' (TypesConfig.ZoomConfig ext q bb _) coords = DL.foldl' (\a (lat, lon) -> DataVectorStorable.snoc a $ DGSM.latLonToXYInTile ext q bb (TypesGeography.LatLon lat lon)) DataVectorStorable.empty (createLines' coords)
+coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
+coordsToPoints geoPosition = VectorStorable.singleton newPoint
+    where
+      newPoint = VectorTile.Point (round posX) (round posY)
+      (Geospatial.PointXY posX posY) = Geospatial.retrieveXY geoPosition
 

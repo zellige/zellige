@@ -7,38 +7,56 @@ clipPolygonQc
 , clipPolygonsQc
 ) where
 
-import qualified Data.Vector                   as Vector
-import qualified Data.Vector.Storable          as VectorStorable
-import qualified Geography.VectorTile          as VectorTile
-
-import qualified Data.Geometry.Types.Geography as TypesGeography
-import qualified Data.Geometry.Clip.Internal.Line as ClipLine
+import qualified Data.Aeson                                as Aeson
+import qualified Data.Geometry.Clip.Internal.Line          as ClipLine
 import qualified Data.Geometry.Clip.Internal.LineQuickClip as ClipLineQuickClip
+import qualified Data.Geometry.Types.Geography             as TypesGeography
+import qualified Data.Geospatial                           as Geospatial
+import qualified Data.LinearRing                           as LinearRing
+import qualified Data.List.NonEmpty                        as ListNonEmpty
+import qualified Data.Validation                           as Validation
+import qualified Data.Vector                               as Vector
+import qualified Data.Vector.Storable                      as VectorStorable
 
-clipPolygonsQc :: TypesGeography.BoundingBoxPts -> Vector.Vector VectorTile.Polygon -> Vector.Vector VectorTile.Polygon
-clipPolygonsQc bb = Vector.foldl' addPoly mempty
-  where
-    addPoly acc f =
-      case clipPolygonQc bb f of
-        Nothing -> acc
-        Just x  -> Vector.cons x acc
+clipPolygonsQc :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPolygonsQc bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
+  case maybeNewMultiPoly bb polys of
+    Nothing   -> acc
+    Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId) acc
 
-clipPolygonQc :: TypesGeography.BoundingBoxPts -> VectorTile.Polygon -> Maybe VectorTile.Polygon
-clipPolygonQc bb (VectorTile.Polygon polyPoints inner) =
-  case clipPolyPoints bb polyPoints of
+maybeNewMultiPoly :: TypesGeography.BoundingBox -> Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
+maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
+
+clipPolygonQc :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPolygonQc bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
+    case maybeNewPoly bb poly of
+      Nothing   -> acc
+      Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId) acc
+
+maybeNewPoly :: TypesGeography.BoundingBox -> Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+maybeNewPoly bb = traverse (clipLinearRing bb)
+
+clipLinearRing :: TypesGeography.BoundingBox -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Maybe (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+clipLinearRing bb linearRing =
+  case createNewClipPts of
     Nothing -> Nothing
-    Just x  -> Just (VectorTile.Polygon x (clipPolygonsQc bb inner))
-
-clipPolyPoints :: TypesGeography.BoundingBoxPts -> VectorStorable.Vector VectorTile.Point -> Maybe (VectorStorable.Vector VectorTile.Point)
-clipPolyPoints bb polyPoints = checkLength (VectorStorable.uniq newClippedPoly)
+    Just a ->
+      case newLinearRing a of
+        Validation.Failure _ -> Nothing
+        Validation.Success b -> Just b
   where
-    newClippedPoly = foo (TypesGeography.bboxPtsToBbox bb) polyPoints
-    checkLength newPoly =
-      if VectorStorable.length newPoly <= 2
-        then Nothing
-        else Just (closeIfNot newPoly)
+    newLinearRing x = LinearRing.fromVector (VectorStorable.map Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+    createNewClipPts = clipPolyPoints bb (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing))
 
-closeIfNot :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
+clipPolyPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
+clipPolyPoints bb polyPoints =
+  if VectorStorable.length newClippedPoly <= 2
+  then Nothing
+  else Just (closeIfNot newClippedPoly)
+  where
+    newClippedPoly = foo bb polyPoints
+
+closeIfNot :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 closeIfNot poly =
   if lastPt /= firstPt
     then VectorStorable.cons lastPt poly
@@ -47,39 +65,10 @@ closeIfNot poly =
     lastPt = VectorStorable.last poly
     firstPt = VectorStorable.head poly
 
-foo ::  TypesGeography.BoundingBox -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
+foo ::  TypesGeography.BoundingBox-> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
   where
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
-    -- newPoints = VectorStorable.foldl' (\pts polyLine -> clipEdges polyLine bbLine pts) VectorStorable.empty (TypesGeography.pointsToLines polyPts)
 
-lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.StorableLine-> VectorStorable.Vector VectorTile.Point
-lineToClippedPoints bb l = ClipLine.foldPointsToLine $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty l
-
--- clip :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
--- clip bb polyLines line =
---   VectorStorable.cons (lineToClippedPoints bb polyLines)
-
--- clipEdges :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector VectorTile.Point
--- clipEdges polyLine@(TypesGeography.StorableLine s e) line acc =
---   case (inside e line, inside s line) of
---     (True, True)   -> VectorStorable.cons e acc
---     (True, False)  -> VectorStorable.cons e $ VectorStorable.cons (lineIntersectPoint line polyLine) acc
---     (False, True)  -> VectorStorable.cons (lineIntersectPoint line polyLine) acc
---     (False, False) -> acc
-
--- lineIntersectPoint :: TypesGeography.StorableLine -> TypesGeography.StorableLine -> VectorTile.Point
--- lineIntersectPoint (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) (TypesGeography.StorableLine (VectorTile.Point x1' y1') (VectorTile.Point x2' y2')) =
---   let
---     (dx, dy) = (x1 - x2, y1 - y2)
---     (dx', dy') = (x1' - x2', y1' - y2')
---     n1 = (x1 * y2) - (y1 * x2)
---     n2 = (x1' * y2') - (y1' * x2')
---     d = (dx * dy') - (dy * dx')
---     x = ((n1 * dx') - (n2 * dx)) `div` d
---     y = ((n1 * dy') - (n2 * dy)) `div` d
---   in VectorTile.Point x y
-
--- -- Is point of RHS of Line
--- inside :: VectorTile.Point -> TypesGeography.StorableLine -> Bool
--- inside (VectorTile.Point x y) (TypesGeography.StorableLine (VectorTile.Point x1 y1) (VectorTile.Point x2 y2)) = (x2 - x1) * (y - y1) > (y2 - y1) * (x - x1)
+lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
+lineToClippedPoints bb l = ClipLine.lineToPointXY $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)

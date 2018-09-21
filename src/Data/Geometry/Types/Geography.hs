@@ -7,14 +7,15 @@
 
 module Data.Geometry.Types.Geography where
 
+import qualified Data.Geospatial      as Geospatial
 import qualified Data.Vector.Storable as VectorStorable
-import qualified Data.Word            as DW
+import qualified Data.Word            as DataWord
 import           Foreign.Storable
 import qualified Geography.VectorTile as VectorTile
 import           Numeric.Natural      (Natural)
 import           Prelude              hiding (Left, Right)
 
-defaultVersion :: DW.Word
+defaultVersion :: DataWord.Word
 defaultVersion = 2
 
 -- Pixels
@@ -26,10 +27,10 @@ defaultBuffer = 128
 -- BoundingBox
 
 data BoundingBox = BoundingBox
-  { _bbMinX :: Double
-  , _bbMinY :: Double
-  , _bbMaxX :: Double
-  , _bbMaxY :: Double
+  { _bbMinX :: !Double
+  , _bbMinY :: !Double
+  , _bbMaxX :: !Double
+  , _bbMaxY :: !Double
   } deriving (Show, Eq)
 
 data BoundingBoxPts = BoundingBoxPts
@@ -51,11 +52,11 @@ bboxPtsToBbox (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point max
 bboxPtsToBboxRect :: BoundingBoxPts -> BoundingBoxRect
 bboxPtsToBboxRect (BoundingBoxPts (VectorTile.Point minX minY) (VectorTile.Point maxX maxY)) = BoundingBoxRect minX minY maxX maxY
 
-mkBBoxPoly :: BoundingBoxPts -> VectorStorable.Vector StorableLine
-mkBBoxPoly BoundingBoxPts{_bbMinPts = (VectorTile.Point x1 y1), _bbMaxPts = (VectorTile.Point x2 y2)} = pointsToLines $ VectorStorable.fromList [VectorTile.Point x1 y1, VectorTile.Point x2 y1, VectorTile.Point x2 y2, VectorTile.Point x1 y2]
+mkBBoxPoly :: BoundingBox -> VectorStorable.Vector GeoStorableLine
+mkBBoxPoly (BoundingBox x1 y1 x2 y2) = pointsToLines $ VectorStorable.fromList [Geospatial.PointXY x1 y1, Geospatial.PointXY x2 y1, Geospatial.PointXY x2 y2, Geospatial.PointXY x1 y2]
 
-pointsToLines :: VectorStorable.Vector VectorTile.Point -> VectorStorable.Vector StorableLine
-pointsToLines pts = (VectorStorable.zipWith StorableLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
+pointsToLines :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector GeoStorableLine
+pointsToLines pts = (VectorStorable.zipWith GeoStorableLine <*> VectorStorable.tail) $ VectorStorable.cons (VectorStorable.last pts) pts
 
 -- Coords types
 
@@ -90,7 +91,7 @@ data OutCode = Inside
   | Top
   deriving (Eq, Ord, Enum, Bounded, Read, Show)
 
-outCodeToWord8 :: OutCode -> DW.Word8
+outCodeToWord8 :: OutCode -> DataWord.Word8
 outCodeToWord8 c =
     case c of
       Inside -> 0
@@ -99,7 +100,7 @@ outCodeToWord8 c =
       Bottom -> 4
       Top    -> 8
 
-word8ToOutCode :: DW.Word8 -> OutCode
+word8ToOutCode :: DataWord.Word8 -> OutCode
 word8ToOutCode w =
     case w of
       0 -> Inside
@@ -108,27 +109,47 @@ word8ToOutCode w =
       4 -> Bottom
       _ -> Top
 
-data ClipPoint = ClipPoint
- { _clipPointCode  :: !OutCode
- , _clipPointPoint :: !VectorTile.Point
- } deriving (Eq, Show)
+sizeOfPointXy :: Int
+sizeOfPointXy = sizeOf (undefined :: Geospatial.PointXY)
 
-data ClipLine = ClipLine
- { _clipLine1 :: !ClipPoint
- , _clipLine2 :: !ClipPoint
- }
+sizeOfDouble :: Int
+sizeOfDouble = sizeOf (undefined :: Double)
 
-instance VectorStorable.Storable ClipLine where
-  sizeOf _ = (16 * 2) + (1 * 2)
-  alignment _ = 8 * 2 + 2
+sizeOfWord8 :: Int
+sizeOfWord8 = sizeOf (undefined :: DataWord.Word8)
+
+data GeoClipPoint = GeoClipPoint
+  { _geoClipPointCode  :: !OutCode
+  , _geoClipPointPoint :: !Geospatial.PointXY
+  } deriving (Eq, Show)
+
+data GeoClipLine = GeoClipLine
+  { _geoClipLine1 :: !GeoClipPoint
+  , _geoClipLine2 :: !GeoClipPoint
+  } deriving (Eq, Show)
+
+instance VectorStorable.Storable GeoClipLine where
+  sizeOf _ = (sizeOfPointXy * 2) + (sizeOfWord8 * 2)
+  alignment _ = alignment (undefined :: Double)
   peek p = do
-    p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
-    p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
-    o1 <- peekByteOff p 32
-    o2 <- peekByteOff p 33
-    pure (ClipLine (ClipPoint (word8ToOutCode o1) p1) (ClipPoint (word8ToOutCode o2) p2))
-  poke p (ClipLine (ClipPoint o1 (VectorTile.Point a1 b1)) (ClipPoint o2 (VectorTile.Point a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p 8 b1 *> pokeByteOff p 16 a2 *> pokeByteOff p 24 b2 *> pokeByteOff p 32 (outCodeToWord8 o1) *> pokeByteOff p 33 (outCodeToWord8 o2)
+    p1 <- Geospatial.PointXY <$> peekByteOff p 0 <*> peekByteOff p (1 * sizeOfDouble)
+    p2 <- Geospatial.PointXY <$> peekByteOff p (2 * sizeOfDouble) <*> peekByteOff p (3 * sizeOfDouble)
+    o1 <- peekByteOff p (4 * sizeOfDouble)
+    o2 <- peekByteOff p ((4 * sizeOfDouble) + sizeOfWord8)
+    pure (GeoClipLine (GeoClipPoint (word8ToOutCode o1) p1) (GeoClipPoint (word8ToOutCode o2) p2))
+  poke p (GeoClipLine (GeoClipPoint o1 (Geospatial.PointXY a1 b1)) (GeoClipPoint o2 (Geospatial.PointXY a2 b2))) = pokeByteOff p 0 a1 *> pokeByteOff p (1 * sizeOfDouble) b1 *> pokeByteOff p (2 * sizeOfDouble) a2 *> pokeByteOff p (3 * sizeOfDouble) b2 *> pokeByteOff p (4 * sizeOfDouble) (outCodeToWord8 o1) *> pokeByteOff p ((4 * sizeOfDouble) + sizeOfWord8) (outCodeToWord8 o2)
 
+
+data GeoStorableLine = GeoStorableLine
+  { _geoStorableLinePt1 :: !Geospatial.PointXY
+  , _geoStorableLinePt2 :: !Geospatial.PointXY
+  } deriving (Eq, Show)
+
+instance VectorStorable.Storable GeoStorableLine where
+  sizeOf _ = 2 * sizeOfPointXy
+  alignment _ = alignment (undefined :: Double)
+  peek p = GeoStorableLine <$> peekByteOff p 0 <*> peekByteOff p (1 * sizeOfPointXy)
+  poke p (GeoStorableLine (Geospatial.PointXY a1 b1) (Geospatial.PointXY a2 b2)) = pokeByteOff p 0 a1 *> pokeByteOff p (1 * sizeOfDouble) b1 *> pokeByteOff p (2 * sizeOfDouble) a2 *> pokeByteOff p (3 * sizeOfDouble) b2
 
 data StorableLine = StorableLine
   { _storableLinePt1 :: !VectorTile.Point
@@ -136,8 +157,8 @@ data StorableLine = StorableLine
   } deriving (Eq, Show)
 
 instance VectorStorable.Storable StorableLine where
-  sizeOf _ = 16 * 2
-  alignment _ = 8 * 2
+  sizeOf _ = 8 * 2 * 2
+  alignment _ = 8
   peek p = do
     p1 <- VectorTile.Point <$> peekByteOff p 0 <*> peekByteOff p 8
     p2 <- VectorTile.Point <$> peekByteOff p 16 <*> peekByteOff p 24
