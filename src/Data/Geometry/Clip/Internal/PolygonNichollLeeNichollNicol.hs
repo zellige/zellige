@@ -254,7 +254,7 @@ _p1Centre r@(TypesGeography.BoundingBox _ top _ bottom) l@(TypesGeography.GeoSto
 _p1CentreBottom :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine
 _p1CentreBottom r@(TypesGeography.BoundingBox _ _ _ bottom) l@(TypesGeography.GeoStorableLine  _ (Geospatial.PointXY _ p2y))
   | p2y < bottom = _p1CentreBottom_p2Bottom r l
-  | otherwise    = rotateLine90c <$> _p1LeftMiddle_p2NotLeft (rotateRect90c r) (rotateLine90c l)
+  | otherwise    = rotateLine270c <$> _p1LeftMiddle_p2NotLeft (rotateRect90c r) (rotateLine90c l)
 
 -- P1 is in the centre-top region
 _p1CentreTop :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Maybe TypesGeography.GeoStorableLine

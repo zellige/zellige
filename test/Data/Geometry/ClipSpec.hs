@@ -143,6 +143,9 @@ geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geo
 geoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
 
+offGeoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
+offGeoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666666) (125.0,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+
 geoResultLinearRing2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoResultLinearRing2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
 
@@ -155,8 +158,14 @@ geoResultTurningRing = SpecHelper.mkLinearRing (125,125) (175,175) (125,200) [(1
 geoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultLinearRing1))) Aeson.Null Nothing
 
+offGeoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+offGeoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton offGeoResultLinearRing1))) Aeson.Null Nothing
+
 geoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+
+offGeoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+offGeoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton offGeoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
 
 geoResultGiantPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultGiantPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultGiantLinearRing))) Aeson.Null Nothing
@@ -228,11 +237,12 @@ testClipPolygon =
     it "Simple - Turning point test" $
       GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
     it "NLN - Returns clipped polygon" $
-      GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
+      GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` offGeoResultPolyFeatureTst
     it "NLN - Returns clipped multipolygon" $
-      GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
+      GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` offGeoResultPolysFeatureTst
     it "NLN - Negative polygon" $
       GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Vector.empty `shouldBe` Vector.empty
-    it "NLN - Maximum polygon" $ GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
+    it "NLN - Maximum polygon" $
+      GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "NLN - Turning point test" $
       GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
