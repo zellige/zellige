@@ -75,7 +75,7 @@ geoResultLine :: Geospatial.GeoLine
 geoResultLine = Geospatial.GeoLine (SpecHelper.mkLineString (10, 10.625) (45, 50) [(50, 60)])
 
 geoLinearRingTst1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoLinearRingTst1 = SpecHelper.mkLinearRing (50,150) (200, 50) (350,150) [(350,300), (250,300), (200,250), (150,350), (100,250), (100,200)]
+geoLinearRingTst1 = SpecHelper.mkLinearRing (50, 50) (50,150) (200, 50) [(350, 50), (350,150), (350, 350), (350,300), (250,300), (200,250), (50, 350), (150,350), (100,250), (100,200)]
 
 geoLinearRingTst2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoLinearRingTst2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
@@ -141,10 +141,10 @@ geoResultLinesFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
 geoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-geoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+geoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(300,100),(300,300),(250,300),(200,250),(124.99999999999999,300),(125,300),(100,250),(100,200)]
 
 offGeoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
-offGeoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666666) (125.0,100) [(275,100),(300,116.66666666666667),(300,300),(250,300),(200,250),(175,300),(125,300),(100,250),(100,200)]
+offGeoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666666) (125.0,100) [(300,100),(300,300),(250,300),(200,250),(125,300),(125,300),(100,250),(100,200)]
 
 geoResultLinearRing2 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoResultLinearRing2 = SpecHelper.mkLinearRing (100,150) (100,207) (250,250) [(250,150),(100,150)]
