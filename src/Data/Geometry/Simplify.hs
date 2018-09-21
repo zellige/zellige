@@ -23,12 +23,12 @@ import qualified Data.Geometry.Types.Config            as TypesConfig
 
 simplifyUsing :: TypesConfig.SimplificationAlgorithm -> Vector.Vector Geospatial.PointXY -> Vector.Vector Geospatial.PointXY
 simplifyUsing TypesConfig.NoAlgorithm    = id
-simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 10.0
+simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 1.0
 simplifyUsing TypesConfig.Visvalingam    = id
 
 newSimplifyUsing :: TypesConfig.SimplificationAlgorithm -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 newSimplifyUsing TypesConfig.NoAlgorithm    = id
-newSimplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.newDouglasPeucker 10.0
+newSimplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.newDouglasPeucker 1.0
 newSimplifyUsing TypesConfig.Visvalingam    = id
 
 simplifyFeatures :: TypesConfig.SimplificationAlgorithm -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
