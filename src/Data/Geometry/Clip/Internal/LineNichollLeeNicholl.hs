@@ -27,7 +27,7 @@ clipLineNLN bb line feature acc =
     Validation.Success res -> Vector.cons (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
     Validation.Failure _   -> acc
   where
-    clippedLine = ClipLine.newNewFoldPointsToLine $ lineToClippedPoints bb line
+    clippedLine = ClipLine.lineToGeoPoint $ lineToClippedPoints bb line
 
 clipLinesNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipLinesNLN bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
@@ -49,10 +49,10 @@ maybeAddLine acc pp =
 clipLineToValidationLineString :: VectorStorable.Vector TypesGeography.GeoStorableLine
              -> Validation.Validation
                   LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-clipLineToValidationLineString lines = LineString.fromVector (ClipLine.newNewFoldPointsToLine lines)
+clipLineToValidationLineString lines = LineString.fromVector (ClipLine.lineToGeoPoint lines)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
-lineToClippedPoints bb geoLine = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.newGetLines geoLine)
+lineToClippedPoints bb geoLine = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines geoLine)
 
 linesToClippedPoints :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (VectorStorable.Vector TypesGeography.GeoStorableLine)
 linesToClippedPoints bb = fmap (lineToClippedPoints bb)

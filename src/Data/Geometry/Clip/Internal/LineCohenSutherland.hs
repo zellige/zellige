@@ -42,7 +42,7 @@ maybeAddLine acc pp =
     Validation.Failure _   -> acc
 
 clipLineToValidationLineString :: VectorStorable.Vector TypesGeography.GeoClipLine -> Validation.Validation LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-clipLineToValidationLineString = LineString.fromVector . ClipLine.newSegmentToLine . foldPointsToLine
+clipLineToValidationLineString = LineString.fromVector . ClipLine.segmentToLine . foldPointsToLine
 
 foldPointsToLine :: VectorStorable.Vector TypesGeography.GeoClipLine -> VectorStorable.Vector Geospatial.GeoPositionWithoutCRS
 foldPointsToLine = VectorStorable.foldr (mappend . getPoints) mempty
@@ -86,7 +86,7 @@ clipPoint outCode (TypesGeography.BoundingBox minX minY maxX maxY) (Geospatial.P
     _      -> undefined
 
 outCodeForLineString :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> VectorStorable.Vector TypesGeography.GeoClipLine
-outCodeForLineString bb line = VectorStorable.map (outCodeForLine bb) (ClipLine.newGetLines line)
+outCodeForLineString bb line = VectorStorable.map (outCodeForLine bb) (ClipLine.getLines line)
 
 outCodeForLine :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> TypesGeography.GeoClipLine
 outCodeForLine bb (TypesGeography.GeoStorableLine p1 p2) = TypesGeography.GeoClipLine toP1 toP2

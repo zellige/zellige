@@ -71,4 +71,4 @@ foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
-lineToClippedPoints bb l = ClipLine.foldPointsToLine $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)
+lineToClippedPoints bb l = ClipLine.lineToPointXY $ VectorStorable.foldr (ClipLineQuickClip.clipOrDiscard bb) VectorStorable.empty (VectorStorable.convert l)
