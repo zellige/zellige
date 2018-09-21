@@ -54,7 +54,7 @@ newSegmentToLine l = if VectorStorable.length l > 1 then VectorStorable.cons sta
     second = VectorStorable.ifilter (\i _ -> odd i)
 {-# INLINE newSegmentToLine #-}
 
--- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
+-- Fold points from line to a vector of points
 newNewFoldPointsToLine :: VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.GeoPositionWithoutCRS
 newNewFoldPointsToLine = newSegmentToLine . VectorStorable.foldr (mappend . (\(TypesGeography.GeoStorableLine p1 p2) -> VectorStorable.fromList [Geospatial.GeoPointXY p1, Geospatial.GeoPointXY p2])) mempty
 {-# INLINE newNewFoldPointsToLine #-}
