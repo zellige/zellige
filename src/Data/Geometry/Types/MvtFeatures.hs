@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -13,6 +14,7 @@ import qualified Data.HashMap.Strict  as HashMapStrict
 import qualified Data.Maybe           as Maybe
 import           Data.Monoid
 import qualified Data.Scientific      as Scientific
+import qualified Data.Semigroup       as Semigroup
 import qualified Data.Text            as Text
 import qualified Data.Text.Encoding   as TextEncoding
 import qualified Data.Vector          as Vector
@@ -54,6 +56,14 @@ convertElems _               = Nothing
 sToF :: Scientific.Scientific -> Double
 sToF = Scientific.toRealFloat
 
+instance Semigroup.Semigroup MvtFeatures where
+  (<>) a b = MvtFeatures (mvtPoints a <> mvtPoints b) (mvtLines a <> mvtLines b) (mvtPolygons a <> mvtPolygons b)
+
 instance Monoid MvtFeatures where
   mempty = MvtFeatures mempty mempty mempty
-  mappend a b = MvtFeatures (mvtPoints a <> mvtPoints b) (mvtLines a <> mvtLines b) (mvtPolygons a <> mvtPolygons b)
+
+#if !(MIN_VERSION_base(4,11,0))
+  -- this is redundant starting with base-4.11 / GHC 8.4
+  -- if you want to avoid CPP, you can define `mappend = (<>)` unconditionally
+  mappend = (<>)
+#endif
