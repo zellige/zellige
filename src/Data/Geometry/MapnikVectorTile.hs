@@ -67,6 +67,20 @@ createMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoF
         layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
     pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
+convertClipSimplify :: Config.Config -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
+convertClipSimplify Config.Config{..} feature = simplifiedFeatures
+  where
+    sphericalMercatorPts = SphericalMercator.mapFeature _extents _quantizePixels (SphericalMercator.boundingBox _gtc) feature
+    clipBb = Clip.createBoundingBox _buffer _extents
+    clippedFeatures = Clip.mapFeature clipBb sphericalMercatorPts
+    simplifiedFeatures = Simplify.mapFeature _simplify clippedFeatures
+
+convertedGeojsonToMvt :: Config.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
+convertedGeojsonToMvt Config.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
+    let MvtFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures)
+        layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
+    pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
+
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s MvtFeatures.MvtFeatures
 getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures _geofeatures
 
