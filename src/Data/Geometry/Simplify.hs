@@ -40,22 +40,22 @@ simplifyFeature algo geometry feature acc =
       Geospatial.MultiPolygon ps              -> simplifyPolygonsAcc algo ps feature acc
       Geospatial.Collection gs                -> Foldable.foldMap (\x -> simplifyFeature algo x feature acc) gs
 
-mapFeature :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeospatialGeometry -> Maybe Geospatial.GeospatialGeometry
+mapFeature :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 mapFeature algo geometry =
   if algo == TypesConfig.NoAlgorithm then
-    Just geometry
+    geometry
   else
     case geometry of
-      Geospatial.NoGeometry                                   -> Just geometry
-      Geospatial.Point _                                      -> Just geometry
-      Geospatial.MultiPoint _                                 -> Just geometry
-      Geospatial.Line l                                       -> either (const Nothing) (Just . Geospatial.Line . Geospatial.GeoLine) (simplifyLine algo l)
-      Geospatial.MultiLine (Geospatial.GeoMultiLine ls)       -> either (const Nothing) (Just . Geospatial.MultiLine  . Geospatial.GeoMultiLine) (simplifyLines algo ls)
-      Geospatial.Polygon (Geospatial.GeoPolygon p)            -> either (const Nothing) (Just . Geospatial.Polygon  . Geospatial.GeoPolygon) (simplifyPolygon algo p)
-      Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon ps) -> either (const Nothing) (Just . Geospatial.MultiPolygon  . Geospatial.GeoMultiPolygon) (simplifyPolygons algo ps)
-      Geospatial.Collection gs                                -> if Vector.null (foldOver gs) then Nothing else Just (Geospatial.Collection (foldOver gs))
+      Geospatial.NoGeometry                                   -> geometry
+      Geospatial.Point _                                      -> geometry
+      Geospatial.MultiPoint _                                 -> geometry
+      Geospatial.Line l                                       -> either (const Geospatial.NoGeometry) (Geospatial.Line . Geospatial.GeoLine) (simplifyLine algo l)
+      Geospatial.MultiLine (Geospatial.GeoMultiLine ls)       -> either (const Geospatial.NoGeometry) (Geospatial.MultiLine  . Geospatial.GeoMultiLine) (simplifyLines algo ls)
+      Geospatial.Polygon (Geospatial.GeoPolygon p)            -> either (const Geospatial.NoGeometry) (Geospatial.Polygon  . Geospatial.GeoPolygon) (simplifyPolygon algo p)
+      Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon ps) -> either (const Geospatial.NoGeometry) (Geospatial.MultiPolygon  . Geospatial.GeoMultiPolygon) (simplifyPolygons algo ps)
+      Geospatial.Collection gs                                -> if Vector.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
    where
-     foldOver = Vector.foldr (\geom acc -> maybe acc (`Vector.cons` acc) (mapFeature algo geom)) Vector.empty
+     foldOver = Vector.foldr (\geom acc -> mapFeature algo geom `Vector.cons` acc) Vector.empty
 
 simplifyUsing :: TypesConfig.SimplificationAlgorithm -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 simplifyUsing TypesConfig.NoAlgorithm    = id

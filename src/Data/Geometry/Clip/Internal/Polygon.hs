@@ -5,6 +5,8 @@
 module Data.Geometry.Clip.Internal.Polygon (
   clipPolygon
 , clipPolygons
+, clipPolygonMap
+, clipPolygonsMap
 ) where
 
 import qualified Data.Aeson                    as Aeson
@@ -18,19 +20,31 @@ import qualified Data.Vector.Storable          as VectorStorable
 import qualified Data.Geometry.Types.Geography as TypesGeography
 
 clipPolygons :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipPolygons bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
-  case maybeNewMultiPoly bb polys of
+clipPolygons bb polys (Geospatial.GeoFeature bbox _ props fId) acc =
+  case clipPolygonsMap bb polys of
     Nothing   -> acc
-    Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId) acc
+    Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon newPolys) props fId) acc
+
+clipPolygonsMap :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Maybe Geospatial.GeoMultiPolygon
+clipPolygonsMap bb (Geospatial.GeoMultiPolygon polys) =
+  case maybeNewMultiPoly bb polys of
+    Nothing       -> Nothing
+    Just newPolys -> Just (Geospatial.GeoMultiPolygon newPolys)
 
 maybeNewMultiPoly :: TypesGeography.BoundingBox -> Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
 maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
 
 clipPolygon :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipPolygon bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
-    case maybeNewPoly bb poly of
+clipPolygon bb poly (Geospatial.GeoFeature bbox _ props fId) acc =
+    case clipPolygonMap bb poly of
       Nothing   -> acc
-      Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId) acc
+      Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon newPoly) props fId) acc
+
+clipPolygonMap :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Maybe Geospatial.GeoPolygon
+clipPolygonMap bb (Geospatial.GeoPolygon poly) =
+  case maybeNewPoly bb poly of
+    Nothing      -> Nothing
+    Just newPoly -> Just (Geospatial.GeoPolygon newPoly)
 
 maybeNewPoly :: TypesGeography.BoundingBox -> Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
 maybeNewPoly bb = traverse (clipLinearRing bb)

@@ -24,6 +24,7 @@ module Data.Geometry.Clip (
 , clipFeatures
 , clipPolygonNLNN
 , clipPolygonsNLNN
+, mapFeature
 ) where
 
 import qualified Data.Aeson                                                as Aeson
@@ -61,4 +62,18 @@ clipFeature bbox geometry feature acc =
     Geospatial.Polygon g      -> clipPolygon bbox g feature acc
     Geospatial.MultiPolygon g -> clipPolygons bbox g feature acc
     Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
+
+mapFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
+mapFeature bbox geometry =
+  case geometry of
+    Geospatial.NoGeometry     -> geometry
+    Geospatial.Point g        -> maybe Geospatial.NoGeometry Geospatial.Point (clipPointMap bbox g)
+    Geospatial.MultiPoint g   -> maybe Geospatial.NoGeometry Geospatial.MultiPoint (clipPointsMap bbox g)
+    Geospatial.Line g         -> maybe Geospatial.NoGeometry Geospatial.Line (clipLineQcMap bbox g)
+    Geospatial.MultiLine g    -> maybe Geospatial.NoGeometry Geospatial.MultiLine (clipLinesQcMap bbox g)
+    Geospatial.Polygon g      -> maybe Geospatial.NoGeometry Geospatial.Polygon (clipPolygonMap bbox g)
+    Geospatial.MultiPolygon g -> maybe Geospatial.NoGeometry Geospatial.MultiPolygon (clipPolygonsMap bbox g)
+    Geospatial.Collection gs  -> if Vector.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
+  where
+    foldOver = Vector.foldr (\geom acc -> mapFeature bbox geom `Vector.cons` acc) Vector.empty
 
