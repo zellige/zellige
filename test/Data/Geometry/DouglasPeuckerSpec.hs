@@ -26,7 +26,7 @@ testKnownPts :: Spec
 testKnownPts =
   describe "base case" $
     it "Returns simplified line epsilon 1" $ do
-      let actual = seqDouglasPeucker 1.0 linePts1
+      let actual = douglasPeucker 1.0 linePts1
           resultPts = SpecHelper.listToSequenceGeo [(0,0),(10,1),(20,-1),(30,50),(70,90),(90,90)]
       actual `shouldBe` resultPts
 
@@ -34,10 +34,10 @@ testAnotherPts :: Spec
 testAnotherPts =
   describe "more complicated" $ do
     it "Returns simplified line epsilon 10" $ do
-        let actual = seqDouglasPeucker 10.0 linePts2
+        let actual = douglasPeucker 10.0 linePts2
             resultPts = SpecHelper.listToSequenceGeo [(24,173),(48,152),(24,125),(76,125),(95,87),(107,89),(109,129),(139,134),(119,154),(80,142),(76,163),(63,138)]
         actual `shouldBe` resultPts
     it "Returns simplified line epsilon 20" $ do
-        let actual = seqDouglasPeucker 20.0 linePts2
+        let actual = douglasPeucker 20.0 linePts2
             resultPts = SpecHelper.listToSequenceGeo [(24,173),(48,152),(24,125),(76,125),(95,87),(139,134),(76,163),(63,138)]
         actual `shouldBe` resultPts
