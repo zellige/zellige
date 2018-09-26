@@ -110,7 +110,6 @@ convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Pol
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
-
 coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
 coordsToPoints geoPosition = Sequence.singleton newPoint
     where
