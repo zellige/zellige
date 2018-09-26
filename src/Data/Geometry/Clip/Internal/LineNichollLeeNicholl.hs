@@ -49,7 +49,7 @@ maybeAddLine acc pp =
 
 clipLineToValidationLineString :: Sequence.Seq TypesGeography.GeoStorableLine
              -> Validation.Validation
-                  LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+                  LineString.SequenceToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 clipLineToValidationLineString lines = LineString.fromSeq (ClipLine.lineToGeoPoint lines)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Sequence.Seq TypesGeography.GeoStorableLine

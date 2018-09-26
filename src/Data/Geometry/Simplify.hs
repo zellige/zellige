@@ -66,7 +66,7 @@ simplifyLineAcc algo line (Geospatial.GeoFeature bbox _ props fId) acc =
     Right res -> (Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine res)) props fId) Sequence.<| acc
     Left _    -> acc
 
-simplifyLine :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Either LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+simplifyLine :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Either LineString.SequenceToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 simplifyLine algo (Geospatial.GeoLine points) = Validation.toEither $ LineString.fromSeq (createSimplifiedLineString algo points)
 
 simplifyLinesAcc :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature a -> Sequence.Seq (Geospatial.GeoFeature a) -> Sequence.Seq (Geospatial.GeoFeature a)
@@ -75,7 +75,7 @@ simplifyLinesAcc algo (Geospatial.GeoMultiLine multiLines) (Geospatial.GeoFeatur
     Right res -> (Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine res)) props fId) Sequence.<| acc
     Left _    -> acc
 
-simplifyLines :: Traversable t => TypesConfig.SimplificationAlgorithm -> t (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Either LineString.VectorToLineStringError (t (LineString.LineString Geospatial.GeoPositionWithoutCRS))
+simplifyLines :: Traversable t => TypesConfig.SimplificationAlgorithm -> t (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Either LineString.SequenceToLineStringError (t (LineString.LineString Geospatial.GeoPositionWithoutCRS))
 simplifyLines algo multiLines = traverse (Validation.toEither . LineString.fromSeq) simplifyMultiLines
   where
     simplifyMultiLines = fmap (createSimplifiedLineString algo) multiLines
@@ -86,7 +86,7 @@ simplifyPolygonAcc algo (Geospatial.GeoPolygon polygon) (Geospatial.GeoFeature b
     Right res -> (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon res)) props fId) Sequence.<| acc
     Left _    -> acc
 
-simplifyPolygon :: Traversable t => TypesConfig.SimplificationAlgorithm -> t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Either (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+simplifyPolygon :: Traversable t => TypesConfig.SimplificationAlgorithm -> t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Either (ListNonEmpty.NonEmpty (LinearRing.SequenceToLinearRingError Geospatial.GeoPositionWithoutCRS)) (t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
 simplifyPolygon algo polygon = traverse (Validation.toEither . LinearRing.fromSeq) simplifyGeoPolygon
   where
     simplifyGeoPolygon = fmap (createSimplifiedLinearRing algo) polygon
@@ -97,7 +97,7 @@ simplifyPolygonsAcc algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFe
     Right res -> (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon res)) props fId) Sequence.<| acc
     Left _    -> acc
 
-simplifyPolygons :: (Traversable t1, Traversable t2) => TypesConfig.SimplificationAlgorithm -> t1 (t2 (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Either (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS))
+simplifyPolygons :: (Traversable t1, Traversable t2) => TypesConfig.SimplificationAlgorithm -> t1 (t2 (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Either (ListNonEmpty.NonEmpty (LinearRing.SequenceToLinearRingError Geospatial.GeoPositionWithoutCRS))
          (t1 (t2 (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
 simplifyPolygons algo polygons = traverse (traverse (Validation.toEither . LinearRing.fromSeq)) simplifyGeoPolygons
   where

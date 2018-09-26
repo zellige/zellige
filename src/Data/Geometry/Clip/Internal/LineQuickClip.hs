@@ -58,7 +58,7 @@ maybeAddLine acc pp =
     Validation.Success res -> (Sequence.<|) res acc
     Validation.Failure _   -> acc
 
-clipLineToValidationLineString :: Sequence.Seq TypesGeography.GeoStorableLine -> Validation.Validation LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+clipLineToValidationLineString :: Sequence.Seq TypesGeography.GeoStorableLine -> Validation.Validation LineString.SequenceToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 clipLineToValidationLineString lines = LineString.fromSeq (ClipLine.lineToGeoPoint lines)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Sequence.Seq TypesGeography.GeoStorableLine
