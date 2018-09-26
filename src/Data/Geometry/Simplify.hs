@@ -59,7 +59,7 @@ mapFeature algo geometry =
 
 simplifyUsing :: TypesConfig.SimplificationAlgorithm -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
 simplifyUsing TypesConfig.NoAlgorithm    = id
-simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.newDouglasPeucker 1.0
+simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 1.0
 simplifyUsing TypesConfig.Visvalingam    = id
 
 simplifyLineAcc :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Geospatial.GeoFeature a -> Vector.Vector (Geospatial.GeoFeature a) -> Vector.Vector (Geospatial.GeoFeature a)

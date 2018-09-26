@@ -3,7 +3,6 @@ module Data.Geometry.SpecHelper where
 import qualified Data.Geospatial      as Geospatial
 import qualified Data.LinearRing      as LinearRing
 import qualified Data.LineString      as LineString
-import qualified Data.Vector          as Vector
 import qualified Data.Vector.Storable as VectorStorable
 import qualified Geography.VectorTile as VectorTile
 
@@ -19,5 +18,5 @@ mkLinearRing p1 p2 p3 rest = LinearRing.makeLinearRing (tupleToGeoPts p1) (tuple
 tupleToGeoPts :: (Double, Double) -> Geospatial.GeoPositionWithoutCRS
 tupleToGeoPts (x, y) = Geospatial.GeoPointXY (Geospatial.PointXY x y)
 
-listToVectorGeo :: [(Double, Double)] -> Vector.Vector Geospatial.PointXY
-listToVectorGeo pts = Vector.fromList $ fmap (uncurry Geospatial.PointXY) pts
+listToVectorGeo :: [(Double, Double)] -> VectorStorable.Vector Geospatial.PointXY
+listToVectorGeo pts = VectorStorable.fromList $ fmap (uncurry Geospatial.PointXY) pts
