@@ -4,12 +4,50 @@ module Data.Geometry.Simplify.DouglasPeucker
     , shortestDistance
     , splitAtMaxDistance
     , douglasPeucker
+    , seqDouglasPeucker
     ) where
 
 import qualified Data.Geospatial               as Geospatial
+import qualified Data.Sequence                 as Sequence
 import qualified Data.Vector.Storable          as VectorStorable
 
 import qualified Data.Geometry.Types.Geography as TypesGeography
+
+-- https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
+seqDouglasPeucker :: Double -> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
+seqDouglasPeucker epsilon points
+  | points == Sequence.empty = Sequence.empty
+  | dMax > epsilon = seqDouglasPeucker epsilon left Sequence.>< seqTail (seqDouglasPeucker epsilon right)
+  | otherwise = Sequence.fromList [(seqHead points), (seqLast points)]
+  where
+    (left, right) = (Sequence.take index points, Sequence.drop (index - 1) points)
+    (dMax, index) = seqSplitAtMaxDistance points
+
+seqSplitAtMaxDistance :: Sequence.Seq Geospatial.PointXY -> (Distance, Index)
+seqSplitAtMaxDistance points =
+  Sequence.foldlWithIndex (\(accMax, index) ni a ->
+    if cp a ls > accMax
+      then (cp a ls, ni + 1)
+      else (accMax, index)
+  ) (0.0, Sequence.length points) points
+  where
+    ls = TypesGeography.GeoStorableLine (seqHead points) (seqLast points)
+    cp = shortestDistance
+
+seqHead :: Sequence.Seq a -> a
+seqHead s = Sequence.index s 0
+
+seqLast :: Sequence.Seq a -> a
+seqLast s = Sequence.index s ((Sequence.length s) - 1)
+
+seqTail :: Sequence.Seq a -> Sequence.Seq a
+seqTail s =
+  case Sequence.viewl s of
+    Sequence.EmptyL    -> Sequence.empty
+    (_ Sequence.:< xs) -> xs
+
+type Distance = Double
+type Index = Int
 
 -- https://en.wikipedia.org/wiki/Ramer%E2%80%93Douglas%E2%80%93Peucker_algorithm
 douglasPeucker :: Double -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY

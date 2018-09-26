@@ -3,6 +3,7 @@ module Data.Geometry.SpecHelper where
 import qualified Data.Geospatial      as Geospatial
 import qualified Data.LinearRing      as LinearRing
 import qualified Data.LineString      as LineString
+import qualified Data.Sequence        as Sequence
 import qualified Data.Vector.Storable as VectorStorable
 import qualified Geography.VectorTile as VectorTile
 
@@ -20,3 +21,6 @@ tupleToGeoPts (x, y) = Geospatial.GeoPointXY (Geospatial.PointXY x y)
 
 listToVectorGeo :: [(Double, Double)] -> VectorStorable.Vector Geospatial.PointXY
 listToVectorGeo pts = VectorStorable.fromList $ fmap (uncurry Geospatial.PointXY) pts
+
+listToSequenceGeo :: [(Double, Double)] -> Sequence.Seq Geospatial.PointXY
+listToSequenceGeo pts = Sequence.fromList $ fmap (uncurry Geospatial.PointXY) pts
