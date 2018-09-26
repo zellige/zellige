@@ -32,7 +32,7 @@ lineClipPts :: GeometryGeography.BoundingBoxPts
 lineClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
 
 linesTst :: Vector.Vector VectorTile.LineString
-linesTst = Vector.fromList
+linesTst = Sequence.fromList
   [ VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (0, 100)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(5, 5), (45, 50), (90, 140)])
@@ -41,7 +41,7 @@ linesTst = Vector.fromList
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (60, 60)])]
 
 resultLines :: Vector.Vector VectorTile.LineString
-resultLines = Vector.fromList
+resultLines = Sequence.fromList
   [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (10, 18)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (10, 10)])
@@ -56,13 +56,13 @@ innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
 
 resultPolyWithInner :: VectorTile.Polygon
-resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
+resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Sequence.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
 
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
 
 geoLinesTst :: Geospatial.GeoMultiLine
-geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
+geoLinesTst = Geospatial.GeoMultiLine $ Sequence.fromList
   [ SpecHelper.mkLineString (11, 11) (59, 59) []
   , SpecHelper.mkLineString (0, 0) (0, 100) []
   , SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)]
@@ -93,7 +93,7 @@ geoPolyTst :: Geospatial.GeoPolygon
 geoPolyTst = Geospatial.GeoPolygon (Vector.singleton geoLinearRingTst1)
 
 geoPolysTst :: Geospatial.GeoMultiPolygon
-geoPolysTst = Geospatial.GeoMultiPolygon (Vector.fromList [
+geoPolysTst = Geospatial.GeoMultiPolygon (Sequence.fromList [
     Vector.singleton geoLinearRingTst1,
     Vector.singleton geoLinearRingTst2
   ])
@@ -126,7 +126,7 @@ geoTurningPolyFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoTurningPolyFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoTurningPolyTst) Aeson.Null Nothing
 
 geoResultLines :: Geospatial.GeoMultiLine
-geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
+geoResultLines = Geospatial.GeoMultiLine $ Sequence.fromList
   [ SpecHelper.mkLineString (10, 10) (60, 60) []
   , SpecHelper.mkLineString (50, 50) (10, 18) []
   , SpecHelper.mkLineString (10, 10) (10, 10) []
@@ -162,10 +162,10 @@ offGeoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 offGeoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton offGeoResultLinearRing1))) Aeson.Null Nothing
 
 geoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Sequence.fromList [Vector.singleton geoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
 
 offGeoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-offGeoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton offGeoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+offGeoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Sequence.fromList [Vector.singleton offGeoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
 
 geoResultGiantPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 geoResultGiantPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultGiantLinearRing))) Aeson.Null Nothing

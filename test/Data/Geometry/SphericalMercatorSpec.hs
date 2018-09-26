@@ -34,10 +34,10 @@ pt3 :: Geospatial.GeoPoint
 pt3 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.960599 (-37.799549)))
 
 testLine :: Geospatial.GeospatialGeometry
-testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) VectorStorable.empty))
+testLine = Geospatial.Line (Geospatial.GeoLine (LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) Sequence.empty))
 
 testPolygon :: Geospatial.GeospatialGeometry
-testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) VectorStorable.empty]))
+testPolygon = Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) Sequence.empty]))
 
 point1 :: Geospatial.GeospatialGeometry
 point1 =  Geospatial.Point (Geospatial.GeoPoint (tupleToGeoPts (839.9996700223613, 2194.1081715809173)))
@@ -55,7 +55,7 @@ polygon :: Geospatial.GeospatialGeometry
 polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) (177.85887856088198, 1161.7239537991395) []))
 
 collection :: Geospatial.GeospatialGeometry
-collection = Geospatial.Collection (Vector.fromList [point1, lineString, polygon])
+collection = Geospatial.Collection (Sequence.fromList [point1, lineString, polygon])
 
 mkFeatureID :: Word -> Maybe Geospatial.FeatureID
 mkFeatureID = Just . Geospatial.FeatureIDNumber . fromIntegral
@@ -73,7 +73,7 @@ testConvertPoints =
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let testFeature = Geospatial.GeoFeature Nothing (Geospatial.Point pt1) AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [testFeature])
+          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
           expected = Geospatial.GeoFeature Nothing point1 AT.Null (mkFeatureID x)
       actual `shouldBe` expected
 
@@ -83,7 +83,7 @@ testConvertLines =
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let testFeature = Geospatial.GeoFeature Nothing testLine AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [testFeature])
+          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
           expected = Geospatial.GeoFeature Nothing lineString AT.Null (mkFeatureID x)
       actual `shouldBe` expected
 
@@ -94,7 +94,7 @@ testConvertPolygon =
       x <- GA.generate QA.arbitrary :: IO Word
       let expected = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
           feature = Geospatial.GeoFeature Nothing testPolygon AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
+          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [feature])
       actual `shouldBe` expected
 
 testConvertCollection :: Spec
@@ -103,6 +103,6 @@ testConvertCollection =
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let expected = Geospatial.GeoFeature Nothing collection AT.Null (mkFeatureID x)
-          feature = Geospatial.GeoFeature Nothing (Geospatial.Collection (Vector.fromList [Geospatial.Point pt1, testLine, testPolygon])) AT.Null (mkFeatureID x)
-          actual = convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Vector.fromList [feature])
-      actual `shouldBe` Vector.fromList [expected]
+          feature = Geospatial.GeoFeature Nothing (Geospatial.Collection (Sequence.fromList [Geospatial.Point pt1, testLine, testPolygon])) AT.Null (mkFeatureID x)
+          actual = convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [feature])
+      actual `shouldBe` Sequence.fromList [expected]

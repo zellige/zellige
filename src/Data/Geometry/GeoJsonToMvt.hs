@@ -19,7 +19,7 @@ import qualified Data.Geometry.Types.MvtFeatures as TypesMvtFeatures
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures :: TypesMvtFeatures.MvtFeatures -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
 geoJsonFeaturesToMvtFeatures layer features = do
   ops <- STRef.newSTRef 0
   Foldable.foldMap (convertFeature layer ops) features
@@ -71,7 +71,7 @@ convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoin
 
 -- Lines
 
-convertLineString :: Geospatial.GeoLine -> Vector.Vector VectorTile.LineString
+convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString =
   Vector.singleton .
   VectorTile.LineString .
@@ -81,12 +81,12 @@ convertLineString =
   LineString.fromLineString .
   Geospatial._unGeoLine
 
-convertMultiLineString :: Geospatial.GeoMultiLine -> Vector.Vector VectorTile.LineString
+convertMultiLineString :: Geospatial.GeoMultiLine -> Sequence.Seq VectorTile.LineString
 convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: Geospatial.GeoPolygon -> Vector.Vector VectorTile.Polygon
+convertPolygon :: Geospatial.GeoPolygon -> Sequence.Seq VectorTile.Polygon
 convertPolygon poly =
   Vector.singleton $
   if Vector.null rawPoly
@@ -98,7 +98,7 @@ convertPolygon poly =
   where
     rawPoly = Geospatial._unGeoPolygon poly
 
-mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Vector.Vector VectorTile.Polygon
+mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTile.Polygon
 mkPolys = List.foldl' (\acc lring -> (mkPoly lring `Vector.cons` acc)) Vector.empty
 
 mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
@@ -107,7 +107,7 @@ mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
 mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorStorable.Vector VectorTile.Point
 mkPolyPoints = VectorStorable.uniq . Vector.convert . LinearRing.foldMap coordsToPoints
 
-convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Vector.Vector VectorTile.Polygon
+convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Polygon
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers

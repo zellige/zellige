@@ -48,10 +48,10 @@ createBoundingBox buffer extent = BoundingBox (-fiBuffer) (-fiBuffer) (fiExtent 
     fiBuffer = fromIntegral buffer
     fiExtent = fromIntegral extent
 
-clipFeatures :: BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipFeatures :: BoundingBox -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipFeatures bbox = Vector.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Vector.empty
 
-clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipFeature bbox geometry feature acc =
   case geometry of
     Geospatial.NoGeometry     -> acc
@@ -73,7 +73,7 @@ mapFeature bbox geometry =
     Geospatial.MultiLine g    -> maybe Geospatial.NoGeometry Geospatial.MultiLine (clipLinesQcMap bbox g)
     Geospatial.Polygon g      -> maybe Geospatial.NoGeometry Geospatial.Polygon (clipPolygonMap bbox g)
     Geospatial.MultiPolygon g -> maybe Geospatial.NoGeometry Geospatial.MultiPolygon (clipPolygonsMap bbox g)
-    Geospatial.Collection gs  -> if Vector.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
+    Geospatial.Collection gs  -> if Sequence.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
   where
     foldOver = Vector.foldr (\geom acc -> mapFeature bbox geom `Vector.cons` acc) Vector.empty
 
