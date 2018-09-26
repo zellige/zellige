@@ -6,8 +6,7 @@ import qualified Data.Aeson.Types                as AT
 import qualified Data.Geospatial                 as Geospatial
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
-import qualified Data.Vector                     as Vector
-import qualified Data.Vector.Storable            as VectorStorable
+import qualified Data.Sequence                   as Sequence
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
 import qualified Test.QuickCheck.Arbitrary       as QA
@@ -52,7 +51,7 @@ lineString :: Geospatial.GeospatialGeometry
 lineString = Geospatial.Line (Geospatial.GeoLine (mkLineString (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) []))
 
 polygon :: Geospatial.GeospatialGeometry
-polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton $ mkLinearRing (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) (177.85887856088198, 1161.7239537991395) []))
+polygon = Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.singleton $ mkLinearRing (839.9996700223613, 2194.1081715809173) (22.762837334737632, 2097.8526471037135) (177.85887856088198, 1161.7239537991395) []))
 
 collection :: Geospatial.GeospatialGeometry
 collection = Geospatial.Collection (Sequence.fromList [point1, lineString, polygon])
@@ -73,7 +72,7 @@ testConvertPoints =
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let testFeature = Geospatial.GeoFeature Nothing (Geospatial.Point pt1) AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
+          actual = Sequence.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
           expected = Geospatial.GeoFeature Nothing point1 AT.Null (mkFeatureID x)
       actual `shouldBe` expected
 
@@ -83,7 +82,7 @@ testConvertLines =
     it "Returns values converted from 4326 to 3857 in a geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let testFeature = Geospatial.GeoFeature Nothing testLine AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
+          actual = Sequence.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [testFeature])
           expected = Geospatial.GeoFeature Nothing lineString AT.Null (mkFeatureID x)
       actual `shouldBe` expected
 
@@ -94,7 +93,7 @@ testConvertPolygon =
       x <- GA.generate QA.arbitrary :: IO Word
       let expected = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
           feature = Geospatial.GeoFeature Nothing testPolygon AT.Null (mkFeatureID x)
-          actual = Vector.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [feature])
+          actual = Sequence.head $ convertFeatures (_zcExtents extentsBb) (_zcQuantize extentsBb) (_zcBBox extentsBb) (Sequence.fromList [feature])
       actual `shouldBe` expected
 
 testConvertCollection :: Spec
