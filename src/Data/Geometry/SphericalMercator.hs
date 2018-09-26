@@ -4,8 +4,6 @@ import qualified Data.Aeson                    as Aeson
 import qualified Data.Foldable                 as Foldable
 import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.LineString               as LineString
 import qualified Data.Sequence                 as Sequence
 
 wgs84MajorRadius :: Double
