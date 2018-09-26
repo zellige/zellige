@@ -59,15 +59,6 @@ pointsToLines :: Sequence.Seq Geospatial.PointXY -> Sequence.Seq GeoStorableLine
 pointsToLines pts@(_ Sequence.:<| (_ Sequence.:|> lastS)) = (Sequence.zipWith GeoStorableLine <*> SeqHelper.sequenceHead) $ lastS Sequence.<| pts
 pointsToLines _ = Sequence.empty
 
--- All but last
-allButLast :: Sequence.Seq a -> Sequence.Seq a
-allButLast (headS Sequence.:|> _) = headS
-allButLast _                      = Sequence.empty
-
-allButFirst :: Sequence.Seq a -> Sequence.Seq a
-allButFirst (_ Sequence.:<| tailS) = tailS
-allButFirst _                      = Sequence.empty
-
 -- Coords types
 
 data LatLon = LatLon
