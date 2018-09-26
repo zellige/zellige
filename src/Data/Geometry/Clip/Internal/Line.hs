@@ -14,7 +14,7 @@ getLines (Geospatial.GeoLine line) = linesFromPoints line
 {-# INLINE getLines #-}
 
 linesFromPoints :: LineString.LineString Geospatial.GeoPositionWithoutCRS -> Sequence.Seq TypesGeography.GeoStorableLine
-linesFromPoints = LineString.combineToVector (\x y -> TypesGeography.GeoStorableLine (Geospatial.retrieveXY x) (Geospatial.retrieveXY y))
+linesFromPoints = LineString.combineToSeq (\x y -> TypesGeography.GeoStorableLine (Geospatial.retrieveXY x) (Geospatial.retrieveXY y))
 {-# INLINE linesFromPoints #-}
 
 pointsFromLine :: TypesGeography.GeoStorableLine -> Sequence.Seq Geospatial.PointXY

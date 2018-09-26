@@ -8,6 +8,7 @@ clipPolygonQc
 ) where
 
 import qualified Data.Aeson                                as Aeson
+import qualified Data.Foldable                             as Foldable
 import qualified Data.Geometry.Clip.Internal.Line          as ClipLine
 import qualified Data.Geometry.Clip.Internal.LineQuickClip as ClipLineQuickClip
 import qualified Data.Geometry.Types.Geography             as TypesGeography

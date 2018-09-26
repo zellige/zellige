@@ -10,6 +10,7 @@ module Data.Geometry.Clip.Internal.Polygon (
 ) where
 
 import qualified Data.Aeson                    as Aeson
+import qualified Data.Foldable                 as Foldable
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.List.NonEmpty            as ListNonEmpty
