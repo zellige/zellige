@@ -7,15 +7,16 @@ clipPolygonNLNN
 , clipPolygonsNLNN
 ) where
 
-import qualified Data.Aeson                    as Aeson
-import qualified Data.Foldable                 as Foldable
-import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.List.NonEmpty            as ListNonEmpty
-import qualified Data.Sequence                 as Sequence
-import qualified Data.Validation               as Validation
+import qualified Data.Aeson                          as Aeson
+import qualified Data.Foldable                       as Foldable
+import qualified Data.Geospatial                     as Geospatial
+import qualified Data.LinearRing                     as LinearRing
+import qualified Data.List.NonEmpty                  as ListNonEmpty
+import qualified Data.Sequence                       as Sequence
+import qualified Data.Validation                     as Validation
 
-import qualified Data.Geometry.Types.Geography as TypesGeography
+import qualified Data.Geometry.Clip.Internal.Polygon as ClipPolygon
+import qualified Data.Geometry.Types.Geography       as TypesGeography
 
 clipPolygonsNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsNLNN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -48,19 +49,7 @@ clipLinearRing bb linearRing =
     createNewClipPts = clipPolyPoints bb (fmap Geospatial.retrieveXY (LinearRing.toSeq linearRing))
 
 clipPolyPoints :: TypesGeography.BoundingBox -> Sequence.Seq Geospatial.PointXY -> Maybe (Sequence.Seq Geospatial.PointXY)
-clipPolyPoints bb polyPoints = checkLength newClippedPoly
-  where
-    newClippedPoly = foo bb polyPoints
-    checkLength newPoly =
-      if Sequence.length newPoly <= 2
-        then Nothing
-        else Just (closeIfNot newPoly)
-
-closeIfNot :: Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
-closeIfNot poly@(firstPt Sequence.:<| (_ Sequence.:|> lastPt)) =
-  if lastPt /= firstPt
-    then lastPt Sequence.<| poly
-    else poly
+clipPolyPoints bb polyPoints = ClipPolygon.closeIfNot $ foo bb polyPoints
 
 foo :: TypesGeography.BoundingBox-> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
 foo bb polyPts = if Sequence.length polyPts <= 2 then Sequence.empty else newPoints

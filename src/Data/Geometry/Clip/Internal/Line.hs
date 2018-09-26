@@ -28,7 +28,7 @@ segmentToLine s = case Sequence.viewl s of
                     (first Sequence.:< rest) ->
                       first Sequence.:<| newRest
                       where
-                        newRest = Sequence.foldrWithIndex (\i elem acc -> if odd i then acc Sequence.|> elem else acc) Sequence.empty rest
+                        newRest = Sequence.foldrWithIndex (\i newElem acc -> if odd i then acc Sequence.|> newElem else acc) Sequence.empty rest
                     Sequence.EmptyL ->
                         mempty
 {-# INLINE segmentToLine #-}

@@ -6,6 +6,7 @@ import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.Sequence                 as Sequence
+import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 import           Test.Hspec                    (Spec, describe, it, shouldBe)
 
@@ -56,7 +57,7 @@ innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
 
 resultPolyWithInner :: VectorTile.Polygon
-resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Sequence.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
+resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
 
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
@@ -227,21 +228,21 @@ testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Simple - Returns clipped polygon" $
-      GeometryClip.clipPolygon polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolyFeatureTst
+      GeometryClip.clipPolygonSh polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolyFeatureTst
     it "Simple - Returns clipped multipolygon" $
-      GeometryClip.clipPolygons polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolysFeatureTst
+      GeometryClip.clipPolygonsSh polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolysFeatureTst
     it "Simple - Negative polygon" $
-      GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
+      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
     it "Simple - Maximum polygon" $
-      GeometryClip.clipPolygon giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
+      GeometryClip.clipPolygonSh giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "Simple - Turning point test" $
-      GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst
+      GeometryClip.clipPolygonSh turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst
     -- it "NLN - Returns clipped polygon" $
     --   GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolyFeatureTst
     -- it "NLN - Returns clipped multipolygon" $
     --   GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolysFeatureTst
     it "NLN - Negative polygon" $
-      GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
+      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
     it "NLN - Maximum polygon" $
       GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "NLN - Turning point test" $
