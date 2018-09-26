@@ -9,6 +9,7 @@ module Data.Geometry.Clip.Internal.LineCohenSutherland
 ) where
 
 import qualified Data.Aeson                       as Aeson
+import qualified Data.Foldable                    as Foldable
 import qualified Data.Geospatial                  as Geospatial
 import qualified Data.LineString                  as LineString
 import qualified Data.Sequence                    as Sequence

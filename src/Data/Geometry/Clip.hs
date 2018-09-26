@@ -30,7 +30,7 @@ module Data.Geometry.Clip (
 import qualified Data.Aeson                                                as Aeson
 import qualified Data.Foldable                                             as Foldable
 import qualified Data.Geospatial                                           as Geospatial
-import qualified Data.Vector                                               as Vector
+import qualified Data.Sequence                                             as Sequence
 
 import           Data.Geometry.Clip.Internal.LineCohenSutherland
 import           Data.Geometry.Clip.Internal.LineLiangBarsky
@@ -49,7 +49,7 @@ createBoundingBox buffer extent = BoundingBox (-fiBuffer) (-fiBuffer) (fiExtent 
     fiExtent = fromIntegral extent
 
 clipFeatures :: BoundingBox -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
-clipFeatures bbox = Vector.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Vector.empty
+clipFeatures bbox = Foldable.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Sequence.empty
 
 clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipFeature bbox geometry feature acc =
@@ -75,5 +75,5 @@ mapFeature bbox geometry =
     Geospatial.MultiPolygon g -> maybe Geospatial.NoGeometry Geospatial.MultiPolygon (clipPolygonsMap bbox g)
     Geospatial.Collection gs  -> if Sequence.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
   where
-    foldOver = Vector.foldr (\geom acc -> mapFeature bbox geom `Vector.cons` acc) Vector.empty
+    foldOver = Foldable.foldr (\geom acc -> mapFeature bbox geom Sequence.<| acc) Sequence.empty
 

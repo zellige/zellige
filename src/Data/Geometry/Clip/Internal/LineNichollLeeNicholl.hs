@@ -12,13 +12,15 @@ module Data.Geometry.Clip.Internal.LineNichollLeeNicholl (
 ) where
 
 import qualified Data.Aeson                       as Aeson
-import qualified Data.Geometry.Clip.Internal.Line as ClipLine
-import qualified Data.Geometry.Types.Geography    as TypesGeography
+import qualified Data.Foldable                    as Foldable
 import qualified Data.Geospatial                  as Geospatial
 import qualified Data.LineString                  as LineString
 import qualified Data.Sequence                    as Sequence
 import qualified Data.Validation                  as Validation
 import           Prelude                          hiding (lines)
+
+import qualified Data.Geometry.Clip.Internal.Line as ClipLine
+import qualified Data.Geometry.Types.Geography    as TypesGeography
 
 clipLineNLN :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLineNLN bb line feature acc =

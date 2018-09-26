@@ -9,14 +9,15 @@ clipPolygonQc
 
 import qualified Data.Aeson                                as Aeson
 import qualified Data.Foldable                             as Foldable
-import qualified Data.Geometry.Clip.Internal.Line          as ClipLine
-import qualified Data.Geometry.Clip.Internal.LineQuickClip as ClipLineQuickClip
-import qualified Data.Geometry.Types.Geography             as TypesGeography
 import qualified Data.Geospatial                           as Geospatial
 import qualified Data.LinearRing                           as LinearRing
 import qualified Data.List.NonEmpty                        as ListNonEmpty
 import qualified Data.Sequence                             as Sequence
 import qualified Data.Validation                           as Validation
+
+import qualified Data.Geometry.Clip.Internal.Line          as ClipLine
+import qualified Data.Geometry.Clip.Internal.LineQuickClip as ClipLineQuickClip
+import qualified Data.Geometry.Types.Geography             as TypesGeography
 
 clipPolygonsQc :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsQc bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -69,4 +70,4 @@ foo bb polyPts = if Sequence.length polyPts <= 2 then Sequence.empty else newPoi
     newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
 lineToClippedPoints :: TypesGeography.BoundingBox -> Sequence.Seq TypesGeography.GeoStorableLine -> Sequence.Seq Geospatial.PointXY
-lineToClippedPoints bb l = ClipLine.lineToPointXY $ Foldable.foldr (ClipLineQuickClip.clipOrDiscard bb) Sequence.empty
+lineToClippedPoints bb l = ClipLine.lineToPointXY $ Foldable.foldr (ClipLineQuickClip.clipOrDiscard bb) Sequence.empty l

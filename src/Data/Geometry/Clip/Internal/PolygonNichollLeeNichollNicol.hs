@@ -9,12 +9,13 @@ clipPolygonNLNN
 
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Foldable                 as Foldable
-import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.List.NonEmpty            as ListNonEmpty
 import qualified Data.Sequence                 as Sequence
 import qualified Data.Validation               as Validation
+
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
 clipPolygonsNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsNLNN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =

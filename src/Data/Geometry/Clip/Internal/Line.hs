@@ -4,10 +4,11 @@
 module Data.Geometry.Clip.Internal.Line where
 
 import qualified Data.Foldable                 as Foldable
-import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LineString               as LineString
 import qualified Data.Sequence                 as Sequence
+
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
 getLines :: Geospatial.GeoLine -> Sequence.Seq TypesGeography.GeoStorableLine
 getLines (Geospatial.GeoLine line) = linesFromPoints line

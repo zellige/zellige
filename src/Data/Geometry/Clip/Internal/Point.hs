@@ -7,9 +7,10 @@ module Data.Geometry.Clip.Internal.Point (
 
 import           Control.Applicative
 import qualified Data.Aeson                    as Aeson
-import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.Sequence                 as Sequence
+
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
 clipPoint :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPoint bbox point feature acc =

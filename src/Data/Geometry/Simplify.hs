@@ -11,15 +11,14 @@ module Data.Geometry.Simplify where
 
 import qualified Data.Aeson                            as Aeson
 import qualified Data.Foldable                         as Foldable
+import qualified Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPeucker
+import qualified Data.Geometry.Types.Config            as TypesConfig
 import qualified Data.Geospatial                       as Geospatial
 import qualified Data.LinearRing                       as LinearRing
 import qualified Data.LineString                       as LineString
 import qualified Data.List.NonEmpty                    as ListNonEmpty
 import qualified Data.Sequence                         as Sequence
 import qualified Data.Validation                       as Validation
-
-import qualified Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPeucker
-import qualified Data.Geometry.Types.Config            as TypesConfig
 
 simplifyFeatures :: TypesConfig.SimplificationAlgorithm -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 simplifyFeatures algo = foldr (\x acc -> simplifyFeature algo (Geospatial._geometry x) x acc) Sequence.empty
