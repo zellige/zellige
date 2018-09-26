@@ -15,32 +15,31 @@ import qualified Data.HashMap.Strict  as HashMapStrict
 import           Data.Monoid
 import qualified Data.Scientific      as Scientific
 import qualified Data.Semigroup       as Semigroup
+import qualified Data.Sequence        as Sequence
 import qualified Data.Text            as Text
 import qualified Data.Text.Encoding   as TextEncoding
-import qualified Data.Vector          as Vector
-import qualified Data.Vector.Storable as VectorStorable
 import qualified Geography.VectorTile as VectorTile
 import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
-  { mvtPoints   :: Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
-  , mvtLines    :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))
-  , mvtPolygons :: Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon))
+  { mvtPoints   :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
+  , mvtLines    :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
+  , mvtPolygons :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
   } deriving (Eq, Show)
 
 emptyMvtFeatures :: MvtFeatures
 emptyMvtFeatures = MvtFeatures mempty mempty mempty
 
-mkPoint :: Word -> Aeson.Value -> VectorStorable.Vector VectorTile.Point -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point)) -> Vector.Vector (VectorTile.Feature (VectorStorable.Vector VectorTile.Point))
-mkPoint fId props p = Vector.cons (VectorTile.Feature fId (convertProps props) p)
+mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
+mkPoint fId props p = (Sequence.<|) (VectorTile.Feature fId (convertProps props) p)
 
-mkLineString :: Word -> Aeson.Value -> Vector.Vector VectorTile.LineString -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString)) -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.LineString))
-mkLineString fId props l = Vector.cons (mkFeature fId props l)
+mkLineString :: Word -> Aeson.Value -> Sequence.Seq VectorTile.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
+mkLineString fId props l = (Sequence.<|) (mkFeature fId props l)
 
-mkPolygon :: Word -> Aeson.Value -> Vector.Vector VectorTile.Polygon -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon)) -> Vector.Vector (VectorTile.Feature (Vector.Vector VectorTile.Polygon))
-mkPolygon x props o = Vector.cons (mkFeature x props o)
+mkPolygon :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Polygon -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
+mkPolygon x props o = (Sequence.<|) (mkFeature x props o)
 
-mkFeature :: Word -> Aeson.Value -> Vector.Vector g -> VectorTile.Feature (Vector.Vector g)
+mkFeature :: Word -> Aeson.Value -> Sequence.Seq g -> VectorTile.Feature (Sequence.Seq g)
 mkFeature fId props = VectorTile.Feature fId (convertProps props)
 
 convertProps :: Aeson.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
