@@ -39,7 +39,7 @@ library
                      , aeson
                      , bytestring
                      , containers
-                     , geojson >= 2.0.0
+                     , geojson >= 3.0.3
                      , optparse-applicative
                      , scientific
                      , stm
@@ -71,7 +71,7 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
-                     , geojson >= 3.0.1
+                     , geojson >= 3.0.3
                      , hspec
                      , lens
                      , QuickCheck
