@@ -2,12 +2,11 @@ module Data.Geometry.SphericalMercator where
 
 import qualified Data.Aeson                    as Aeson
 import qualified Data.Foldable                 as Foldable
+import qualified Data.Geometry.Types.Geography as TypesGeography
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.LineString               as LineString
-import qualified Data.Vector                   as Vector
-
-import qualified Data.Geometry.Types.Geography as TypesGeography
+import qualified Data.Sequence                 as Sequence
 
 wgs84MajorRadius :: Double
 wgs84MajorRadius = 6378137.0
@@ -18,23 +17,23 @@ maxExtents = 20037508.342789244 :: Double
 degreesToRadians :: Double -> Double
 degreesToRadians x = x / 180 * pi
 
-convertFeatures :: Int -> Int -> TypesGeography.BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-convertFeatures extents qt bb = Vector.foldr (\x acc -> convertFeature extents qt bb (Geospatial._geometry x) x acc) Vector.empty
+convertFeatures :: Int -> Int -> TypesGeography.BoundingBox -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+convertFeatures extents qt bb = Foldable.foldr (\x acc -> convertFeature extents qt bb (Geospatial._geometry x) x acc) Sequence.empty
 
-convertFeature :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+convertFeature :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 convertFeature extents qt bb geometry feature acc =
   case geometry of
     Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> Vector.cons (Geospatial.reWrapGeometry feature $ convertPoint extents qt bb g) acc
-    Geospatial.MultiPoint g   -> Vector.cons (Geospatial.reWrapGeometry feature $ convertPoints extents qt bb g) acc
-    Geospatial.Line g         -> Vector.cons (Geospatial.reWrapGeometry feature $ convertLine extents qt bb g) acc
-    Geospatial.MultiLine g    -> Vector.cons (Geospatial.reWrapGeometry feature $ convertLines extents qt bb g) acc
-    Geospatial.Polygon g      -> Vector.cons (Geospatial.reWrapGeometry feature $ convertPolygon extents qt bb g) acc
-    Geospatial.MultiPolygon g -> Vector.cons (Geospatial.reWrapGeometry feature $ convertMultiPolygon extents qt bb g) acc
-    Geospatial.Collection gs  -> Vector.cons (Geospatial.reWrapGeometry feature $ Geospatial.Collection (Foldable.foldMap (\g -> convertFeature' extents qt bb g Vector.empty) gs)) acc
+    Geospatial.Point g        -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertPoint extents qt bb g) acc
+    Geospatial.MultiPoint g   -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertPoints extents qt bb g) acc
+    Geospatial.Line g         -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertLine extents qt bb g) acc
+    Geospatial.MultiLine g    -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertLines extents qt bb g) acc
+    Geospatial.Polygon g      -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertPolygon extents qt bb g) acc
+    Geospatial.MultiPolygon g -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ convertMultiPolygon extents qt bb g) acc
+    Geospatial.Collection gs  -> (Sequence.<|) (Geospatial.reWrapGeometry feature $ Geospatial.Collection (Foldable.foldMap (\g -> convertFeature' extents qt bb g Sequence.empty) gs)) acc
 
-convertFeature' :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Vector.Vector Geospatial.GeospatialGeometry -> Vector.Vector Geospatial.GeospatialGeometry
-convertFeature' extents qt bb geometry = Vector.cons (mapFeature extents qt bb geometry)
+convertFeature' :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Sequence.Seq Geospatial.GeospatialGeometry -> Sequence.Seq Geospatial.GeospatialGeometry
+convertFeature' extents qt bb geometry = (Sequence.<|) (mapFeature extents qt bb geometry)
 
 mapFeature :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 mapFeature extents qt bb geometry =
@@ -61,27 +60,27 @@ convertPoints extents qt bb (Geospatial.GeoMultiPoint points) = Geospatial.Multi
 convertLine :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeospatialGeometry
 convertLine extents qt bb (Geospatial.GeoLine line) = Geospatial.Line (Geospatial.GeoLine newLine)
   where
-    newLine = LineString.map (latLonToXYInTile extents qt bb) line
+    newLine = fmap (latLonToXYInTile extents qt bb) line
 
 convertLines :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeospatialGeometry
 convertLines extents qt bb (Geospatial.GeoMultiLine mLines) = Geospatial.MultiLine (Geospatial.GeoMultiLine newLines)
   where
-    newLines = (fmap . LineString.map) (latLonToXYInTile extents qt bb) mLines
+    newLines = (fmap . fmap) (latLonToXYInTile extents qt bb) mLines
 
 convertPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeospatialGeometry
 convertPolygon extents qt bb (Geospatial.GeoPolygon poly) = Geospatial.Polygon (Geospatial.GeoPolygon newPoly)
   where
-    newPoly = (fmap . LinearRing.map) (latLonToXYInTile extents qt bb) poly
+    newPoly = (fmap . fmap) (latLonToXYInTile extents qt bb) poly
 
 convertMultiPolygon :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeospatialGeometry
 convertMultiPolygon extents qt bb (Geospatial.GeoMultiPolygon polys) = Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)
   where
-    newPolys = (fmap . fmap . LinearRing.map) (latLonToXYInTile extents qt bb) polys
+    newPolys = (fmap . fmap . fmap) (latLonToXYInTile extents qt bb) polys
 
-convertCollection :: Int -> Int -> TypesGeography.BoundingBox -> Vector.Vector Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
+convertCollection :: Int -> Int -> TypesGeography.BoundingBox -> Sequence.Seq Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 convertCollection extents qt bb gs = Geospatial.Collection newCollection
   where
-    newCollection = Foldable.foldMap (\g -> convertFeature' extents qt bb g Vector.empty) gs
+    newCollection = Foldable.foldMap (\g -> convertFeature' extents qt bb g Sequence.empty) gs
 
 latLonToXYInTile :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Geospatial.GeoPositionWithoutCRS
 latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY maxX maxY) pt = xy
