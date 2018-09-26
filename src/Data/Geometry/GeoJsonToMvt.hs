@@ -10,6 +10,7 @@ import qualified Data.Geospatial                 as Geospatial
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.List                       as List
+import qualified Data.SeqHelper                  as SeqHelper
 import qualified Data.Sequence                   as Sequence
 import qualified Data.STRef                      as STRef
 import qualified Geography.VectorTile            as VectorTile
@@ -91,10 +92,10 @@ convertPolygon poly =
     then VectorTile.Polygon mempty mempty
     else
       if Sequence.length rawPoly == 1
-        then mkPoly (Vector.head rawPoly)
-        else VectorTile.Polygon (mkPolyPoints (Vector.head rawPoly)) (mkPolys (Vector.tail rawPoly))
+        then mkPoly headS
+        else VectorTile.Polygon (mkPolyPoints headS) (mkPolys tailS)
   where
-    rawPoly = Geospatial._unGeoPolygon poly
+    rawPoly@(headS Sequence.:<| tailS) = Geospatial._unGeoPolygon poly
 
 mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTile.Polygon
 mkPolys = List.foldl' (\acc lring -> (mkPoly lring Sequence.<| acc)) Sequence.empty
