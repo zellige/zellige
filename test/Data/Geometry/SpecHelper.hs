@@ -4,11 +4,10 @@ import qualified Data.Geospatial      as Geospatial
 import qualified Data.LinearRing      as LinearRing
 import qualified Data.LineString      as LineString
 import qualified Data.Sequence        as Sequence
-import qualified Data.Vector.Storable as VectorStorable
 import qualified Geography.VectorTile as VectorTile
 
-tupleToPts :: [(Int, Int)] -> VectorStorable.Vector VectorTile.Point
-tupleToPts = foldr (\(x,y) acc -> VectorTile.Point x y `VectorStorable.cons` acc) VectorStorable.empty
+tupleToPts :: [(Int, Int)] -> Sequence.Seq VectorTile.Point
+tupleToPts = foldr (\(x,y) acc -> VectorTile.Point x y Sequence.<| acc) Sequence.empty
 
 mkLineString :: (Double, Double) -> (Double, Double) -> [(Double, Double)] -> LineString.LineString Geospatial.GeoPositionWithoutCRS
 mkLineString p1 p2 rest = LineString.makeLineString (tupleToGeoPts p1) (tupleToGeoPts p2) (Sequence.fromList $ fmap tupleToGeoPts rest)

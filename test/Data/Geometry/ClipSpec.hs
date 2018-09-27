@@ -6,7 +6,6 @@ import qualified Data.Aeson                    as Aeson
 import qualified Data.Geospatial               as Geospatial
 import qualified Data.LinearRing               as LinearRing
 import qualified Data.Sequence                 as Sequence
-import qualified Data.Vector                   as Vector
 import qualified Geography.VectorTile          as VectorTile
 import           Test.Hspec                    (Spec, describe, it, shouldBe)
 
@@ -57,7 +56,7 @@ innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
 
 resultPolyWithInner :: VectorTile.Polygon
-resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
+resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Sequence.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
 
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
