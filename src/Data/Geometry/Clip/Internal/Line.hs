@@ -23,14 +23,11 @@ pointsFromLine (TypesGeography.GeoStorableLine p1 p2) = Sequence.fromList [p1, p
 {-# INLINE pointsFromLine #-}
 
 -- Remove duplicate points in segments [(1,2),(2,3)] becomes [1,2,3]
-segmentToLine :: Sequence.Seq a -> Sequence.Seq a
-segmentToLine s = case Sequence.viewl s of
-                    (first Sequence.:< rest) ->
-                      first Sequence.:<| newRest
-                      where
-                        newRest = Sequence.foldrWithIndex (\i newElem acc -> if odd i then acc Sequence.|> newElem else acc) Sequence.empty rest
-                    Sequence.EmptyL ->
-                        mempty
+segmentToLine :: Sequence.Seq a  -> Sequence.Seq a
+segmentToLine l = if Sequence.length l > 1 then start Sequence.<| second l else mempty
+  where
+    start = Sequence.index l 0
+    second = Sequence.foldrWithIndex (\i newElem acc -> if odd i then newElem Sequence.<| acc else acc) Sequence.empty
 {-# INLINE segmentToLine #-}
 
 -- Fold points from line to a vector of points
