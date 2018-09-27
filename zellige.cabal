@@ -51,7 +51,7 @@ library
                      , validation
                      , vector
                      , vector-th-unbox
-                     , vectortiles >=1.4.0                
+                     , vectortiles >= 1.5.0                
   ghc-options:         -Wall -Werror -O2                    
   default-language:    Haskell2010
 
@@ -80,7 +80,7 @@ test-suite zellige-test
                      , text
                      , unordered-containers
                      , vector
-                     , vectortiles >=1.4.0                
+                     , vectortiles >= 1.5.0                
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
