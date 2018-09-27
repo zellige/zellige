@@ -2,17 +2,18 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Aeson                    as Aeson
-import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.Sequence                 as Sequence
-import qualified Geography.VectorTile          as VectorTile
-import           Test.Hspec                    (Spec, describe, it, shouldBe)
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Geospatial                  as Geospatial
+import qualified Data.LinearRing                  as LinearRing
+import qualified Data.Sequence                    as Sequence
+import qualified Geography.VectorTile             as VectorTile
+import           Test.Hspec                       (Spec, describe, it, shouldBe)
 
-import qualified Data.Geometry.Clip            as GeometryClip
-import qualified Data.Geometry.Types.Geography as GeometryGeography
+import qualified Data.Geometry.Clip               as GeometryClip
+import qualified Data.Geometry.Clip.Internal.Line as InternalLine
+import qualified Data.Geometry.Types.Geography    as GeometryGeography
 
-import qualified Data.Geometry.SpecHelper      as SpecHelper
+import qualified Data.Geometry.SpecHelper         as SpecHelper
 
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150),  (200, 50)
@@ -190,10 +191,23 @@ turningClip = GeometryGeography.BoundingBox 100 100 200 200
 
 spec :: Spec
 spec = do
+  testLineHelper
   testClipLine
   testClipPolygon
   -- testClipPolygonWithInterior
   -- testManyClipPolygon
+
+testLineHelper :: Spec
+testLineHelper =
+  describe "segmentToLine" $ do
+    it "Simple test" $ do
+      let inputPts = (Sequence.fromList ([1,2,2,7,7,10,10,11] :: [Int]))
+          expectedPts = (Sequence.fromList ([1,2,7,10,11] :: [Int]))
+      expectedPts `shouldBe` InternalLine.segmentToLine inputPts
+    it "Empty Test" $
+      Sequence.empty `shouldBe` (InternalLine.segmentToLine (Sequence.empty :: Sequence.Seq Int))
+    it "Single element test" $
+      Sequence.empty `shouldBe` InternalLine.segmentToLine (Sequence.fromList ([1] :: [Int]))
 
 testClipLine :: Spec
 testClipLine =
