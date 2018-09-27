@@ -1,10 +1,12 @@
-module Data.Geometry.SpecHelper where
+module Data.SpecHelper where
 
-import qualified Data.Geospatial      as Geospatial
-import qualified Data.LinearRing      as LinearRing
-import qualified Data.LineString      as LineString
-import qualified Data.Sequence        as Sequence
-import qualified Geography.VectorTile as VectorTile
+import qualified Data.Geospatial               as Geospatial
+import qualified Data.LinearRing               as LinearRing
+import qualified Data.LineString               as LineString
+import qualified Data.Sequence                 as Sequence
+import qualified Geography.VectorTile          as VectorTile
+
+import qualified Data.Geometry.Types.Geography as TypesGeography
 
 tupleToPts :: [(Int, Int)] -> Sequence.Seq VectorTile.Point
 tupleToPts = foldr (\(x,y) acc -> VectorTile.Point x y Sequence.<| acc) Sequence.empty
@@ -18,8 +20,8 @@ mkLinearRing p1 p2 p3 rest = LinearRing.makeLinearRing (tupleToGeoPts p1) (tuple
 tupleToGeoPts :: (Double, Double) -> Geospatial.GeoPositionWithoutCRS
 tupleToGeoPts (x, y) = Geospatial.GeoPointXY (Geospatial.PointXY x y)
 
-listToVectorGeo :: [(Double, Double)] -> Sequence.Seq Geospatial.PointXY
-listToVectorGeo pts = Sequence.fromList $ fmap (uncurry Geospatial.PointXY) pts
-
 listToSequenceGeo :: [(Double, Double)] -> Sequence.Seq Geospatial.PointXY
 listToSequenceGeo pts = Sequence.fromList $ fmap (uncurry Geospatial.PointXY) pts
+
+listToSequenceGeoLine :: [((Double, Double),(Double, Double))] -> Sequence.Seq TypesGeography.GeoStorableLine
+listToSequenceGeoLine pts = Sequence.fromList $ fmap (\(x, y) -> TypesGeography.GeoStorableLine (uncurry Geospatial.PointXY x) (uncurry Geospatial.PointXY y)) pts

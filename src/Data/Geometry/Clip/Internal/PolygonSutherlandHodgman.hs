@@ -23,8 +23,8 @@ import qualified Data.Geometry.Types.Geography       as TypesGeography
 clipPolygonsSh :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsSh bb polys (Geospatial.GeoFeature bbox _ props fId) acc =
   case clipPolygonsMapSh bb polys of
-    Nothing   -> acc
-    Just newPolys -> (Sequence.<|) (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon newPolys) props fId) acc
+    Nothing      -> acc
+    Just newPolys -> Geospatial.GeoFeature bbox (Geospatial.MultiPolygon newPolys) props fId Sequence.<| acc
 
 clipPolygonsMapSh :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Maybe Geospatial.GeoMultiPolygon
 clipPolygonsMapSh bb (Geospatial.GeoMultiPolygon polys) =
@@ -38,8 +38,8 @@ maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
 clipPolygonSh :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonSh bb poly (Geospatial.GeoFeature bbox _ props fId) acc =
     case clipPolygonMapSh bb poly of
-      Nothing   -> acc
-      Just newPoly -> (Sequence.<|) (Geospatial.GeoFeature bbox (Geospatial.Polygon newPoly) props fId) acc
+      Nothing      -> acc
+      Just newPoly -> Geospatial.GeoFeature bbox (Geospatial.Polygon newPoly) props fId Sequence.<| acc
 
 clipPolygonMapSh :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Maybe Geospatial.GeoPolygon
 clipPolygonMapSh bb (Geospatial.GeoPolygon poly) =
@@ -75,9 +75,9 @@ foo polyPts bbLine = if Sequence.length polyPts <= 2 then Sequence.empty else ne
 clipEdges :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
 clipEdges polyLine@(TypesGeography.GeoStorableLine s e) line acc =
   case (inside e line, inside s line) of
-    (True, True)   -> (Sequence.<|) e acc
+    (True, True)   -> e Sequence.<| acc
     (True, False)  -> (Sequence.<|) e $ (Sequence.<|) (lineIntersectPoint line polyLine) acc
-    (False, True)  -> (Sequence.<|) (lineIntersectPoint line polyLine) acc
+    (False, True)  -> lineIntersectPoint line polyLine Sequence.<| acc
     (False, False) -> acc
 
 lineIntersectPoint :: TypesGeography.GeoStorableLine -> TypesGeography.GeoStorableLine -> Geospatial.PointXY

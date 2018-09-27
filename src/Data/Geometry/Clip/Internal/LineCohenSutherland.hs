@@ -22,7 +22,7 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 clipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLineCs bb geoLine feature acc =
   case validLine of
-    Validation.Success res -> (Sequence.<|) (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
+    Validation.Success res -> (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) Sequence.<| acc
     Validation.Failure _   -> acc
   where
     validLine = clipLineToValidationLineString x
@@ -31,14 +31,14 @@ clipLineCs bb geoLine feature acc =
 clipLinesCs :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLinesCs bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
   where
-    checkLinesAndAdd = if Sequence.null multiLine then acc else (Sequence.<|) reMakeFeature acc
+    checkLinesAndAdd = if Sequence.null multiLine then acc else reMakeFeature Sequence.<| acc
     reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
     multiLine = Foldable.foldl' maybeAddLine mempty (findClipLines bb (Geospatial.splitGeoMultiLine lines))
 
 maybeAddLine :: Sequence.Seq (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq TypesGeography.GeoClipLine -> Sequence.Seq (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 maybeAddLine acc pp =
   case clipLineToValidationLineString pp of
-    Validation.Success res -> (Sequence.<|) res acc
+    Validation.Success res -> res Sequence.<| acc
     Validation.Failure _   -> acc
 
 clipLineToValidationLineString :: Sequence.Seq TypesGeography.GeoClipLine -> Validation.Validation LineString.SequenceToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)

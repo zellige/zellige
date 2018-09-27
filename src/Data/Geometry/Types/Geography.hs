@@ -56,7 +56,7 @@ mkBBoxPoly :: BoundingBox -> Sequence.Seq GeoStorableLine
 mkBBoxPoly (BoundingBox x1 y1 x2 y2) = pointsToLines $ Sequence.fromList [Geospatial.PointXY x1 y1, Geospatial.PointXY x2 y1, Geospatial.PointXY x2 y2, Geospatial.PointXY x1 y2]
 
 pointsToLines :: Sequence.Seq Geospatial.PointXY -> Sequence.Seq GeoStorableLine
-pointsToLines pts@(_ Sequence.:<| (_ Sequence.:|> lastS)) = (Sequence.zipWith GeoStorableLine <*> SeqHelper.sequenceHead) $ lastS Sequence.<| pts
+pointsToLines pts@(_ Sequence.:<| (_ Sequence.:|> lastS)) = (Sequence.zipWith GeoStorableLine <*> SeqHelper.sequenceTail) $ lastS Sequence.<| pts
 pointsToLines _ = Sequence.empty
 
 -- Coords types

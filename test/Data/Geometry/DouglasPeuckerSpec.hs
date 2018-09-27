@@ -9,7 +9,7 @@ import           Test.Hspec                            (Spec, describe, it,
 
 import           Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPuecker
 
-import           Data.Geometry.SpecHelper              as SpecHelper
+import           Data.SpecHelper                       as SpecHelper
 
 linePts1 :: Sequence.Seq Geospatial.PointXY
 linePts1 = SpecHelper.listToSequenceGeo [(0,0),(10,1),(20,-1),(30,50),(40,60),(50,70),(60,81),(70,90),(80,90),(90,90)]

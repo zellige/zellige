@@ -20,7 +20,7 @@ import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.Config
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
 
-import           Data.Geometry.SpecHelper
+import           Data.SpecHelper
 
 config :: Config
 config = mkConfig "foo" 18 (236629,160842) 128 2048 1 NoAlgorithm

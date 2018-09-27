@@ -13,7 +13,7 @@ import qualified Data.Geometry.Clip               as GeometryClip
 import qualified Data.Geometry.Clip.Internal.Line as InternalLine
 import qualified Data.Geometry.Types.Geography    as GeometryGeography
 
-import qualified Data.Geometry.SpecHelper         as SpecHelper
+import qualified Data.SpecHelper                  as SpecHelper
 
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150),  (200, 50)
