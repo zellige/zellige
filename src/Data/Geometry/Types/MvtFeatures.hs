@@ -22,9 +22,9 @@ import qualified Geography.VectorTile as VectorTile
 import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
-  { mvtPoints   :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
-  , mvtLines    :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
-  , mvtPolygons :: Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
+  { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)))
+  , mvtLines    :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)))
+  , mvtPolygons :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)))
   } deriving (Eq, Show)
 
 emptyMvtFeatures :: MvtFeatures
