@@ -9,17 +9,19 @@
 
 module Data.Geometry.Types.MvtFeatures where
 
-import qualified Data.Aeson           as Aeson
-import qualified Data.ByteString.Lazy as ByteStringLazy
-import qualified Data.HashMap.Strict  as HashMapStrict
+import qualified Data.Aeson                    as Aeson
+import qualified Data.ByteString.Lazy          as ByteStringLazy
+import qualified Data.HashMap.Strict           as HashMapStrict
+import qualified Data.Map.Lazy                 as MapLazy
 import           Data.Monoid
-import qualified Data.Scientific      as Scientific
-import qualified Data.Semigroup       as Semigroup
-import qualified Data.Sequence        as Sequence
-import qualified Data.Text            as Text
-import qualified Data.Text.Encoding   as TextEncoding
-import qualified Geography.VectorTile as VectorTile
-import           Prelude              hiding (Left, Right)
+import qualified Data.Scientific               as Scientific
+import qualified Data.Semigroup                as Semigroup
+import qualified Data.Sequence                 as Sequence
+import qualified Data.Text                     as Text
+import qualified Data.Text.Encoding            as TextEncoding
+import qualified Geography.VectorTile          as VectorTile
+import qualified Geography.VectorTile.Geometry as VectorTileGeometry
+import           Prelude                       hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
   { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)))
@@ -51,6 +53,37 @@ convertElems (!k, Aeson.String !v) = Just ((ByteStringLazy.fromStrict . TextEnco
 convertElems (!k, Aeson.Number !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))
 convertElems (!k, Aeson.Bool !v)   = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.B v)
 convertElems _                   = Nothing
+
+-- data MvtFeatures = MvtFeatures
+--   { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature VectorTileGeometry.Point))
+--   , mvtLines    :: !(Sequence.Seq (VectorTile.Feature VectorTileGeometry.LineString))
+--   , mvtPolygons :: !(Sequence.Seq (VectorTile.Feature VectorTileGeometry.Polygon))
+--   } deriving (Eq, Show)
+
+-- emptyMvtFeatures :: MvtFeatures
+-- emptyMvtFeatures = MvtFeatures mempty mempty mempty
+
+-- mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.Point -> Sequence.Seq (VectorTile.Feature (Int, Int)) -> Sequence.Seq (VectorTile.Feature VectorTileGeometry.Point)
+-- mkPoint fId props p = (Sequence.<|) (VectorTile.Feature (fromIntegral fId :: Int) (convertProps props) p)
+
+-- mkLineString :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.LineString -> Sequence.Seq (VectorTile.Feature VectorTileGeometry.LineString) -> Sequence.Seq (VectorTile.Feature VectorTileGeometry.LineString)
+-- mkLineString fId props l = (Sequence.<|) (mkFeature fId props l)
+
+-- mkPolygon :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.Polygon -> Sequence.Seq (VectorTile.Feature VectorTileGeometry.Polygon) -> Sequence.Seq (VectorTile.Feature VectorTileGeometry.Polygon)
+-- mkPolygon x props o = (Sequence.<|) (mkFeature x props o)
+
+-- mkFeature :: Word -> Aeson.Value -> Sequence.Seq g -> VectorTile.Feature g
+-- mkFeature fId props = VectorTile.Feature (fromIntegral fId :: Int) (convertProps props)
+
+-- convertProps :: Aeson.Value -> MapLazy.Map Text.Text VectorTile.Val
+-- convertProps (Aeson.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> MapLazy.insert k' v' acc) (convertElems (k, v))) MapLazy.empty x
+-- convertProps _                 = MapLazy.empty
+
+-- convertElems :: (t, Aeson.Value) -> Maybe (t, VectorTile.Val)
+-- convertElems (!k, Aeson.String !v) = Just (k, VectorTile.St v)
+-- convertElems (!k, Aeson.Number !v) = Just (k, VectorTile.Do (sToF v))
+-- convertElems (!k, Aeson.Bool !v)   = Just (k, VectorTile.B v)
+-- convertElems _                     = Nothing
 
 sToF :: Scientific.Scientific -> Double
 sToF = Scientific.toRealFloat
