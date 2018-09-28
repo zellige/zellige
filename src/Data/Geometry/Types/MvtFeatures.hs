@@ -9,19 +9,17 @@
 
 module Data.Geometry.Types.MvtFeatures where
 
-import qualified Data.Aeson                    as Aeson
-import qualified Data.ByteString.Lazy          as ByteStringLazy
-import qualified Data.HashMap.Strict           as HashMapStrict
-import qualified Data.Map.Lazy                 as MapLazy
+import qualified Data.Aeson           as Aeson
+import qualified Data.ByteString.Lazy as ByteStringLazy
+import qualified Data.HashMap.Strict  as HashMapStrict
 import           Data.Monoid
-import qualified Data.Scientific               as Scientific
-import qualified Data.Semigroup                as Semigroup
-import qualified Data.Sequence                 as Sequence
-import qualified Data.Text                     as Text
-import qualified Data.Text.Encoding            as TextEncoding
-import qualified Geography.VectorTile          as VectorTile
-import qualified Geography.VectorTile.Geometry as VectorTileGeometry
-import           Prelude                       hiding (Left, Right)
+import qualified Data.Scientific      as Scientific
+import qualified Data.Semigroup       as Semigroup
+import qualified Data.Sequence        as Sequence
+import qualified Data.Text            as Text
+import qualified Data.Text.Encoding   as TextEncoding
+import qualified Geography.VectorTile as VectorTile
+import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
   { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)))
