@@ -71,7 +71,7 @@ convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoin
 
 -- Lines
 
-convertLineString :: Geospatial.GeoLine ->  Sequence.Seq VectorTile.LineString
+convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString =
   Sequence.singleton .
   VectorTile.LineString .
