@@ -46,7 +46,7 @@ convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
 
 -- Fold (x -> a -> x) x (x -> b) -- Fold step initial extract
 data StreamingLayer = StreamingLayer
-  { featureId    :: Int
+  { featureId    :: Word
   , slKeyStore   :: KeyStore
   , slValueStore :: ValueStore
   , slFeatures   :: ProtocolBuffersBasic.Seq Feature.Feature
@@ -67,11 +67,12 @@ foldLayer = Foldl.Fold step begin done
   where
     begin = StreamingLayer 1 (KeyStore 0 mempty) (ValueStore 0 mempty) mempty
 
-    step (StreamingLayer featureId (KeyStore keyCount keyMap) (ValueStore valueCount valueMap) features) (_, value) = StreamingLayer (featureId + 1) (KeyStore newKeyCount newKeyStore) (ValueStore newValueCount newValueStore) features
+    step (StreamingLayer featureId (KeyStore keyCount keyMap) (ValueStore valueCount valueMap) features) (geom, value) = StreamingLayer (featureId + 1) (KeyStore newKeyCount newKeyStore) (ValueStore newValueCount newValueStore) newFeatures
       where
         convertedProps = TypesMvtFeatures.convertProps value
         (newKeyCount, newKeyStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (keyCount, keyMap) (HashMapStrict.keys convertedProps)
         (newValueCount, newValueStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (valueCount, valueMap) (HashMapStrict.elems convertedProps)
+        newFeatures = newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom
 
     done = id
 
