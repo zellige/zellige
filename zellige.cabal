@@ -42,7 +42,9 @@ library
                      , containers
                      , foldl
                      , geojson >= 3.0.3
+                     , hashable
                      , optparse-applicative
+                     , protocol-buffers >=2.4 && <2.5
                      , scientific
                      , stm
                      , text
