@@ -7,6 +7,7 @@ import qualified Control.Foldl                                                  
 import qualified Control.Monad.ST                                                 as MonadST
 import qualified Data.Aeson                                                       as Aeson
 import qualified Data.Aeson.Types                                                 as AesonTypes
+import qualified Data.ByteString                                                  as ByteString
 import qualified Data.ByteString.Lazy                                             as ByteStringLazy
 import qualified Data.Foldable                                                    as Foldable
 import qualified Data.Geospatial                                                  as Geospatial
@@ -21,13 +22,17 @@ import qualified Data.Sequence                                                  
 import qualified Data.STRef                                                       as STRef
 import qualified Geography.VectorTile                                             as VectorTile
 import qualified Geography.VectorTile.Internal                                    as VectorTileInternal
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
 import           Prelude                                                          hiding
                                                                                    (Left,
                                                                                    Right)
 import qualified Text.ProtocolBuffers.Basic                                       as ProtocolBuffersBasic
+import qualified Text.ProtocolBuffers.WireMessage                                 as WireMessage
 
+import qualified Data.Geometry.Types.Config                                       as TypesConfig
 import qualified Data.Geometry.Types.MvtFeatures                                  as TypesMvtFeatures
 
 -- Lib
@@ -93,6 +98,26 @@ newConvertGeometry acc fid convertedProps keys values geom =
     Geospatial.Polygon _      -> acc
     Geospatial.MultiPolygon _ -> acc
     Geospatial.Collection gs  -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
+
+createLayerFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Layer.Layer
+createLayerFromStreamingLayer TypesConfig.Config{..} (StreamingLayer _ (KeyStore _ keys) (ValueStore _ values) features) = Layer.Layer
+  { Layer.version   = fromIntegral _version
+  , Layer.name      = ProtocolBuffersBasic.Utf8 _name
+  , Layer.features  = features
+  , Layer.keys      = Sequence.fromList $ map ProtocolBuffersBasic.Utf8 (HashMapStrict.keys keys)
+  , Layer.values    = Sequence.fromList $ map VectorTileInternal.toProtobuf (HashMapStrict.keys values)
+  , Layer.extent    = Just $ fromIntegral _extents
+  , Layer.ext'field = ProtocolBuffersBasic.defaultValue
+  }
+
+createTileFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Tile.Tile
+createTileFromStreamingLayer config sl = Tile.Tile
+  { Tile.layers    = Sequence.fromList [createLayerFromStreamingLayer config sl]
+  , Tile.ext'field = ProtocolBuffersBasic.defaultValue
+  }
+
+vtToBytes :: TypesConfig.Config -> StreamingLayer -> ByteString.ByteString
+vtToBytes config sl = ByteStringLazy.toStrict . WireMessage.messagePut $ createTileFromStreamingLayer config sl
 
 -- Geometry
 
