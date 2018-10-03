@@ -3,20 +3,36 @@
 
 module Data.Geometry.GeoJsonToMvt where
 
-import qualified Control.Monad.ST                as MonadST
-import qualified Data.Aeson                      as Aeson
-import qualified Data.Foldable                   as Foldable
-import qualified Data.Geospatial                 as Geospatial
-import qualified Data.LinearRing                 as LinearRing
-import qualified Data.LineString                 as LineString
-import qualified Data.List                       as List
-import qualified Data.STRef                      as STRef
-import qualified Data.Vector                     as Vector
-import qualified Data.Vector.Storable            as VectorStorable
-import qualified Geography.VectorTile            as VectorTile
+import qualified Control.Foldl                                                    as Foldl
+import qualified Control.Monad.ST                                                 as MonadST
+import qualified Data.Aeson                                                       as Aeson
+import qualified Data.Aeson.Types                                                 as AesonTypes
+import qualified Data.ByteString                                                  as ByteString
+import qualified Data.ByteString.Lazy                                             as ByteStringLazy
+import qualified Data.Foldable                                                    as Foldable
+import qualified Data.Geospatial                                                  as Geospatial
+import qualified Data.Hashable                                                    as Hashable
+import qualified Data.HashMap.Strict                                              as HashMapStrict
+import qualified Data.LinearRing                                                  as LinearRing
+import qualified Data.LineString                                                  as LineString
+import qualified Data.List                                                        as List
+-- import           Data.Monoid
+-- import qualified Data.SeqHelper                                                   as SeqHelper
+import qualified Data.Sequence                                                    as Sequence
+import qualified Data.STRef                                                       as STRef
+import qualified Data.Vector                                                      as Vector
+import qualified Data.Vector.Storable                                             as VectorStorable
+import qualified Geography.VectorTile                                             as VectorTile
+import qualified Geography.VectorTile.Internal                                    as VectorTileInternal
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
+import qualified Text.ProtocolBuffers.Basic                                       as ProtocolBuffersBasic
+import qualified Text.ProtocolBuffers.WireMessage                                 as WireMessage
 
-import qualified Data.Geometry.Types.MvtFeatures as TypesMvtFeatures
-
+import qualified Data.Geometry.Types.Config                                       as TypesConfig
+import qualified Data.Geometry.Types.MvtFeatures                                  as TypesMvtFeatures
 -- Lib
 
 geoJsonFeaturesToMvtFeatures :: TypesMvtFeatures.MvtFeatures -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesMvtFeatures.MvtFeatures
@@ -30,6 +46,76 @@ convertFeature :: TypesMvtFeatures.MvtFeatures -> STRef.STRef s Word -> Geospati
 convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
   pure $ convertGeometry layer fid props geom
+
+  -- Fold (x -> a -> x) x (x -> b) -- Fold step initial extract
+data StreamingLayer = StreamingLayer
+  { featureId    :: Word
+  , slKeyStore   :: KeyStore
+  , slValueStore :: ValueStore
+  , slFeatures   :: ProtocolBuffersBasic.Seq Feature.Feature
+  }
+
+data KeyStore = KeyStore
+  { ksKeyInt :: Int
+  , ksKeys   :: HashMapStrict.HashMap ByteStringLazy.ByteString Int
+  }
+
+data ValueStore = ValueStore
+  { vsValueInt :: Int
+  , vsValues   :: HashMapStrict.HashMap VectorTile.Val Int
+  }
+
+foldLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) StreamingLayer
+foldLayer = Foldl.Fold step begin done
+  where
+    begin = StreamingLayer 1 (KeyStore 0 mempty) (ValueStore 0 mempty) mempty
+
+    step (StreamingLayer featureId (KeyStore keyCount keyMap) (ValueStore valueCount valueMap) features) (geom, value) = StreamingLayer (featureId + 1) (KeyStore newKeyCount newKeyStore) (ValueStore newValueCount newValueStore) newFeatures
+      where
+        convertedProps = TypesMvtFeatures.convertProps value
+        (newKeyCount, newKeyStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (keyCount, keyMap) (HashMapStrict.keys convertedProps)
+        (newValueCount, newValueStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (valueCount, valueMap) (HashMapStrict.elems convertedProps)
+        newFeatures = newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom
+
+    done = id
+
+addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> (Int, HashMapStrict.HashMap a Int)
+addKeyValue currentKeyNumber key hashMap =
+  case HashMapStrict.lookup key hashMap of
+    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key (currentKeyNumber + 1) hashMap)
+    Just _  -> (currentKeyNumber, hashMap)
+
+newConvertGeometry :: ProtocolBuffersBasic.Seq Feature.Feature -> Word -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val -> HashMapStrict.HashMap ByteStringLazy.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Geospatial.GeospatialGeometry -> ProtocolBuffersBasic.Seq Feature.Feature
+newConvertGeometry acc fid convertedProps keys values geom =
+  case geom of
+    Geospatial.NoGeometry     -> acc
+    Geospatial.Point g        -> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertPoint g))) <> acc
+    Geospatial.MultiPoint g   -> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertMultiPoint g))) <> acc
+    Geospatial.Line _         -> acc
+    Geospatial.MultiLine _    -> acc
+    Geospatial.Polygon _      -> acc
+    Geospatial.MultiPolygon _ -> acc
+    Geospatial.Collection gs  -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
+
+createLayerFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Layer.Layer
+createLayerFromStreamingLayer TypesConfig.Config{..} (StreamingLayer _ (KeyStore _ keys) (ValueStore _ values) features) = Layer.Layer
+  { Layer.version   = fromIntegral _version
+  , Layer.name      = ProtocolBuffersBasic.Utf8 _name
+  , Layer.features  = features
+  , Layer.keys      = Sequence.fromList $ map ProtocolBuffersBasic.Utf8 (HashMapStrict.keys keys)
+  , Layer.values    = Sequence.fromList $ map VectorTileInternal.toProtobuf (HashMapStrict.keys values)
+  , Layer.extent    = Just $ fromIntegral _extents
+  , Layer.ext'field = ProtocolBuffersBasic.defaultValue
+  }
+
+createTileFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Tile.Tile
+createTileFromStreamingLayer config sl = Tile.Tile
+  { Tile.layers    = Sequence.fromList [createLayerFromStreamingLayer config sl]
+  , Tile.ext'field = ProtocolBuffersBasic.defaultValue
+  }
+
+vtToBytes :: TypesConfig.Config -> StreamingLayer -> ByteString.ByteString
+vtToBytes config sl = ByteStringLazy.toStrict . WireMessage.messagePut $ createTileFromStreamingLayer config sl
 
 -- Geometry
 

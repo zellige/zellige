@@ -39,8 +39,11 @@ library
                      , aeson
                      , bytestring
                      , containers
+                     , foldl                     
                      , geojson >= 2.0.0
+                     , hashable
                      , optparse-applicative
+                     , protocol-buffers >=2.4 && <2.5
                      , scientific
                      , stm
                      , text
@@ -50,7 +53,7 @@ library
                      , validation
                      , vector
                      , vector-th-unbox
-                     , vectortiles >=1.4.0                
+                     , vectortiles >=1.5.0                
   ghc-options:         -Wall -Werror -O2                    
   default-language:    Haskell2010
 
@@ -79,7 +82,7 @@ test-suite zellige-test
                      , text
                      , unordered-containers
                      , vector
-                     , vectortiles >=1.4.0                
+                     , vectortiles >=1.5.0                
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
