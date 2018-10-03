@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP                       #-}
 {-# LANGUAGE DataKinds                 #-}
 {-# LANGUAGE FlexibleInstances         #-}
 {-# LANGUAGE LambdaCase                #-}
@@ -14,6 +15,7 @@ import qualified Data.Aeson                    as Aeson
 import qualified Data.ByteString.Lazy          as ByteStringLazy
 import qualified Data.Char                     as Char
 import qualified Data.Monoid                   as Monoid
+import qualified Data.Semigroup                as Semigroup
 import qualified Data.String                   as String
 import qualified Data.Text                     as Text
 import qualified Data.Text.Encoding            as TextEncoding
@@ -80,11 +82,19 @@ data Options = Options
   , oExtent  :: Monoid.Last Int
   } deriving (Show, Eq)
 
-instance Monoid Options where
-  mempty = Options mempty mempty mempty
-  mappend x y = Options
+
+instance Semigroup.Semigroup Options where
+  (<>) x y = Options
     { oVersion = oVersion x Monoid.<> oVersion y
     , oName    = oName    x Monoid.<> oName    y
     , oExtent  = oExtent  x Monoid.<> oExtent  y
     }
 
+instance Monoid Options where
+  mempty = Options mempty mempty mempty
+
+#if !(MIN_VERSION_base(4,11,0))
+  -- this is redundant starting with base-4.11 / GHC 8.4
+  -- if you want to avoid CPP, you can define `mappend = (<>)` unconditionally
+  mappend = (<>)
+#endif

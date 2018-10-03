@@ -1,3 +1,5 @@
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE CPP                   #-}
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -10,9 +12,9 @@ module Data.Geometry.Types.MvtFeatures where
 import qualified Data.Aeson           as Aeson
 import qualified Data.ByteString.Lazy as ByteStringLazy
 import qualified Data.HashMap.Strict  as HashMapStrict
-import qualified Data.Maybe           as Maybe
 import           Data.Monoid
 import qualified Data.Scientific      as Scientific
+import qualified Data.Semigroup       as Semigroup
 import qualified Data.Text            as Text
 import qualified Data.Text.Encoding   as TextEncoding
 import qualified Data.Vector          as Vector
@@ -42,18 +44,26 @@ mkFeature :: Word -> Aeson.Value -> Vector.Vector g -> VectorTile.Feature (Vecto
 mkFeature fId props = VectorTile.Feature fId (convertProps props)
 
 convertProps :: Aeson.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
-convertProps (Aeson.Object x) = HashMapStrict.fromList . Maybe.catMaybes $ Prelude.fmap convertElems (HashMapStrict.toList x)
-convertProps _ = HashMapStrict.empty
+convertProps (Aeson.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> HashMapStrict.insert k' v' acc) (convertElems (k, v))) HashMapStrict.empty x
+convertProps _                 = HashMapStrict.empty
 
 convertElems :: (Text.Text, Aeson.Value) -> Maybe (ByteStringLazy.ByteString, VectorTile.Val)
-convertElems (k, Aeson.String v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.St ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) v))
-convertElems (k, Aeson.Number v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))
-convertElems (k, Aeson.Bool v)   = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.B v)
-convertElems _               = Nothing
+convertElems (!k, Aeson.String !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.St ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) v))
+convertElems (!k, Aeson.Number !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))
+convertElems (!k, Aeson.Bool !v)   = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.B v)
+convertElems _                   = Nothing
 
 sToF :: Scientific.Scientific -> Double
 sToF = Scientific.toRealFloat
 
+instance Semigroup.Semigroup MvtFeatures where
+  (<>) a b = MvtFeatures (mvtPoints a <> mvtPoints b) (mvtLines a <> mvtLines b) (mvtPolygons a <> mvtPolygons b)
+
 instance Monoid MvtFeatures where
   mempty = MvtFeatures mempty mempty mempty
-  mappend a b = MvtFeatures (mvtPoints a <> mvtPoints b) (mvtLines a <> mvtLines b) (mvtPolygons a <> mvtPolygons b)
+
+#if !(MIN_VERSION_base(4,11,0))
+  -- this is redundant starting with base-4.11 / GHC 8.4
+  -- if you want to avoid CPP, you can define `mappend = (<>)` unconditionally
+  mappend = (<>)
+#endif

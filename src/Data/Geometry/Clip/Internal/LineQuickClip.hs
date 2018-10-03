@@ -7,6 +7,8 @@ module Data.Geometry.Clip.Internal.LineQuickClip (
   clipLineQc
   , clipLinesQc
   , clipOrDiscard
+  , clipLineQcMap
+  , clipLinesQcMap
 ) where
 
 import qualified Data.Aeson                       as Aeson
@@ -22,17 +24,28 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 
 clipLineQc :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipLineQc bb line feature acc =
+  case clipLineQcMap bb line of
+    Just res -> Vector.cons (Geospatial.reWrapGeometry feature (Geospatial.Line res)) acc
+    Nothing  -> acc
+
+clipLineQcMap :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Maybe Geospatial.GeoLine
+clipLineQcMap bb line =
   case LineString.fromVector clippedLine of
-    Validation.Success res -> Vector.cons (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
-    Validation.Failure _   -> acc
+    Validation.Success res -> Just (Geospatial.GeoLine res)
+    Validation.Failure _   -> Nothing
   where
     clippedLine = ClipLine.lineToGeoPoint $ lineToClippedPoints bb line
 
 clipLinesQc :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipLinesQc bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
+clipLinesQc bb lines (Geospatial.GeoFeature bbox _ props fId) acc =
+  case clipLinesQcMap bb lines of
+    Just res -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiLine res) props fId) acc
+    Nothing  -> acc
+
+clipLinesQcMap :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Maybe Geospatial.GeoMultiLine
+clipLinesQcMap bb lines =
+  if Vector.null multiLine then Nothing else Just (Geospatial.GeoMultiLine multiLine)
   where
-    checkLinesAndAdd = if Vector.null multiLine then acc else Vector.cons reMakeFeature acc
-    reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
     multiLine = Vector.foldl' maybeAddLine mempty (linesToClippedPoints bb (Geospatial.splitGeoMultiLine lines))
 
 maybeAddLine :: Vector.Vector

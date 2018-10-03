@@ -1,6 +1,8 @@
 module Data.Geometry.Clip.Internal.Point (
  clipPoints
 , clipPoint
+, clipPointMap
+, clipPointsMap
 ) where
 
 import qualified Data.Aeson                    as Aeson
@@ -15,13 +17,20 @@ clipPoint bbox point feature acc =
     then Vector.cons feature acc
     else acc
 
+clipPointMap :: TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Maybe Geospatial.GeoPoint
+clipPointMap bbox point = if pointInsideExtent bbox (Geospatial._unGeoPoint point) then Just point else Nothing
+
 clipPoints :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
 clipPoints bbox multiPoint feature acc =
-  if Vector.null newPoints
-    then acc
-    else Vector.cons (feature { Geospatial._geometry = Geospatial.MultiPoint (Geospatial.GeoMultiPoint newPoints) }) acc
+  case clipPointsMap bbox multiPoint of
+    Nothing -> acc
+    Just newPoints ->Vector.cons (feature { Geospatial._geometry = Geospatial.MultiPoint newPoints }) acc
+
+clipPointsMap :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPoint -> Maybe Geospatial.GeoMultiPoint
+clipPointsMap bbox multiPoint = if Vector.null newPoints then Nothing else Just (Geospatial.GeoMultiPoint newPoints)
   where
     newPoints = Vector.filter (pointInsideExtent bbox) (Vector.map Geospatial._unGeoPoint $ Geospatial.splitGeoMultiPoint multiPoint)
+
 
 pointInsideExtent :: TypesGeography.BoundingBox -> Geospatial.GeoPositionWithoutCRS -> Bool
 pointInsideExtent (TypesGeography.BoundingBox minX minY maxX maxY) position =

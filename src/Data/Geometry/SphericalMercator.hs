@@ -34,16 +34,19 @@ convertFeature extents qt bb geometry feature acc =
     Geospatial.Collection gs  -> Vector.cons (Geospatial.reWrapGeometry feature $ Geospatial.Collection (Foldable.foldMap (\g -> convertFeature' extents qt bb g Vector.empty) gs)) acc
 
 convertFeature' :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Vector.Vector Geospatial.GeospatialGeometry -> Vector.Vector Geospatial.GeospatialGeometry
-convertFeature' extents qt bb geometry acc =
+convertFeature' extents qt bb geometry = Vector.cons (mapFeature extents qt bb geometry)
+
+mapFeature :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
+mapFeature extents qt bb geometry =
   case geometry of
-    Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> Vector.cons (convertPoint extents qt bb g) acc
-    Geospatial.MultiPoint g   -> Vector.cons (convertPoints extents qt bb g) acc
-    Geospatial.Line g         -> Vector.cons (convertLine extents qt bb g) acc
-    Geospatial.MultiLine g    -> Vector.cons (convertLines extents qt bb g) acc
-    Geospatial.Polygon g      -> Vector.cons (convertPolygon extents qt bb g) acc
-    Geospatial.MultiPolygon g -> Vector.cons (convertMultiPolygon extents qt bb g) acc
-    Geospatial.Collection gs  -> Vector.cons (convertCollection extents qt bb gs) acc
+    Geospatial.NoGeometry     -> geometry
+    Geospatial.Point g        -> convertPoint extents qt bb g
+    Geospatial.MultiPoint g   -> convertPoints extents qt bb g
+    Geospatial.Line g         -> convertLine extents qt bb g
+    Geospatial.MultiLine g    -> convertLines extents qt bb g
+    Geospatial.Polygon g      -> convertPolygon extents qt bb g
+    Geospatial.MultiPolygon g -> convertMultiPolygon extents qt bb g
+    Geospatial.Collection gs  -> convertCollection extents qt bb gs
 
 convertPoint :: Int -> Int -> TypesGeography.BoundingBox -> Geospatial.GeoPoint -> Geospatial.GeospatialGeometry
 convertPoint extents qt bb (Geospatial.GeoPoint point) = Geospatial.Point (Geospatial.GeoPoint newPoint)
