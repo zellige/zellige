@@ -60,52 +60,54 @@ data StreamingLayer = StreamingLayer
 data KeyStore = KeyStore
   { ksKeyInt :: Int
   , ksKeys   :: HashMapStrict.HashMap ByteStringLazy.ByteString Int
+  , ksList   :: ProtocolBuffersBasic.Seq ProtocolBuffersBasic.Utf8
   }
 
 data ValueStore = ValueStore
   { vsValueInt :: Int
   , vsValues   :: HashMapStrict.HashMap VectorTile.Val Int
+  , vsList :: ProtocolBuffersBasic.Seq (VectorTileInternal.Protobuf VectorTile.Val)
   }
 
 foldLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) StreamingLayer
 foldLayer = Foldl.Fold step begin done
   where
-    begin = StreamingLayer 1 (KeyStore 0 mempty) (ValueStore 0 mempty) mempty
+    begin = StreamingLayer 1 (KeyStore 0 mempty mempty) (ValueStore 0 mempty mempty) mempty
 
-    step (StreamingLayer featureId (KeyStore keyCount keyMap) (ValueStore valueCount valueMap) features) (geom, value) = StreamingLayer (featureId + 1) (KeyStore newKeyCount newKeyStore) (ValueStore newValueCount newValueStore) newFeatures
+    step (StreamingLayer featureId (KeyStore keyCount keyMap keyList) (ValueStore valueCount valueMap valueList) features) (geom, value) = StreamingLayer (featureId + 1) (KeyStore newKeyCount newKeyStore newKeyList) (ValueStore newValueCount newValueStore newValueList) newFeatures
       where
         convertedProps = TypesMvtFeatures.convertProps value
-        (newKeyCount, newKeyStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (keyCount, keyMap) (HashMapStrict.keys convertedProps)
-        (newValueCount, newValueStore) = foldr (\x (counter, currMap) -> addKeyValue counter x currMap) (valueCount, valueMap) (HashMapStrict.elems convertedProps)
+        (newKeyCount, newKeyStore, newKeyList) = foldr (\x (counter, currMap, currSeq) -> addKeyValue counter x currMap currSeq ProtocolBuffersBasic.Utf8) (keyCount, keyMap, keyList) (HashMapStrict.keys convertedProps)
+        (newValueCount, newValueStore, newValueList) = foldr (\x (counter, currMap, currSeq) -> addKeyValue counter x currMap currSeq VectorTileInternal.toProtobuf) (valueCount, valueMap, valueList) (HashMapStrict.elems convertedProps)
         newFeatures = newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom
 
     done = id
 
-addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> (Int, HashMapStrict.HashMap a Int)
-addKeyValue currentKeyNumber key hashMap =
+addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> ProtocolBuffersBasic.Seq b -> (a -> b)-> (Int, HashMapStrict.HashMap a Int, ProtocolBuffersBasic.Seq b)
+addKeyValue currentKeyNumber key hashMap seqs f =
   case HashMapStrict.lookup key hashMap of
-    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key (currentKeyNumber + 1) hashMap)
-    Just _  -> (currentKeyNumber, hashMap)
+    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key currentKeyNumber hashMap, seqs <> pure (f key))
+    Just _ -> (currentKeyNumber, hashMap, seqs)
 
 newConvertGeometry :: ProtocolBuffersBasic.Seq Feature.Feature -> Word -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val -> HashMapStrict.HashMap ByteStringLazy.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Geospatial.GeospatialGeometry -> ProtocolBuffersBasic.Seq Feature.Feature
 newConvertGeometry acc fid convertedProps keys values geom =
   case geom of
     Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertPoint g))) <> acc
-    Geospatial.MultiPoint g   -> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertMultiPoint g))) <> acc
-    Geospatial.Line _         -> acc
-    Geospatial.MultiLine _    -> acc
-    Geospatial.Polygon _      -> acc
-    Geospatial.MultiPolygon _ -> acc
-    Geospatial.Collection gs  -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
+    Geospatial.Point g        -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertPoint g)))
+    Geospatial.MultiPoint g   -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertMultiPoint g)))
+    Geospatial.Line g         -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertLineString g)))
+    Geospatial.MultiLine g    -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertMultiLineString g)))
+    Geospatial.Polygon g      -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertPolygon g)))
+    Geospatial.MultiPolygon g -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertMultiPolygon g)))
+    Geospatial.Collection gs -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
 createLayerFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Layer.Layer
-createLayerFromStreamingLayer TypesConfig.Config{..} (StreamingLayer _ (KeyStore _ keys) (ValueStore _ values) features) = Layer.Layer
+createLayerFromStreamingLayer TypesConfig.Config{..} (StreamingLayer _ (KeyStore _ _ keysList) (ValueStore _ _ valuesList) features) = Layer.Layer
   { Layer.version   = fromIntegral _version
   , Layer.name      = ProtocolBuffersBasic.Utf8 _name
   , Layer.features  = features
-  , Layer.keys      = Sequence.fromList $ map ProtocolBuffersBasic.Utf8 (HashMapStrict.keys keys)
-  , Layer.values    = Sequence.fromList $ map VectorTileInternal.toProtobuf (HashMapStrict.keys values)
+  , Layer.keys      = keysList
+  , Layer.values    = valuesList
   , Layer.extent    = Just $ fromIntegral _extents
   , Layer.ext'field = ProtocolBuffersBasic.defaultValue
   }
