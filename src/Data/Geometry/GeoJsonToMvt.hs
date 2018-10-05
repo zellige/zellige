@@ -52,19 +52,19 @@ data StreamingLayer = StreamingLayer
   { featureId    :: Word
   , slKeyStore   :: KeyStore
   , slValueStore :: ValueStore
-  , slFeatures   :: ProtocolBuffersBasic.Seq Feature.Feature
+  , slFeatures   :: Sequence.Seq Feature.Feature
   }
 
 data KeyStore = KeyStore
   { ksKeyInt :: Int
   , ksKeys   :: HashMapStrict.HashMap ByteStringLazy.ByteString Int
-  , ksList   :: ProtocolBuffersBasic.Seq ProtocolBuffersBasic.Utf8
+  , ksList   :: Sequence.Seq ProtocolBuffersBasic.Utf8
   }
 
 data ValueStore = ValueStore
   { vsValueInt :: Int
   , vsValues   :: HashMapStrict.HashMap VectorTile.Val Int
-  , vsList     :: ProtocolBuffersBasic.Seq (VectorTileInternal.Protobuf VectorTile.Val)
+  , vsList     :: Sequence.Seq (VectorTileInternal.Protobuf VectorTile.Val)
   }
 
 foldLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) StreamingLayer
@@ -81,13 +81,13 @@ foldLayer = Foldl.Fold step begin done
 
     done = id
 
-addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> ProtocolBuffersBasic.Seq b -> (a -> b)-> (Int, HashMapStrict.HashMap a Int, ProtocolBuffersBasic.Seq b)
+addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> Sequence.Seq b -> (a -> b)-> (Int, HashMapStrict.HashMap a Int, Sequence.Seq b)
 addKeyValue currentKeyNumber key hashMap seqs f =
   case HashMapStrict.lookup key hashMap of
-    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key currentKeyNumber hashMap, seqs <> pure (f key))
+    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key currentKeyNumber hashMap, f key Sequence.<| seqs)
     Just _  -> (currentKeyNumber, hashMap, seqs)
 
-newConvertGeometry :: ProtocolBuffersBasic.Seq Feature.Feature -> Word -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val -> HashMapStrict.HashMap ByteStringLazy.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Geospatial.GeospatialGeometry -> ProtocolBuffersBasic.Seq Feature.Feature
+newConvertGeometry :: Sequence.Seq Feature.Feature -> Word -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val -> HashMapStrict.HashMap ByteStringLazy.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Geospatial.GeospatialGeometry -> ProtocolBuffersBasic.Seq Feature.Feature
 newConvertGeometry acc fid convertedProps keys values geom =
   case geom of
     Geospatial.NoGeometry     -> acc
@@ -165,8 +165,8 @@ convertLineString =
   VectorTile.LineString .
   VectorStorable.uniq .
   Vector.convert .
-  Foldable.foldMap coordsToPoints .
-  LineString.fromLineString .
+  VectorStorable.foldr (mappend . coordsToPoints) mempty .
+  LineString.toVector .
   Geospatial._unGeoLine
 
 convertMultiLineString :: Geospatial.GeoMultiLine -> Vector.Vector VectorTile.LineString
