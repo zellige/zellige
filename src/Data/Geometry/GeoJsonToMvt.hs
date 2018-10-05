@@ -91,12 +91,12 @@ newConvertGeometry :: Sequence.Seq Feature.Feature -> Word -> HashMapStrict.Hash
 newConvertGeometry acc fid convertedProps keys values geom =
   case geom of
     Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertPoint g)))
-    Geospatial.MultiPoint g   -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertMultiPoint g)))
-    Geospatial.Line g         -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertLineString g)))
-    Geospatial.MultiLine g    -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertMultiLineString g)))
-    Geospatial.Polygon g      -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertPolygon g)))
-    Geospatial.MultiPolygon g -> acc <> pure (VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertMultiPolygon g)))
+    Geospatial.Point g        -> VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertPoint g)) Sequence.<| acc
+    Geospatial.MultiPoint g   -> VectorTileInternal.unfeats keys values GeomType.POINT (VectorTile.Feature fid convertedProps (convertMultiPoint g)) Sequence.<| acc
+    Geospatial.Line g         -> VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertLineString g)) Sequence.<| acc
+    Geospatial.MultiLine g    -> VectorTileInternal.unfeats keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (convertMultiLineString g)) Sequence.<| acc
+    Geospatial.Polygon g      -> VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertPolygon g)) Sequence.<| acc
+    Geospatial.MultiPolygon g -> VectorTileInternal.unfeats keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (convertMultiPolygon g)) Sequence.<| acc
     Geospatial.Collection gs  -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
 createLayerFromStreamingLayer :: TypesConfig.Config -> StreamingLayer -> Layer.Layer
