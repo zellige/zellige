@@ -16,12 +16,7 @@ import qualified Data.Foldable                                                  
 import qualified Data.Geospatial                                                  as Geospatial
 import qualified Data.Hashable                                                    as Hashable
 import qualified Data.HashMap.Strict                                              as HashMapStrict
-import qualified Data.LinearRing                                                  as LinearRing
-import qualified Data.LineString                                                  as LineString
-import qualified Data.List                                                        as List
-import           Data.Monoid
 import qualified Data.Scientific                                                  as Scientific
-import qualified Data.SeqHelper                                                   as SeqHelper
 import qualified Data.Sequence                                                    as Sequence
 import qualified Data.Text                                                        as Text
 import qualified Data.Text.Encoding                                               as TextEncoding

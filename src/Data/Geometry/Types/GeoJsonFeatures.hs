@@ -9,11 +9,8 @@
 
 module Data.Geometry.Types.GeoJsonFeatures where
 
-import qualified Data.Aeson           as Aeson
-import qualified Data.ByteString.Lazy as ByteStringLazy
 import qualified Data.Foldable        as Foldable
 import qualified Data.Geospatial      as Geospatial
-import qualified Data.HashMap.Strict  as HashMapStrict
 import qualified Data.LinearRing      as LinearRing
 import qualified Data.LineString      as LineString
 import qualified Data.List            as List
@@ -22,8 +19,6 @@ import qualified Data.Scientific      as Scientific
 import qualified Data.Semigroup       as Semigroup
 import qualified Data.SeqHelper       as SeqHelper
 import qualified Data.Sequence        as Sequence
-import qualified Data.Text            as Text
-import qualified Data.Text.Encoding   as TextEncoding
 import qualified Geography.VectorTile as VectorTile
 import           Prelude              hiding (Left, Right)
 

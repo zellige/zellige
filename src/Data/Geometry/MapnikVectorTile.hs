@@ -22,7 +22,6 @@ import qualified Data.Geometry.SphericalMercator     as SphericalMercator
 import qualified Data.Geometry.Types.Config          as TypesConfig
 import qualified Data.Geometry.Types.GeoJsonFeatures as TypesGeoJsonFeatures
 import qualified Data.Geometry.Types.LayerConfig     as TypesLayerConfig
-import qualified Data.Geometry.Types.MvtFeatures     as TypesMvtFeatures
 
 -- Command line
 

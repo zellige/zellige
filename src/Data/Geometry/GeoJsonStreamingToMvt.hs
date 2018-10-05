@@ -3,37 +3,24 @@
 
 module Data.Geometry.GeoJsonStreamingToMvt where
 
-import qualified Control.Foldl                                                    as Foldl
-import qualified Control.Monad.ST                                                 as MonadST
-import qualified Data.Aeson                                                       as Aeson
-import qualified Data.Aeson.Types                                                 as AesonTypes
-import qualified Data.ByteString                                                  as ByteString
-import qualified Data.ByteString.Lazy                                             as ByteStringLazy
-import qualified Data.Foldable                                                    as Foldable
-import qualified Data.Geospatial                                                  as Geospatial
-import qualified Data.Hashable                                                    as Hashable
-import qualified Data.HashMap.Strict                                              as HashMapStrict
-import qualified Data.LinearRing                                                  as LinearRing
-import qualified Data.LineString                                                  as LineString
-import qualified Data.List                                                        as List
+import qualified Control.Foldl                                                 as Foldl
+import qualified Data.Aeson.Types                                              as AesonTypes
+import qualified Data.ByteString                                               as ByteString
+import qualified Data.ByteString.Lazy                                          as ByteStringLazy
+import qualified Data.Geospatial                                               as Geospatial
+import qualified Data.HashMap.Strict                                           as HashMapStrict
 import           Data.Monoid
-import qualified Data.SeqHelper                                                   as SeqHelper
-import qualified Data.Sequence                                                    as Sequence
-import qualified Data.STRef                                                       as STRef
-import qualified Geography.VectorTile                                             as VectorTile
-import qualified Geography.VectorTile.Internal                                    as VectorTileInternal
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
-import           Prelude                                                          hiding
-                                                                                   (Left,
-                                                                                   Right)
-import qualified Text.ProtocolBuffers.Basic                                       as ProtocolBuffersBasic
-import qualified Text.ProtocolBuffers.WireMessage                                 as WireMessage
+import qualified Data.Sequence                                                 as Sequence
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile       as Tile
+import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Layer
+import           Prelude                                                       hiding
+                                                                                (Left,
+                                                                                Right)
+import qualified Text.ProtocolBuffers.Basic                                    as ProtocolBuffersBasic
+import qualified Text.ProtocolBuffers.WireMessage                              as WireMessage
 
-import qualified Data.Geometry.Types.Config                                       as TypesConfig
-import qualified Data.Geometry.Types.MvtFeatures                                  as TypesMvtFeatures
+import qualified Data.Geometry.Types.Config                                    as TypesConfig
+import qualified Data.Geometry.Types.MvtFeatures                               as TypesMvtFeatures
 
 foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
 foldStreamingLayer = Foldl.Fold step begin done
