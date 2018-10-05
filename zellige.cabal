@@ -26,6 +26,7 @@ library
                      , Data.Geometry.Clip.Internal.PolygonQuickClip
                      , Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol
                      , Data.Geometry.Clip.Internal.PolygonSutherlandHodgman
+                     , Data.Geometry.GeoJsonStreamingToMvt
                      , Data.Geometry.GeoJsonToMvt
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.Simplify
@@ -33,6 +34,7 @@ library
                      , Data.Geometry.Types.Config
                      , Data.Geometry.Types.Geography
                      , Data.Geometry.Types.LayerConfig
+                     , Data.Geometry.Types.GeoJsonMvtFeatures
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Simplify.DouglasPeucker
 

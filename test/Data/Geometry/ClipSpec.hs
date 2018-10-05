@@ -254,9 +254,9 @@ testClipPolygon =
     --   GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolyFeatureTst
     -- it "NLN - Returns clipped multipolygon" $
     --   GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolysFeatureTst
-    it "NLN - Negative polygon" $
-      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
-    it "NLN - Maximum polygon" $
-      GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
-    it "NLN - Turning point test" $
-      GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst
+    -- it "NLN - Negative polygon" $
+    --   GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
+    -- it "NLN - Maximum polygon" $
+    --   GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
+    -- it "NLN - Turning point test" $
+    --   GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst

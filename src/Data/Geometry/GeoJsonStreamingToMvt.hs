@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE RecordWildCards  #-}
 
-module Data.Geometry.GeoJsonToMvt where
+module Data.Geometry.GeoJsonStreamingToMvt where
 
 import qualified Control.Foldl                                                    as Foldl
 import qualified Control.Monad.ST                                                 as MonadST
@@ -33,49 +33,39 @@ import qualified Text.ProtocolBuffers.Basic                                     
 import qualified Text.ProtocolBuffers.WireMessage                                 as WireMessage
 
 import qualified Data.Geometry.Types.Config                                       as TypesConfig
-import qualified Data.Geometry.Types.GeoJsonFeatures                              as TypesGeoJsonFeatures
 import qualified Data.Geometry.Types.MvtFeatures                                  as TypesMvtFeatures
 
--- Lib
+foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
+foldStreamingLayer = Foldl.Fold step begin done
+  where
+    begin = TypesMvtFeatures.StreamingLayer 1 (TypesMvtFeatures.KeyStore 0 mempty mempty) (TypesMvtFeatures.ValueStore 0 mempty mempty) mempty
 
-geoJsonFeaturesToMvtFeatures :: TypesGeoJsonFeatures.MvtFeatures -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesGeoJsonFeatures.MvtFeatures
-geoJsonFeaturesToMvtFeatures layer features = do
-  ops <- STRef.newSTRef 0
-  Foldable.foldMap (convertFeature layer ops) features
+    step (TypesMvtFeatures.StreamingLayer featureId ks vs features) (geom, value) = TypesMvtFeatures.StreamingLayer (featureId + 1) (TypesMvtFeatures.KeyStore newKeyCount newKeyStore newKeyList) (TypesMvtFeatures.ValueStore newValueCount newValueStore newValueList) newFeatures
+      where
+        convertedProps = TypesMvtFeatures.convertProps value
+        (newKeyCount, newKeyStore, newKeyList) = TypesMvtFeatures.newKeys ks (HashMapStrict.keys convertedProps)
+        (newValueCount, newValueStore, newValueList) = TypesMvtFeatures.newValues vs (HashMapStrict.elems convertedProps)
+        newFeatures = TypesMvtFeatures.newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom
 
--- Feature
+    done = id
 
-convertFeature :: TypesGeoJsonFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesGeoJsonFeatures.MvtFeatures
-convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
-  fid <- convertId mfid ops
-  pure $ convertGeometry layer fid props geom
+createLayerFromStreamingLayer :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> Layer.Layer
+createLayerFromStreamingLayer TypesConfig.Config{..} (TypesMvtFeatures.StreamingLayer _ (TypesMvtFeatures.KeyStore _ _ keysList) (TypesMvtFeatures.ValueStore _ _ valuesList) features) = Layer.Layer
+  { Layer.version   = fromIntegral _version
+  , Layer.name      = ProtocolBuffersBasic.Utf8 _name
+  , Layer.features  = features
+  , Layer.keys      = keysList
+  , Layer.values    = valuesList
+  , Layer.extent    = Just $ fromIntegral _extents
+  , Layer.ext'field = ProtocolBuffersBasic.defaultValue
+  }
 
--- Geometry
+createTileFromStreamingLayer :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> Tile.Tile
+createTileFromStreamingLayer config sl = Tile.Tile
+  { Tile.layers    = Sequence.fromList [createLayerFromStreamingLayer config sl]
+  , Tile.ext'field = ProtocolBuffersBasic.defaultValue
+  }
 
-convertGeometry :: TypesGeoJsonFeatures.MvtFeatures -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesGeoJsonFeatures.MvtFeatures
-convertGeometry layer@TypesGeoJsonFeatures.MvtFeatures{..} fid props geom =
-  case geom of
-    Geospatial.NoGeometry     -> mempty
-    Geospatial.Point g        -> layer { TypesGeoJsonFeatures.mvtPoints   = TypesMvtFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertPoint g) mvtPoints }
-    Geospatial.MultiPoint g   -> layer { TypesGeoJsonFeatures.mvtPoints   = TypesMvtFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertMultiPoint g) mvtPoints }
-    Geospatial.Line g         -> layer { TypesGeoJsonFeatures.mvtLines    = TypesMvtFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertLineString g) mvtLines }
-    Geospatial.MultiLine g    -> layer { TypesGeoJsonFeatures.mvtLines    = TypesMvtFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertMultiLineString g) mvtLines }
-    Geospatial.Polygon g      -> layer { TypesGeoJsonFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertPolygon g) mvtPolygons }
-    Geospatial.MultiPolygon g -> layer { TypesGeoJsonFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertMultiPolygon g) mvtPolygons }
-    Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry layer fid props) gs
+vtToBytes :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> ByteString.ByteString
+vtToBytes config sl = ByteStringLazy.toStrict . WireMessage.messagePut $ createTileFromStreamingLayer config sl
 
--- FeatureID
-
-readFeatureID :: Maybe Geospatial.FeatureID -> Maybe Word
-readFeatureID mfid =
-  case mfid of
-    Just (Geospatial.FeatureIDNumber x) -> Just (fromIntegral x)
-    _                                   -> Nothing
-
-convertId :: Maybe Geospatial.FeatureID -> STRef.STRef s Word -> MonadST.ST s Word
-convertId mfid ops =
-  case readFeatureID mfid of
-    Just val -> pure val
-    Nothing  -> do
-      STRef.modifySTRef ops (+1)
-      STRef.readSTRef ops
