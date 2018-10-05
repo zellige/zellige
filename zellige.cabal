@@ -34,7 +34,7 @@ library
                      , Data.Geometry.Types.Config
                      , Data.Geometry.Types.Geography
                      , Data.Geometry.Types.LayerConfig
-                     , Data.Geometry.Types.GeoJsonMvtFeatures
+                     , Data.Geometry.Types.GeoJsonFeatures
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Simplify.DouglasPeucker
 
