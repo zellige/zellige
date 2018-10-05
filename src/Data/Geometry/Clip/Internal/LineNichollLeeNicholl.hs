@@ -12,56 +12,57 @@ module Data.Geometry.Clip.Internal.LineNichollLeeNicholl (
 ) where
 
 import qualified Data.Aeson                       as Aeson
-import qualified Data.Geometry.Clip.Internal.Line as ClipLine
-import qualified Data.Geometry.Types.Geography    as TypesGeography
+import qualified Data.Foldable                    as Foldable
 import qualified Data.Geospatial                  as Geospatial
 import qualified Data.LineString                  as LineString
+import qualified Data.Sequence                    as Sequence
 import qualified Data.Validation                  as Validation
-import qualified Data.Vector                      as Vector
-import qualified Data.Vector.Storable             as VectorStorable
 import           Prelude                          hiding (lines)
 
-clipLineNLN :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+import qualified Data.Geometry.Clip.Internal.Line as ClipLine
+import qualified Data.Geometry.Types.Geography    as TypesGeography
+
+clipLineNLN :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLineNLN bb line feature acc =
-  case LineString.fromVector clippedLine of
-    Validation.Success res -> Vector.cons (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
+  case LineString.fromSeq clippedLine of
+    Validation.Success res -> (Sequence.<|) (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) acc
     Validation.Failure _   -> acc
   where
     clippedLine = ClipLine.lineToGeoPoint $ lineToClippedPoints bb line
 
-clipLinesNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipLinesNLN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLinesNLN bb lines (Geospatial.GeoFeature bbox _ props fId) acc = checkLinesAndAdd
   where
-    checkLinesAndAdd = if Vector.null multiLine then acc else Vector.cons reMakeFeature acc
+    checkLinesAndAdd = if Sequence.null multiLine then acc else (Sequence.<|) reMakeFeature acc
     reMakeFeature = Geospatial.GeoFeature bbox (Geospatial.MultiLine (Geospatial.GeoMultiLine multiLine)) props fId
-    multiLine = Vector.foldl' maybeAddLine mempty (linesToClippedPoints bb (Geospatial.splitGeoMultiLine lines))
+    multiLine = Foldable.foldl' maybeAddLine mempty (linesToClippedPoints bb (Geospatial.splitGeoMultiLine lines))
 
-maybeAddLine :: Vector.Vector
+maybeAddLine :: Sequence.Seq
                (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-             -> VectorStorable.Vector TypesGeography.GeoStorableLine
-             -> Vector.Vector
+             -> Sequence.Seq TypesGeography.GeoStorableLine
+             -> Sequence.Seq
                   (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 maybeAddLine acc pp =
   case clipLineToValidationLineString pp of
-    Validation.Success res -> Vector.cons res acc
+    Validation.Success res -> (Sequence.<|) res acc
     Validation.Failure _   -> acc
 
-clipLineToValidationLineString :: VectorStorable.Vector TypesGeography.GeoStorableLine
+clipLineToValidationLineString :: Sequence.Seq TypesGeography.GeoStorableLine
              -> Validation.Validation
-                  LineString.VectorToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-clipLineToValidationLineString lines = LineString.fromVector (ClipLine.lineToGeoPoint lines)
+                  LineString.SequenceToLineStringError (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+clipLineToValidationLineString lines = LineString.fromSeq (ClipLine.lineToGeoPoint lines)
 
-lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
-lineToClippedPoints bb geoLine = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty (ClipLine.getLines geoLine)
+lineToClippedPoints :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Sequence.Seq TypesGeography.GeoStorableLine
+lineToClippedPoints bb geoLine = Foldable.foldr (clipOrDiscard bb) Sequence.empty (ClipLine.getLines geoLine)
 
-linesToClippedPoints :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (VectorStorable.Vector TypesGeography.GeoStorableLine)
+linesToClippedPoints :: Functor f => TypesGeography.BoundingBox -> f Geospatial.GeoLine -> f (Sequence.Seq TypesGeography.GeoStorableLine)
 linesToClippedPoints bb = fmap (lineToClippedPoints bb)
 
-clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector TypesGeography.GeoStorableLine
+clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine -> Sequence.Seq TypesGeography.GeoStorableLine -> Sequence.Seq TypesGeography.GeoStorableLine
 clipOrDiscard bb line acc =
   case reverseAndClipLine bb line of
     Nothing          -> acc
-    Just clippedLine -> VectorStorable.cons clippedLine acc
+    Just clippedLine -> (Sequence.<|) clippedLine acc
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up

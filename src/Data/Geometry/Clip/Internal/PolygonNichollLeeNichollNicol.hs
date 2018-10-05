@@ -7,31 +7,33 @@ clipPolygonNLNN
 , clipPolygonsNLNN
 ) where
 
-import qualified Data.Aeson                    as Aeson
-import qualified Data.Geometry.Types.Geography as TypesGeography
-import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.List.NonEmpty            as ListNonEmpty
-import qualified Data.Validation               as Validation
-import qualified Data.Vector                   as Vector
-import qualified Data.Vector.Storable          as VectorStorable
+import qualified Data.Aeson                          as Aeson
+import qualified Data.Foldable                       as Foldable
+import qualified Data.Geospatial                     as Geospatial
+import qualified Data.LinearRing                     as LinearRing
+import qualified Data.List.NonEmpty                  as ListNonEmpty
+import qualified Data.Sequence                       as Sequence
+import qualified Data.Validation                     as Validation
 
-clipPolygonsNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+import qualified Data.Geometry.Clip.Internal.Polygon as ClipPolygon
+import qualified Data.Geometry.Types.Geography       as TypesGeography
+
+clipPolygonsNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonsNLNN bb (Geospatial.GeoMultiPolygon polys) (Geospatial.GeoFeature bbox _ props fId) acc =
   case maybeNewMultiPoly bb polys of
     Nothing   -> acc
-    Just newPolys -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId) acc
+    Just newPolys -> Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon newPolys)) props fId Sequence.<| acc
 
-maybeNewMultiPoly :: TypesGeography.BoundingBox -> Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Vector.Vector (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
+maybeNewMultiPoly :: TypesGeography.BoundingBox -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
 maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
 
-clipPolygonNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipPolygonNLNN :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonNLNN bb (Geospatial.GeoPolygon poly) (Geospatial.GeoFeature bbox _ props fId) acc =
     case maybeNewPoly bb poly of
       Nothing   -> acc
-      Just newPoly -> Vector.cons (Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId) acc
+      Just newPoly -> Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon newPoly)) props fId Sequence.<| acc
 
-maybeNewPoly :: TypesGeography.BoundingBox -> Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Vector.Vector (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+maybeNewPoly :: TypesGeography.BoundingBox -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
 maybeNewPoly bb = traverse (clipLinearRing bb)
 
 clipLinearRing :: TypesGeography.BoundingBox -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Maybe (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
@@ -43,44 +45,29 @@ clipLinearRing bb linearRing =
         Validation.Failure _ -> Nothing
         Validation.Success b -> Just b
   where
-    newLinearRing x = LinearRing.fromVector (VectorStorable.map Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.VectorToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-    createNewClipPts = clipPolyPoints bb (VectorStorable.map Geospatial.retrieveXY (LinearRing.toVector linearRing))
+    newLinearRing x = LinearRing.fromSeq (fmap Geospatial.GeoPointXY x) :: Validation.Validation (ListNonEmpty.NonEmpty (LinearRing.SequenceToLinearRingError Geospatial.GeoPositionWithoutCRS)) (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+    createNewClipPts = clipPolyPoints bb (fmap Geospatial.retrieveXY (LinearRing.toSeq linearRing))
 
-clipPolyPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector Geospatial.PointXY -> Maybe (VectorStorable.Vector Geospatial.PointXY)
-clipPolyPoints bb polyPoints = checkLength newClippedPoly
+clipPolyPoints :: TypesGeography.BoundingBox -> Sequence.Seq Geospatial.PointXY -> Maybe (Sequence.Seq Geospatial.PointXY)
+clipPolyPoints bb polyPoints = ClipPolygon.closeIfNot $ foo bb polyPoints
+
+foo :: TypesGeography.BoundingBox-> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
+foo bb polyPts = if Sequence.length polyPts <= 2 then Sequence.empty else newPoints
   where
-    newClippedPoly = foo bb polyPoints
-    checkLength newPoly =
-      if VectorStorable.length newPoly <= 2
-        then Nothing
-        else Just (closeIfNot newPoly)
+    newPoints = lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
 
-closeIfNot :: VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
-closeIfNot poly =
-  if lastPt /= firstPt
-    then VectorStorable.cons lastPt poly
-    else poly
-  where
-    lastPt = VectorStorable.last poly
-    firstPt = VectorStorable.head poly
+lineToClippedPoints :: TypesGeography.BoundingBox -> Sequence.Seq TypesGeography.GeoStorableLine -> Sequence.Seq Geospatial.PointXY
+lineToClippedPoints bb = Foldable.foldr (clipOrDiscard bb) Sequence.empty
 
-foo :: TypesGeography.BoundingBox-> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
-foo bb polyPts = if VectorStorable.length polyPts <= 2 then VectorStorable.empty else newPoints
-  where
-    newPoints = VectorStorable.uniq $ lineToClippedPoints bb (TypesGeography.pointsToLines polyPts)
-
-lineToClippedPoints :: TypesGeography.BoundingBox -> VectorStorable.Vector TypesGeography.GeoStorableLine -> VectorStorable.Vector Geospatial.PointXY
-lineToClippedPoints bb = VectorStorable.foldr (clipOrDiscard bb) VectorStorable.empty
-
-clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> VectorStorable.Vector Geospatial.PointXY -> VectorStorable.Vector Geospatial.PointXY
+clipOrDiscard :: TypesGeography.BoundingBox -> TypesGeography.GeoStorableLine  -> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
 clipOrDiscard bb line acc =
   case foldLine bb line of
     Nothing -> acc
     Just (TypesGeography.GeoStorableLine  p1 p2) ->
       if p1 == p2 then
-        VectorStorable.cons p1 acc
+        p1 Sequence.<| acc
       else
-        VectorStorable.cons p1 (VectorStorable.cons p2 acc)
+        p1 Sequence.<| (p2 Sequence.<| acc)
 
 -- Clip line to bounding box
 -- Assumes y axis is pointing up

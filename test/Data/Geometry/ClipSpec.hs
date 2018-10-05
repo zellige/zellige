@@ -2,17 +2,18 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Aeson                    as Aeson
-import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.Vector                   as Vector
-import qualified Geography.VectorTile          as VectorTile
-import           Test.Hspec                    (Spec, describe, it, shouldBe)
+import qualified Data.Aeson                       as Aeson
+import qualified Data.Geospatial                  as Geospatial
+import qualified Data.LinearRing                  as LinearRing
+import qualified Data.Sequence                    as Sequence
+import qualified Geography.VectorTile             as VectorTile
+import           Test.Hspec                       (Spec, describe, it, shouldBe)
 
-import qualified Data.Geometry.Clip            as GeometryClip
-import qualified Data.Geometry.Types.Geography as GeometryGeography
+import qualified Data.Geometry.Clip               as GeometryClip
+import qualified Data.Geometry.Clip.Internal.Line as InternalLine
+import qualified Data.Geometry.Types.Geography    as GeometryGeography
 
-import qualified Data.Geometry.SpecHelper      as SpecHelper
+import qualified Data.SpecHelper                  as SpecHelper
 
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150),  (200, 50)
@@ -31,8 +32,8 @@ poly = VectorTile.Polygon (SpecHelper.tupleToPts polyPts) mempty
 lineClipPts :: GeometryGeography.BoundingBoxPts
 lineClipPts = GeometryGeography.BoundingBoxPts (VectorTile.Point 10 10) (VectorTile.Point 60 60)
 
-linesTst :: Vector.Vector VectorTile.LineString
-linesTst = Vector.fromList
+linesTst :: Sequence.Seq VectorTile.LineString
+linesTst = Sequence.fromList
   [ VectorTile.LineString (SpecHelper.tupleToPts [(11, 11), (59, 59)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (0, 100)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(5, 5), (45, 50), (90, 140)])
@@ -40,8 +41,8 @@ linesTst = Vector.fromList
   , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (0, 10)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(0, 0), (60, 60)])]
 
-resultLines :: Vector.Vector VectorTile.LineString
-resultLines = Vector.fromList
+resultLines :: Sequence.Seq VectorTile.LineString
+resultLines = Sequence.fromList
   [ VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (60, 60)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(50, 50), (10, 18)])
   , VectorTile.LineString (SpecHelper.tupleToPts [(10, 10), (10, 10)])
@@ -56,13 +57,13 @@ innerPolyResultPts :: [(Int, Int)]
 innerPolyResultPts = [(100,150),(100,207),(250,250),(250,150),(100,150)]
 
 resultPolyWithInner :: VectorTile.Polygon
-resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Vector.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
+resultPolyWithInner = VectorTile.Polygon (SpecHelper.tupleToPts resultPolyPts) (Sequence.fromList [VectorTile.Polygon (SpecHelper.tupleToPts innerPolyResultPts) mempty])
 
 geoLineTst :: Geospatial.GeoLine
 geoLineTst = Geospatial.GeoLine (SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)])
 
 geoLinesTst :: Geospatial.GeoMultiLine
-geoLinesTst = Geospatial.GeoMultiLine $ Vector.fromList
+geoLinesTst = Geospatial.GeoMultiLine $ Sequence.fromList
   [ SpecHelper.mkLineString (11, 11) (59, 59) []
   , SpecHelper.mkLineString (0, 0) (0, 100) []
   , SpecHelper.mkLineString (5, 5) (45, 50) [(90, 140)]
@@ -90,22 +91,22 @@ geoTurningLinearRingTst :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCR
 geoTurningLinearRingTst = SpecHelper.mkLinearRing (125,125) (175,175) (75,225) [(25,175), (125,125)]
 
 geoPolyTst :: Geospatial.GeoPolygon
-geoPolyTst = Geospatial.GeoPolygon (Vector.singleton geoLinearRingTst1)
+geoPolyTst = Geospatial.GeoPolygon (Sequence.singleton geoLinearRingTst1)
 
 geoPolysTst :: Geospatial.GeoMultiPolygon
-geoPolysTst = Geospatial.GeoMultiPolygon (Vector.fromList [
-    Vector.singleton geoLinearRingTst1,
-    Vector.singleton geoLinearRingTst2
+geoPolysTst = Geospatial.GeoMultiPolygon (Sequence.fromList [
+    Sequence.singleton geoLinearRingTst1,
+    Sequence.singleton geoLinearRingTst2
   ])
 
 geoBrokenPolyTst :: Geospatial.GeoPolygon
-geoBrokenPolyTst = Geospatial.GeoPolygon (Vector.singleton geoBrokenLinearRingTst)
+geoBrokenPolyTst = Geospatial.GeoPolygon (Sequence.singleton geoBrokenLinearRingTst)
 
 geoGiantPolyTst :: Geospatial.GeoPolygon
-geoGiantPolyTst = Geospatial.GeoPolygon (Vector.singleton geoGiantLinearRingTst)
+geoGiantPolyTst = Geospatial.GeoPolygon (Sequence.singleton geoGiantLinearRingTst)
 
 geoTurningPolyTst :: Geospatial.GeoPolygon
-geoTurningPolyTst = Geospatial.GeoPolygon (Vector.singleton geoTurningLinearRingTst)
+geoTurningPolyTst = Geospatial.GeoPolygon (Sequence.singleton geoTurningLinearRingTst)
 
 geoLineFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoLineFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Line geoLineTst) Aeson.Null Nothing
@@ -126,7 +127,7 @@ geoTurningPolyFeatureTst :: Geospatial.GeoFeature Aeson.Value
 geoTurningPolyFeatureTst = Geospatial.GeoFeature Nothing (Geospatial.Polygon geoTurningPolyTst) Aeson.Null Nothing
 
 geoResultLines :: Geospatial.GeoMultiLine
-geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
+geoResultLines = Geospatial.GeoMultiLine $ Sequence.fromList
   [ SpecHelper.mkLineString (10, 10) (60, 60) []
   , SpecHelper.mkLineString (50, 50) (10, 18) []
   , SpecHelper.mkLineString (10, 10) (10, 10) []
@@ -134,11 +135,11 @@ geoResultLines = Geospatial.GeoMultiLine $ Vector.fromList
   , SpecHelper.mkLineString (11, 11) (59, 59) []
   ]
 
-geoResultLineFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultLineFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Line geoResultLine) Aeson.Null Nothing
+geoResultLineFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultLineFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Line geoResultLine) Aeson.Null Nothing
 
-geoResultLinesFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultLinesFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
+geoResultLinesFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultLinesFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiLine geoResultLines) Aeson.Null Nothing
 
 geoResultLinearRing1 :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoResultLinearRing1 = SpecHelper.mkLinearRing (100,200) (100,116.66666666666667) (125.00000000000001,100) [(300,100),(300,300),(250,300),(200,250),(124.99999999999999,300),(125,300),(100,250),(100,200)]
@@ -155,23 +156,23 @@ geoResultGiantLinearRing = SpecHelper.mkLinearRing (-128, -128) (2176, -128) (21
 geoResultTurningRing :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS
 geoResultTurningRing = SpecHelper.mkLinearRing (125,125) (175,175) (125,200) [(100,200),(100,137.5),(125,125)]
 
-geoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultLinearRing1))) Aeson.Null Nothing
+geoResultPolyFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultPolyFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.singleton geoResultLinearRing1))) Aeson.Null Nothing
 
-offGeoResultPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-offGeoResultPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton offGeoResultLinearRing1))) Aeson.Null Nothing
+offGeoResultPolyFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+offGeoResultPolyFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.singleton offGeoResultLinearRing1))) Aeson.Null Nothing
 
-geoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton geoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+geoResultPolysFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultPolysFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Sequence.fromList [Sequence.singleton geoResultLinearRing1, Sequence.singleton geoResultLinearRing2]))) Aeson.Null Nothing
 
-offGeoResultPolysFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-offGeoResultPolysFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Vector.fromList [Vector.singleton offGeoResultLinearRing1, Vector.singleton geoResultLinearRing2]))) Aeson.Null Nothing
+offGeoResultPolysFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+offGeoResultPolysFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon (Sequence.fromList [Sequence.singleton offGeoResultLinearRing1, Sequence.singleton geoResultLinearRing2]))) Aeson.Null Nothing
 
-geoResultGiantPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultGiantPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultGiantLinearRing))) Aeson.Null Nothing
+geoResultGiantPolyFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultGiantPolyFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.singleton geoResultGiantLinearRing))) Aeson.Null Nothing
 
-geoResultTurningPolyFeatureTst :: Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-geoResultTurningPolyFeatureTst = Vector.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Vector.singleton geoResultTurningRing))) Aeson.Null Nothing
+geoResultTurningPolyFeatureTst :: Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+geoResultTurningPolyFeatureTst = Sequence.singleton $ Geospatial.GeoFeature Nothing (Geospatial.Polygon (Geospatial.GeoPolygon (Sequence.singleton geoResultTurningRing))) Aeson.Null Nothing
 
 lineClip :: GeometryGeography.BoundingBox
 lineClip = GeometryGeography.BoundingBox 10 10 60 60
@@ -190,59 +191,72 @@ turningClip = GeometryGeography.BoundingBox 100 100 200 200
 
 spec :: Spec
 spec = do
+  testLineHelper
   testClipLine
   testClipPolygon
   -- testClipPolygonWithInterior
   -- testManyClipPolygon
 
+testLineHelper :: Spec
+testLineHelper =
+  describe "segmentToLine" $ do
+    it "Simple test" $ do
+      let inputPts = (Sequence.fromList ([1,2,2,7,7,10,10,11] :: [Int]))
+          expectedPts = (Sequence.fromList ([1,2,7,10,11] :: [Int]))
+      expectedPts `shouldBe` InternalLine.segmentToLine inputPts
+    it "Empty Test" $
+      Sequence.empty `shouldBe` (InternalLine.segmentToLine (Sequence.empty :: Sequence.Seq Int))
+    it "Single element test" $
+      Sequence.empty `shouldBe` InternalLine.segmentToLine (Sequence.fromList ([1] :: [Int]))
+
 testClipLine :: Spec
 testClipLine =
   describe "simple line test" $ do
     it "Cohen Sutherland returns clipped line" $ do
-      let actual = GeometryClip.clipLineCs lineClip geoLineTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLineCs lineClip geoLineTst geoLineFeatureTst Sequence.empty
       actual `shouldBe` geoResultLineFeatureTst
     it "Cohen Sutherland returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesCs lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      let actual = GeometryClip.clipLinesCs lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
       actual `shouldBe` geoResultLinesFeatureTst
     it "Liang Barsky returns clipped line" $ do
-      let actual = GeometryClip.clipLineLb lineClip geoLineTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLineLb lineClip geoLineTst geoLineFeatureTst Sequence.empty
       actual `shouldBe` geoResultLineFeatureTst
     it "Liang Barsky returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesLb lineClip geoLinesTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLinesLb lineClip geoLinesTst geoLineFeatureTst Sequence.empty
       actual `shouldBe` geoResultLinesFeatureTst
     it "QuickClip returns clipped line" $ do
-      let actual = GeometryClip.clipLineQc lineClip geoLineTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLineQc lineClip geoLineTst geoLineFeatureTst Sequence.empty
       actual `shouldBe` geoResultLineFeatureTst
     it "QuickClip returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesQc lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      let actual = GeometryClip.clipLinesQc lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
       actual `shouldBe` geoResultLinesFeatureTst
     it "NLN returns clipped line" $ do
-      let actual = GeometryClip.clipLineNLN lineClip geoLineTst geoLineFeatureTst Vector.empty
+      let actual = GeometryClip.clipLineNLN lineClip geoLineTst geoLineFeatureTst Sequence.empty
       actual `shouldBe` geoResultLineFeatureTst
     it "NLN returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesNLN lineClip geoLinesTst geoLinesFeatureTst Vector.empty
+      let actual = GeometryClip.clipLinesNLN lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
       actual `shouldBe` geoResultLinesFeatureTst
 
 testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Simple - Returns clipped polygon" $
-      GeometryClip.clipPolygon polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolyFeatureTst
+      GeometryClip.clipPolygonSh polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolyFeatureTst
     it "Simple - Returns clipped multipolygon" $
-      GeometryClip.clipPolygons polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` geoResultPolysFeatureTst
+      GeometryClip.clipPolygonsSh polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolysFeatureTst
     it "Simple - Negative polygon" $
-      GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Vector.empty `shouldBe` Vector.empty
+      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
     it "Simple - Maximum polygon" $
-      GeometryClip.clipPolygon giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
+      GeometryClip.clipPolygonSh giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "Simple - Turning point test" $
-      GeometryClip.clipPolygon turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
+      GeometryClip.clipPolygonSh turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst
     -- it "NLN - Returns clipped polygon" $
-    --   GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Vector.empty `shouldBe` offGeoResultPolyFeatureTst
+    --   GeometryClip.clipPolygonNLNN polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolyFeatureTst
     -- it "NLN - Returns clipped multipolygon" $
-    --   GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Vector.empty `shouldBe` offGeoResultPolysFeatureTst
+    --   GeometryClip.clipPolygonsNLNN polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` offGeoResultPolysFeatureTst
     it "NLN - Negative polygon" $
-      GeometryClip.clipPolygon brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Vector.empty `shouldBe` Vector.empty
+      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
     it "NLN - Maximum polygon" $
-      GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Vector.empty `shouldBe` geoResultGiantPolyFeatureTst
+      GeometryClip.clipPolygonNLNN giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
     it "NLN - Turning point test" $
-      GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Vector.empty `shouldBe` geoResultTurningPolyFeatureTst
+      GeometryClip.clipPolygonNLNN turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst

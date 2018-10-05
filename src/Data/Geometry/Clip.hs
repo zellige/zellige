@@ -16,8 +16,8 @@ module Data.Geometry.Clip (
 , clipLinesQc
 , clipLineNLN
 , clipLinesNLN
-, clipPolygon
-, clipPolygons
+, clipPolygonSh
+, clipPolygonsSh
 , clipPolygonQc
 , clipPolygonsQc
 , clipFeature
@@ -30,16 +30,16 @@ module Data.Geometry.Clip (
 import qualified Data.Aeson                                                as Aeson
 import qualified Data.Foldable                                             as Foldable
 import qualified Data.Geospatial                                           as Geospatial
-import qualified Data.Vector                                               as Vector
+import qualified Data.Sequence                                             as Sequence
 
 import           Data.Geometry.Clip.Internal.LineCohenSutherland
 import           Data.Geometry.Clip.Internal.LineLiangBarsky
 import           Data.Geometry.Clip.Internal.LineNichollLeeNicholl
 import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.Point
-import           Data.Geometry.Clip.Internal.Polygon
 import           Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol
 import           Data.Geometry.Clip.Internal.PolygonQuickClip
+import           Data.Geometry.Clip.Internal.PolygonSutherlandHodgman
 import           Data.Geometry.Types.Geography
 
 createBoundingBox :: Word -> Int -> BoundingBox
@@ -48,10 +48,10 @@ createBoundingBox buffer extent = BoundingBox (-fiBuffer) (-fiBuffer) (fiExtent 
     fiBuffer = fromIntegral buffer
     fiExtent = fromIntegral extent
 
-clipFeatures :: BoundingBox -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
-clipFeatures bbox = Vector.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Vector.empty
+clipFeatures :: BoundingBox -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
+clipFeatures bbox = Foldable.foldr (\x acc -> clipFeature bbox (Geospatial._geometry x) x acc) Sequence.empty
 
-clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Vector.Vector (Geospatial.GeoFeature Aeson.Value) -> Vector.Vector (Geospatial.GeoFeature Aeson.Value)
+clipFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipFeature bbox geometry feature acc =
   case geometry of
     Geospatial.NoGeometry     -> acc
@@ -59,8 +59,8 @@ clipFeature bbox geometry feature acc =
     Geospatial.MultiPoint g   -> clipPoints bbox g feature acc
     Geospatial.Line g         -> clipLineQc bbox g feature acc
     Geospatial.MultiLine g    -> clipLinesQc bbox g feature acc
-    Geospatial.Polygon g      -> clipPolygon bbox g feature acc
-    Geospatial.MultiPolygon g -> clipPolygons bbox g feature acc
+    Geospatial.Polygon g      -> clipPolygonSh bbox g feature acc
+    Geospatial.MultiPolygon g -> clipPolygonsSh bbox g feature acc
     Geospatial.Collection gs  -> Foldable.foldMap (\x -> clipFeature bbox x feature acc) gs
 
 mapFeature :: BoundingBox -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
@@ -71,9 +71,9 @@ mapFeature bbox geometry =
     Geospatial.MultiPoint g   -> maybe Geospatial.NoGeometry Geospatial.MultiPoint (clipPointsMap bbox g)
     Geospatial.Line g         -> maybe Geospatial.NoGeometry Geospatial.Line (clipLineQcMap bbox g)
     Geospatial.MultiLine g    -> maybe Geospatial.NoGeometry Geospatial.MultiLine (clipLinesQcMap bbox g)
-    Geospatial.Polygon g      -> maybe Geospatial.NoGeometry Geospatial.Polygon (clipPolygonMap bbox g)
-    Geospatial.MultiPolygon g -> maybe Geospatial.NoGeometry Geospatial.MultiPolygon (clipPolygonsMap bbox g)
-    Geospatial.Collection gs  -> if Vector.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
+    Geospatial.Polygon g      -> maybe Geospatial.NoGeometry Geospatial.Polygon (clipPolygonMapSh bbox g)
+    Geospatial.MultiPolygon g -> maybe Geospatial.NoGeometry Geospatial.MultiPolygon (clipPolygonsMapSh bbox g)
+    Geospatial.Collection gs  -> if Sequence.null (foldOver gs) then Geospatial.NoGeometry else Geospatial.Collection (foldOver gs)
   where
-    foldOver = Vector.foldr (\geom acc -> mapFeature bbox geom `Vector.cons` acc) Vector.empty
+    foldOver = Foldable.foldr (\geom acc -> mapFeature bbox geom Sequence.<| acc) Sequence.empty
 

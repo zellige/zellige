@@ -8,8 +8,7 @@ import qualified Data.Geospatial                 as Geospatial
 import qualified Data.HashMap.Strict             as HM
 import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
-import qualified Data.Vector                     as Vector
-import qualified Data.Vector.Storable            as VectorStorable
+import qualified Data.Sequence                   as Sequence
 import qualified Geography.VectorTile            as VectorTile
 
 import           Test.Hspec                      (Spec, describe, it, shouldBe)
@@ -21,7 +20,7 @@ import           Data.Geometry.SphericalMercator
 import           Data.Geometry.Types.Config
 import qualified Data.Geometry.Types.MvtFeatures as MvtFeatures
 
-import           Data.Geometry.SpecHelper
+import           Data.SpecHelper
 
 config :: Config
 config = mkConfig "foo" 18 (236629,160842) 128 2048 1 NoAlgorithm
@@ -56,8 +55,8 @@ testPoints =
       let point = Geospatial.Point pt1
           feature = Geospatial.GeoFeature Nothing point AT.Null (mkFeatureID x)
           pts = tupleToPts [(840, 2194)]
-          result = MvtFeatures.MvtFeatures (Vector.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures (Sequence.singleton $ VectorTile.Feature x HM.empty pts) mempty mempty
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
 testLines :: Spec
@@ -66,10 +65,10 @@ testLines =
     it "Returns mapnik lines feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing line AT.Null (mkFeatureID x)
-          line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) VectorStorable.empty
+          line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) Sequence.empty
           pts = tupleToPts [(840, 2194), (23, 2098)]
-          result = MvtFeatures.MvtFeatures mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.LineString pts])]) mempty
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures mempty (Sequence.fromList [VectorTile.Feature x HM.empty (Sequence.fromList [VectorTile.LineString pts])]) mempty
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
 -- Add test when all points are removed from polygon.
@@ -80,10 +79,10 @@ testPolygons =
     it "Returns mapnik polygon feature from geojson feature" $ do
       x <- GA.generate QA.arbitrary :: IO Word
       let feature = Geospatial.GeoFeature Nothing polygon AT.Null (mkFeatureID x)
-          polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Vector.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) mempty]
+          polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Sequence.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) mempty]
           pts = tupleToPts [(840, 2194), (23, 2098), (178, 1162), (840, 2194)]
-          result = MvtFeatures.MvtFeatures mempty mempty (Vector.fromList [VectorTile.Feature x HM.empty (Vector.fromList [VectorTile.Polygon pts mempty])])
-          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature])
+          result = MvtFeatures.MvtFeatures mempty mempty (Sequence.fromList [VectorTile.Feature x HM.empty (Sequence.fromList [VectorTile.Polygon pts mempty])])
+          actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
 testCounter :: Spec
@@ -93,6 +92,6 @@ testCounter =
     let feature = Geospatial.GeoFeature Nothing point AT.Null Nothing
         point = Geospatial.Point pt1
         pts = tupleToPts [(840, 2194)]
-        result = MvtFeatures.MvtFeatures (Vector.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
-        actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Vector.fromList [feature, feature])
+        result = MvtFeatures.MvtFeatures (Sequence.fromList [VectorTile.Feature 1 HM.empty pts, VectorTile.Feature 2 HM.empty pts]) mempty mempty
+        actual = ST.runST $ geoJsonFeaturesToMvtFeatures MvtFeatures.emptyMvtFeatures (Sequence.fromList [feature, feature])
     actual `shouldBe` result
