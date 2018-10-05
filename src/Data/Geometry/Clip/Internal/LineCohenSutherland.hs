@@ -22,7 +22,7 @@ import qualified Data.Geometry.Types.Geography    as TypesGeography
 clipLineCs :: TypesGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipLineCs bb geoLine feature acc =
   case validLine of
-    Validation.Success res -> (Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res))) Sequence.<| acc
+    Validation.Success res -> Geospatial.reWrapGeometry feature (Geospatial.Line (Geospatial.GeoLine res)) Sequence.<| acc
     Validation.Failure _   -> acc
   where
     validLine = clipLineToValidationLineString x

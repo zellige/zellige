@@ -201,11 +201,11 @@ testLineHelper :: Spec
 testLineHelper =
   describe "segmentToLine" $ do
     it "Simple test" $ do
-      let inputPts = (Sequence.fromList ([1,2,2,7,7,10,10,11] :: [Int]))
-          expectedPts = (Sequence.fromList ([1,2,7,10,11] :: [Int]))
+      let inputPts = Sequence.fromList ([1,2,2,7,7,10,10,11] :: [Int])
+          expectedPts = Sequence.fromList ([1,2,7,10,11] :: [Int])
       expectedPts `shouldBe` InternalLine.segmentToLine inputPts
     it "Empty Test" $
-      Sequence.empty `shouldBe` (InternalLine.segmentToLine (Sequence.empty :: Sequence.Seq Int))
+      Sequence.empty `shouldBe` InternalLine.segmentToLine (Sequence.empty :: Sequence.Seq Int)
     it "Single element test" $
       Sequence.empty `shouldBe` InternalLine.segmentToLine (Sequence.fromList ([1] :: [Int]))
 
