@@ -91,6 +91,7 @@ test-suite zellige-test
                      , Data.Geometry.GeoJsonToMvtSpec
                      , Data.Geometry.DouglasPeuckerSpec
                      , Data.Geometry.SphericalMercatorSpec
+                     , Data.Geometry.Types.MvtFeaturesSpec
                      , Data.SpecHelper
                      , Data.Types.GeographySpec
   ghc-options:         -threaded -rtsopts -with-rtsopts=-N -Wall -Werror -O2
