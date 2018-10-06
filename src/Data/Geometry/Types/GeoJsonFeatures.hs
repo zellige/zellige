@@ -60,7 +60,7 @@ convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString =
   Sequence.singleton .
   VectorTile.LineString .
-  SeqHelper.unique .
+  SeqHelper.removeNextDuplicate .
   Foldable.foldMap coordsToPoints .
   LineString.fromLineString .
   Geospatial._unGeoLine
@@ -90,7 +90,7 @@ mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.P
 mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
 
 mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
-mkPolyPoints = SeqHelper.unique . foldMap coordsToPoints
+mkPolyPoints = SeqHelper.removeNextDuplicate . foldMap coordsToPoints
 
 convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Polygon
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon

@@ -43,7 +43,7 @@ library
                      , bytestring
                      , containers
                      , foldl
-                     , geojson >= 3.0.3
+                     , geojson >= 3.0.4
                      , hashable
                      , optparse-applicative
                      , protocol-buffers >=2.4 && <2.5
@@ -77,7 +77,7 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
-                     , geojson >= 3.0.3
+                     , geojson >= 3.0.4
                      , hspec
                      , lens
                      , QuickCheck
@@ -118,7 +118,7 @@ benchmark zellige-bench
                      , cereal >=0.5 && <0.6
                      , containers
                      , criterion >=1.4 && <1.5
-                     , geojson >= 3.0.3
+                     , geojson >= 3.0.4
                      , microlens >=0.4 && <0.5
                      , microlens-platform >=0.3 && <0.4
                      , optparse-generic >= 1.2.3
