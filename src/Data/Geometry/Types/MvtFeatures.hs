@@ -85,7 +85,7 @@ newValues (ValueStore valueCount valueMap valueList) = foldr (\x (counter, currM
 addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> Sequence.Seq b -> (a -> b)-> (Int, HashMapStrict.HashMap a Int, Sequence.Seq b)
 addKeyValue currentKeyNumber key hashMap seqs f =
   case HashMapStrict.lookup key hashMap of
-    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key currentKeyNumber hashMap, f key Sequence.<| seqs)
+    Nothing -> (currentKeyNumber + 1, HashMapStrict.insert key currentKeyNumber hashMap, seqs Sequence.|> f key)
     Just _  -> (currentKeyNumber, hashMap, seqs)
 
 newConvertGeometry :: Sequence.Seq Feature.Feature -> Word -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val -> HashMapStrict.HashMap ByteStringLazy.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Geospatial.GeospatialGeometry -> ProtocolBuffersBasic.Seq Feature.Feature
