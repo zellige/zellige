@@ -29,13 +29,15 @@ clipPolygonsSh bb polys (Geospatial.GeoFeature bbox _ props fId) acc =
 
 clipPolygonsMapSh :: TypesGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Maybe Geospatial.GeoMultiPolygon
 clipPolygonsMapSh bb (Geospatial.GeoMultiPolygon polys) =
-  case maybeNewMultiPoly bb polys of
-    Nothing       -> Nothing
-    Just newPolys -> Just (Geospatial.GeoMultiPolygon newPolys)
+  if Sequence.null newMultiPolys
+    then Nothing
+    else Just (Geospatial.GeoMultiPolygon newMultiPolys)
+  where
+    newMultiPolys = clippedMultiPoly bb polys
 
 -- TODO Don't use traverse here either - just filter out nothings
-maybeNewMultiPoly :: TypesGeography.BoundingBox -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
-maybeNewMultiPoly bb = traverse $ traverse (clipLinearRing bb)
+clippedMultiPoly :: TypesGeography.BoundingBox -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+clippedMultiPoly bb = fmap (clippedPoly bb)
 
 clipPolygonSh :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)
 clipPolygonSh bb poly (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -45,16 +47,14 @@ clipPolygonSh bb poly (Geospatial.GeoFeature bbox _ props fId) acc =
 
 clipPolygonMapSh :: TypesGeography.BoundingBox -> Geospatial.GeoPolygon -> Maybe Geospatial.GeoPolygon
 clipPolygonMapSh bb (Geospatial.GeoPolygon poly) =
-  if Sequence.null isNewPolys
+  if Sequence.null newPolys
     then Nothing
-    else Just (Geospatial.GeoPolygon isNewPolys)
+    else Just (Geospatial.GeoPolygon newPolys)
   where
-    isNewPolys = maybeNewPoly bb poly
+    newPolys = clippedPoly bb poly
 
-maybeNewPoly :: TypesGeography.BoundingBox -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-maybeNewPoly bb = foldr (\x acc -> Maybe.maybe acc (Sequence.<| acc) (clipped x)) Sequence.empty
-    where
-      clipped = clipLinearRing bb
+clippedPoly :: TypesGeography.BoundingBox -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
+clippedPoly bb = Foldable.foldl' (\acc x -> Maybe.maybe acc (Sequence.<| acc) (clipLinearRing bb x)) Sequence.empty
 
 clipLinearRing :: TypesGeography.BoundingBox -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Maybe (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
 clipLinearRing bb linearRing =
