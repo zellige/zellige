@@ -35,7 +35,6 @@ clipPolygonsMapSh bb (Geospatial.GeoMultiPolygon polys) =
   where
     newMultiPolys = clippedMultiPoly bb polys
 
--- TODO Don't use traverse here either - just filter out nothings
 clippedMultiPoly :: TypesGeography.BoundingBox -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
 clippedMultiPoly bb = fmap (clippedPoly bb)
 
@@ -54,7 +53,7 @@ clipPolygonMapSh bb (Geospatial.GeoPolygon poly) =
     newPolys = clippedPoly bb poly
 
 clippedPoly :: TypesGeography.BoundingBox -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
-clippedPoly bb = Foldable.foldl' (\acc x -> Maybe.maybe acc (Sequence.<| acc) (clipLinearRing bb x)) Sequence.empty
+clippedPoly bb = Foldable.foldr (\x acc -> Maybe.maybe acc (Sequence.<| acc) (clipLinearRing bb x)) Sequence.empty
 
 clipLinearRing :: TypesGeography.BoundingBox -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Maybe (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)
 clipLinearRing bb linearRing =

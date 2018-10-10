@@ -48,11 +48,7 @@ clipLinesQcMap bb lines =
   where
     multiLine = Foldable.foldl' maybeAddLine mempty (linesToClippedPoints bb (Geospatial.splitGeoMultiLine lines))
 
-maybeAddLine :: Sequence.Seq
-               (LineString.LineString Geospatial.GeoPositionWithoutCRS)
-             -> Sequence.Seq TypesGeography.GeoStorableLine
-             -> Sequence.Seq
-                  (LineString.LineString Geospatial.GeoPositionWithoutCRS)
+maybeAddLine :: Sequence.Seq (LineString.LineString Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq TypesGeography.GeoStorableLine -> Sequence.Seq (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 maybeAddLine acc pp =
   case clipLineToValidationLineString pp of
     Validation.Success res -> (Sequence.<|) res acc
