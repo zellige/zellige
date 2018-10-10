@@ -60,7 +60,8 @@ convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString =
   Sequence.singleton .
   VectorTile.LineString .
-  SeqHelper.removeNextDuplicate .
+  -- TODO - Fix this
+  -- SeqHelper.removeNextDuplicate .
   Foldable.foldMap coordsToPoints .
   LineString.fromLineString .
   Geospatial._unGeoLine
