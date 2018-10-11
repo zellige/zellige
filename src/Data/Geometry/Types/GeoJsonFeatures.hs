@@ -12,7 +12,6 @@ module Data.Geometry.Types.GeoJsonFeatures where
 import qualified Data.Foldable        as Foldable
 import qualified Data.Geospatial      as Geospatial
 import qualified Data.LinearRing      as LinearRing
-import qualified Data.LineString      as LineString
 import qualified Data.List            as List
 import           Data.Monoid
 import qualified Data.Scientific      as Scientific
@@ -58,12 +57,11 @@ convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoin
 
 convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString l =
-  if Sequence.length xl > 1
-    then Sequence.singleton $ VectorTile.LineString xl
+  if Sequence.length convertedLine > 1
+    then Sequence.singleton $ VectorTile.LineString convertedLine
     else Sequence.empty
   where
-    x = SeqHelper.removeNextDuplicate . Foldable.foldMap coordsToPoints . LineString.fromLineString . Geospatial._unGeoLine
-    xl = x l
+    convertedLine = convertAndRemoveDupes . Geospatial._unGeoLine $ l
 
 convertMultiLineString :: Geospatial.GeoMultiLine -> Sequence.Seq VectorTile.LineString
 convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
@@ -79,7 +77,7 @@ convertPolygon poly =
       if Sequence.length rest == 0 then
         mkPoly h
       else
-        VectorTile.Polygon (mkPolyPoints h) (mkPolys rest)
+        VectorTile.Polygon (convertAndRemoveDupes h) (mkPolys rest)
   where
     rawPoly = Geospatial._unGeoPolygon poly
 
@@ -87,15 +85,14 @@ mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutC
 mkPolys = List.foldl' (\acc lring -> (mkPoly lring Sequence.<| acc)) Sequence.empty
 
 mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
-mkPoly lring = VectorTile.Polygon (mkPolyPoints lring) mempty
-
-mkPolyPoints :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
-mkPolyPoints = SeqHelper.removeNextDuplicate . foldMap coordsToPoints
+mkPoly lring = VectorTile.Polygon (convertAndRemoveDupes lring) mempty
 
 convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Polygon
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
+convertAndRemoveDupes :: Foldable t => t Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
+convertAndRemoveDupes = SeqHelper.removeNextDuplicate . Foldable.foldMap coordsToPoints
 
 coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
 coordsToPoints geoPosition = Sequence.singleton newPoint
