@@ -57,14 +57,13 @@ convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoin
 -- Lines
 
 convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
-convertLineString =
-  Sequence.singleton .
-  VectorTile.LineString .
-  -- TODO - Fix this
-  -- SeqHelper.removeNextDuplicate .
-  Foldable.foldMap coordsToPoints .
-  LineString.fromLineString .
-  Geospatial._unGeoLine
+convertLineString l =
+  if Sequence.length xl > 1
+    then Sequence.singleton $ VectorTile.LineString xl
+    else Sequence.empty
+  where
+    x = SeqHelper.removeNextDuplicate . Foldable.foldMap coordsToPoints . LineString.fromLineString . Geospatial._unGeoLine
+    xl = x l
 
 convertMultiLineString :: Geospatial.GeoMultiLine -> Sequence.Seq VectorTile.LineString
 convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
