@@ -94,7 +94,7 @@ latLonToXYInTile extents quantizePixels (TypesGeography.BoundingBox minX minY ma
       spanY = maxY - minY
 
 newQuantize :: Double -> Double -> Double
-newQuantize pixels i = (i / pixels) * pixels
+newQuantize pixels i = fromInteger (round (i / pixels)) * pixels
 
 -- Longitude 4326 to 3857 X
 lonToX :: Double -> Double
