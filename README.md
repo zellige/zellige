@@ -10,3 +10,6 @@ Example of use:
 Tests:
 - `ghci --test`
 - `hspec [name of spec]`
+
+### Other Projects
+- [Clipper](http://www.angusj.com/delphi/clipper.php)

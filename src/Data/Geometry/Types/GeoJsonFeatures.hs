@@ -83,7 +83,7 @@ convertPolygon poly =
 
 -- Foldr?
 mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTile.Polygon
-mkPolys = List.foldl' (\acc lring -> (mkPoly lring Sequence.<| acc)) Sequence.empty
+mkPolys = List.foldl' (\acc lring -> mkPoly lring Sequence.<| acc) Sequence.empty
 
 mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
 mkPoly lring = VectorTile.Polygon (convertAndRemoveDupes lring) mempty
