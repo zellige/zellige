@@ -81,6 +81,7 @@ convertPolygon poly =
   where
     rawPoly = Geospatial._unGeoPolygon poly
 
+-- Foldr?
 mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTile.Polygon
 mkPolys = List.foldl' (\acc lring -> (mkPoly lring Sequence.<| acc)) Sequence.empty
 
@@ -91,6 +92,7 @@ convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Pol
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
+-- Foldr?
 convertAndRemoveDupes :: Foldable t => t Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
 convertAndRemoveDupes = SeqHelper.removeNextDuplicate . Foldable.foldMap coordsToPoints
 
