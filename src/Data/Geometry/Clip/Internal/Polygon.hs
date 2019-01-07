@@ -22,9 +22,9 @@ closeIfNot poly =
 -- Surveyor's/Shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
 -- https://stackoverflow.com/questions/451426/how-do-i-calculate-the-area-of-a-2d-polygon
 -- https://rosettacode.org/wiki/Shoelace_formula_for_polygonal_area#Haskell
--- [(3, 4), (5, 11), (12, 8), (9, 5), (5, 6)] -> 30
+-- [(3, 4), (5, 11), (12, 8), (9, 5), (5, 6)] -> -30
 surveyor :: Sequence.Seq Geospatial.PointXY -> Double
-surveyor v = (/ 2) . abs . Foldable.foldl' (+) 0 $ Sequence.zipWith3 (\xn yn yp -> xn * (yn - yp)) xs yns yps
+surveyor v = (/ 2) . Foldable.foldl' (+) 0 $ Sequence.zipWith3 (\xn yn yp -> xn * (yn - yp)) xs yns yps
   where
     -- [3,5,12,9,5]
     xs = fmap Geospatial._xyX v
