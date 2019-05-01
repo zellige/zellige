@@ -1,15 +1,19 @@
 {-# LANGUAGE DataKinds             #-}
 {-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE RecordWildCards       #-}
 {-# LANGUAGE TypeFamilies          #-}
 {-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.Geometry.Types.Geography where
 
+import qualified Data.Aeson           as Aeson
 import qualified Data.Geospatial      as Geospatial
+import qualified Data.Scientific      as Scientific
 import qualified Data.SeqHelper       as SeqHelper
 import qualified Data.Sequence        as Sequence
+import qualified Data.Vector          as Vector
 import qualified Data.Word            as DataWord
 import qualified Geography.VectorTile as VectorTile
 import           Numeric.Natural      (Natural)
@@ -32,6 +36,9 @@ data BoundingBox = BoundingBox
   , _bbMaxX :: !Double
   , _bbMaxY :: !Double
   } deriving (Show, Eq)
+
+instance Aeson.ToJSON BoundingBox where
+  toJSON BoundingBox{..} = Aeson.Array (Vector.fromList $ fmap (Aeson.Number . Scientific.fromFloatDigits) [_bbMinX, _bbMinY, _bbMaxX, _bbMaxY])
 
 data BoundingBoxPts = BoundingBoxPts
   {
