@@ -9,6 +9,7 @@
 module Data.Geometry.Types.Geography where
 
 import qualified Data.Aeson           as Aeson
+import qualified Data.Aeson.Types     as AesonTypes
 import qualified Data.Geospatial      as Geospatial
 import qualified Data.Scientific      as Scientific
 import qualified Data.SeqHelper       as SeqHelper
@@ -40,9 +41,13 @@ data BoundingBox = BoundingBox
 instance Aeson.ToJSON BoundingBox where
   toJSON BoundingBox{..} = Aeson.Array (Vector.fromList $ fmap (Aeson.Number . Scientific.fromFloatDigits) [_bbMinX, _bbMinY, _bbMaxX, _bbMaxY])
 
+instance Aeson.FromJSON BoundingBox where
+  parseJSON json = do
+    [bbMinX, bbMinY, bbMaxX, bbMaxY] <- AesonTypes.parseJSON json
+    return $ BoundingBox bbMinX bbMinY bbMaxX bbMaxY
+
 data BoundingBoxPts = BoundingBoxPts
-  {
-    _bbMinPts :: VectorTile.Point
+  { _bbMinPts :: VectorTile.Point
   , _bbMaxPts :: VectorTile.Point
   } deriving (Show, Eq)
 

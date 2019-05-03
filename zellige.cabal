@@ -88,6 +88,7 @@ test-suite zellige-test
                      , vectortiles >= 1.5.0                
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
+                     , Data.Geometry.GeographySpec
                      , Data.Geometry.GeoJsonToMvtSpec
                      , Data.Geometry.DouglasPeuckerSpec
                      , Data.Geometry.SphericalMercatorSpec
