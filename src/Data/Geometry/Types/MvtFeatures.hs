@@ -20,8 +20,9 @@ import qualified Data.Scientific                                                
 import qualified Data.Sequence                                                    as Sequence
 import qualified Data.Text                                                        as Text
 import qualified Data.Text.Encoding                                               as TextEncoding
-import qualified Geography.VectorTile                                             as VectorTile
-import qualified Geography.VectorTile.Internal                                    as VectorTileInternal
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geometry.VectorTile.Internal                                    as VectorTileInternal
+import qualified Data.Geometry.VectorTile.Geometry as VectorTileGeometry
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
 import           Prelude                                                          hiding
@@ -31,13 +32,13 @@ import qualified Text.ProtocolBuffers.Basic                                     
 
 import qualified Data.Geometry.Types.GeoJsonFeatures                              as TypesGeoJsonFeatures
 
-mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
+mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Point))
 mkPoint fId props p = (Sequence.<|) (VectorTile.Feature fId (convertProps props) p)
 
-mkLineString :: Word -> Aeson.Value -> Sequence.Seq VectorTile.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
+mkLineString :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.LineString))
 mkLineString fId props l = (Sequence.<|) (mkFeature fId props l)
 
-mkPolygon :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Polygon -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
+mkPolygon :: Word -> Aeson.Value -> Sequence.Seq VectorTileGeometry.Polygon -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Polygon)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Polygon))
 mkPolygon x props o = (Sequence.<|) (mkFeature x props o)
 
 mkFeature :: Word -> Aeson.Value -> Sequence.Seq g -> VectorTile.Feature (Sequence.Seq g)

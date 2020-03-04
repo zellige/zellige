@@ -37,6 +37,10 @@ library
                      , Data.Geometry.Types.GeoJsonFeatures
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Simplify.DouglasPeucker
+                     , Data.Geometry.VectorTile.Geometry
+                     , Data.Geometry.VectorTile.Internal
+                     , Data.Geometry.VectorTile.Util
+                     , Data.Geometry.VectorTile.VectorTile
 
   build-depends:       base >= 4.8 && < 5
                      , aeson
@@ -45,6 +49,7 @@ library
                      , foldl
                      , geojson >= 3.0.4
                      , hashable
+                     , mtl
                      , optparse-applicative
                      , protocol-buffers >=2.4 && <2.5
                      , scientific

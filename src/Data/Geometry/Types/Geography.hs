@@ -16,7 +16,7 @@ import qualified Data.SeqHelper       as SeqHelper
 import qualified Data.Sequence        as Sequence
 import qualified Data.Vector          as Vector
 import qualified Data.Word            as DataWord
-import qualified Geography.VectorTile as VectorTile
+import qualified Data.Geometry.VectorTile.Geometry as VectorTile
 import           Numeric.Natural      (Natural)
 import           Prelude              hiding (Left, Right)
 
