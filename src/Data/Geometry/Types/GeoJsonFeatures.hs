@@ -19,13 +19,12 @@ import qualified Data.Semigroup       as Semigroup
 import qualified Data.SeqHelper       as SeqHelper
 import qualified Data.Sequence        as Sequence
 import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
-import qualified Data.Geometry.VectorTile.VectorTile as VectorTileGeometry
 import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures
-  { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Point)))
-  , mvtLines    :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.LineString)))
-  , mvtPolygons :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTileGeometry.Polygon)))
+  { mvtPoints   :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)))
+  , mvtLines    :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)))
+  , mvtPolygons :: !(Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)))
   } deriving (Eq, Show)
 
 instance Semigroup.Semigroup MvtFeatures where
@@ -48,57 +47,57 @@ sToF = Scientific.toRealFloat
 
 -- Points
 
-convertPoint :: Geospatial.GeoPoint -> Sequence.Seq VectorTileGeometry.Point
+convertPoint :: Geospatial.GeoPoint -> Sequence.Seq VectorTile.Point
 convertPoint = coordsToPoints . Geospatial._unGeoPoint
 
-convertMultiPoint :: Geospatial.GeoMultiPoint -> Sequence.Seq VectorTileGeometry.Point
+convertMultiPoint :: Geospatial.GeoMultiPoint -> Sequence.Seq VectorTile.Point
 convertMultiPoint = Foldable.foldMap convertPoint . Geospatial.splitGeoMultiPoint
 
 -- Lines
 
-convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTileGeometry.LineString
+convertLineString :: Geospatial.GeoLine -> Sequence.Seq VectorTile.LineString
 convertLineString l =
   if Sequence.length convertedLine > 1
-    then Sequence.singleton $ VectorTileGeometry.LineString convertedLine
+    then Sequence.singleton $ VectorTile.LineString convertedLine
     else Sequence.empty
   where
     convertedLine = convertAndRemoveDupes . Geospatial._unGeoLine $ l
 
-convertMultiLineString :: Geospatial.GeoMultiLine -> Sequence.Seq VectorTileGeometry.LineString
+convertMultiLineString :: Geospatial.GeoMultiLine -> Sequence.Seq VectorTile.LineString
 convertMultiLineString = Foldable.foldMap convertLineString . Geospatial.splitGeoMultiLine
 
 -- Polygons
 
-convertPolygon :: Geospatial.GeoPolygon -> Sequence.Seq VectorTileGeometry.Polygon
+convertPolygon :: Geospatial.GeoPolygon -> Sequence.Seq VectorTile.Polygon
 convertPolygon poly =
   Sequence.singleton $
   case Sequence.viewl rawPoly of
-    Sequence.EmptyL -> VectorTileGeometry.Polygon mempty mempty
+    Sequence.EmptyL -> VectorTile.Polygon mempty mempty
     (h Sequence.:< rest) ->
       if Sequence.length rest == 0 then
         mkPoly h
       else
-        VectorTileGeometry.Polygon (convertAndRemoveDupes h) (mkPolys rest)
+        VectorTile.Polygon (convertAndRemoveDupes h) (mkPolys rest)
   where
     rawPoly = Geospatial._unGeoPolygon poly
 
 -- Foldr?
-mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTileGeometry.Polygon
+mkPolys :: Foldable t => t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Sequence.Seq VectorTile.Polygon
 mkPolys = List.foldl' (\acc lring -> mkPoly lring Sequence.<| acc) Sequence.empty
 
-mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTileGeometry.Polygon
-mkPoly lring = VectorTileGeometry.Polygon (convertAndRemoveDupes lring) mempty
+mkPoly :: LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> VectorTile.Polygon
+mkPoly lring = VectorTile.Polygon (convertAndRemoveDupes lring) mempty
 
-convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTileGeometry.Polygon
+convertMultiPolygon :: Geospatial.GeoMultiPolygon -> Sequence.Seq VectorTile.Polygon
 convertMultiPolygon = Foldable.foldMap convertPolygon . Geospatial.splitGeoMultiPolygon
 
 -- Helpers
 -- Foldr?
-convertAndRemoveDupes :: Foldable t => t Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTileGeometry.Point
+convertAndRemoveDupes :: Foldable t => t Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
 convertAndRemoveDupes = SeqHelper.removeNextDuplicate . Foldable.foldMap coordsToPoints
 
-coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTileGeometry.Point
+coordsToPoints :: Geospatial.GeoPositionWithoutCRS -> Sequence.Seq VectorTile.Point
 coordsToPoints geoPosition = Sequence.singleton newPoint
   where
-    newPoint = VectorTileGeometry.Point (round posX) (round posY)
+    newPoint = VectorTile.Point (round posX) (round posY)
     (Geospatial.PointXY posX posY) = Geospatial.retrieveXY geoPosition
