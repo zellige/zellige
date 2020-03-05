@@ -81,7 +81,7 @@ import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomTyp
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
 import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
 import           Data.Geometry.VectorTile.Util
-import qualified Data.Geometry.VectorTile.VectorTile                                  as VT
+import qualified Data.Geometry.VectorTile.Types                                  as VT
 import           Text.Printf
 import           Text.ProtocolBuffers.Basic
                                                                                    (Utf8 (..),

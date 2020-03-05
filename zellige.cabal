@@ -39,6 +39,7 @@ library
                      , Data.Geometry.Simplify.DouglasPeucker
                      , Data.Geometry.VectorTile.Geometry
                      , Data.Geometry.VectorTile.Internal
+                     , Data.Geometry.VectorTile.Types
                      , Data.Geometry.VectorTile.Util
                      , Data.Geometry.VectorTile.VectorTile
 
