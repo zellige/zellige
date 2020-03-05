@@ -42,6 +42,12 @@ library
                      , Data.Geometry.VectorTile.Types
                      , Data.Geometry.VectorTile.Util
                      , Data.Geometry.VectorTile.VectorTile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value
 
   build-depends:       base >= 4.8 && < 5
                      , aeson
@@ -53,6 +59,7 @@ library
                      , mtl
                      , optparse-applicative
                      , protocol-buffers >=2.4 && <2.5
+                     , protocol-buffers-descriptor >=2.4 && <2.5
                      , scientific
                      , stm
                      , text
@@ -61,8 +68,7 @@ library
                      , unordered-containers
                      , validation
                      , vector
-                     , vector-th-unbox
-                     , vectortiles >= 1.5.0                
+                     , vector-th-unbox              
   ghc-options:         -Wall -Werror -O2                    
   default-language:    Haskell2010
 

@@ -75,11 +75,11 @@ import           Data.Text
                                                                                    pack)
 import           Data.Word
 import qualified Data.Geometry.VectorTile.Geometry                                    as G
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
 import           Data.Geometry.VectorTile.Util
 import qualified Data.Geometry.VectorTile.Types                                  as VT
 import           Text.Printf

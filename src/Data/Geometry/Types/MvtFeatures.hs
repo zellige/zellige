@@ -20,11 +20,11 @@ import qualified Data.Scientific                                                
 import qualified Data.Sequence                                                    as Sequence
 import qualified Data.Text                                                        as Text
 import qualified Data.Text.Encoding                                               as TextEncoding
-import qualified Data.Geometry.VectorTile.Types as VectorTile
-import qualified Data.Geometry.VectorTile.Internal                                    as VectorTileInternal
-import qualified Data.Geometry.VectorTile.Geometry as VectorTileGeometry
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile                                    as VectorTileInternal
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTileGeometry
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
 import           Prelude                                                          hiding
                                                                                    (Left,
                                                                                    Right)
