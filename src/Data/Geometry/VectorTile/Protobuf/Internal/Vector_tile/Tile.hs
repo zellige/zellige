@@ -9,7 +9,7 @@ import qualified Data.Data as Prelude'
 import qualified Text.ProtocolBuffers.Header as P'
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Vector_tile.Tile (Layer)
 
-data Tile = Tile{layers :: !(P'.Seq Vector_tile.Tile.Layer), ext'field :: !(P'.ExtField)}
+data Tile = Tile{layers :: !(P'.Seq Vector_tile.Tile.Layer), ext'field :: !P'.ExtField}
           deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.ExtendMessage Tile where
@@ -30,7 +30,7 @@ instance P'.Wire Tile where
        11 -> P'.prependMessageSize calc'Size
        _ -> P'.wireSizeErr ft' self'
     where
-        calc'Size = (P'.wireSizeRep 1 11 x'1 + P'.wireSizeExtField x'2)
+        calc'Size = P'.wireSizeRep 1 11 x'1 + P'.wireSizeExtField x'2
   wirePut ft' self'@(Tile x'1 x'2)
    = case ft' of
        10 -> put'Fields
@@ -73,7 +73,7 @@ instance P'.TextType Tile where
 
 instance P'.TextMsg Tile where
   textPut msg
-   = do
+   =
        P'.tellT "layers" (layers msg)
   textGet
    = do

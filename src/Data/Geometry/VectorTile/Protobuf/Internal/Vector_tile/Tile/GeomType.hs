@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType (GeomType(..)) where
 import Prelude ((+), (/), (.))
@@ -23,12 +23,12 @@ instance Prelude'.Bounded GeomType where
 instance P'.Default GeomType where
   defaultValue = UNKNOWN
 
-toMaybe'Enum :: Prelude'.Int -> P'.Maybe GeomType
-toMaybe'Enum 0 = Prelude'.Just UNKNOWN
-toMaybe'Enum 1 = Prelude'.Just POINT
-toMaybe'Enum 2 = Prelude'.Just LINESTRING
-toMaybe'Enum 3 = Prelude'.Just POLYGON
-toMaybe'Enum _ = Prelude'.Nothing
+toMaybeEnum :: Prelude'.Int -> P'.Maybe GeomType
+toMaybeEnum 0 = Prelude'.Just UNKNOWN
+toMaybeEnum 1 = Prelude'.Just POINT
+toMaybeEnum 2 = Prelude'.Just LINESTRING
+toMaybeEnum 3 = Prelude'.Just POLYGON
+toMaybeEnum _ = Prelude'.Nothing
 
 instance Prelude'.Enum GeomType where
   fromEnum UNKNOWN = 0
@@ -39,7 +39,7 @@ instance Prelude'.Enum GeomType where
    = P'.fromMaybe
       (Prelude'.error
         "hprotoc generated code: toEnum failure for type Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType")
-      . toMaybe'Enum
+      . toMaybeEnum
   succ UNKNOWN = POINT
   succ POINT = LINESTRING
   succ LINESTRING = POLYGON
@@ -54,9 +54,9 @@ instance Prelude'.Enum GeomType where
 instance P'.Wire GeomType where
   wireSize ft' enum = P'.wireSize ft' (Prelude'.fromEnum enum)
   wirePut ft' enum = P'.wirePut ft' (Prelude'.fromEnum enum)
-  wireGet 14 = P'.wireGetEnum toMaybe'Enum
+  wireGet 14 = P'.wireGetEnum toMaybeEnum
   wireGet ft' = P'.wireGetErr ft'
-  wireGetPacked 14 = P'.wireGetPackedEnum toMaybe'Enum
+  wireGetPacked 14 = P'.wireGetPackedEnum toMaybeEnum
   wireGetPacked ft' = P'.wireGetErr ft'
 
 instance P'.GPB GeomType

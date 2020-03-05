@@ -10,7 +10,7 @@ import qualified Text.ProtocolBuffers.Header as P'
 
 data Value = Value{string_value :: !(P'.Maybe P'.Utf8), float_value :: !(P'.Maybe P'.Float), double_value :: !(P'.Maybe P'.Double),
                    int_value :: !(P'.Maybe P'.Int64), uint_value :: !(P'.Maybe P'.Word64), sint_value :: !(P'.Maybe P'.Int64),
-                   bool_value :: !(P'.Maybe P'.Bool), ext'field :: !(P'.ExtField)}
+                   bool_value :: !(P'.Maybe P'.Bool), ext'field :: !P'.ExtField}
            deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.ExtendMessage Value where
@@ -39,11 +39,11 @@ instance P'.Wire Value where
        _ -> P'.wireSizeErr ft' self'
     where
         calc'Size
-         = (P'.wireSizeOpt 1 9 x'1 + P'.wireSizeOpt 1 2 x'2 + P'.wireSizeOpt 1 1 x'3 + P'.wireSizeOpt 1 3 x'4 +
+         = P'.wireSizeOpt 1 9 x'1 + P'.wireSizeOpt 1 2 x'2 + P'.wireSizeOpt 1 1 x'3 + P'.wireSizeOpt 1 3 x'4 +
              P'.wireSizeOpt 1 4 x'5
              + P'.wireSizeOpt 1 18 x'6
              + P'.wireSizeOpt 1 8 x'7
-             + P'.wireSizeExtField x'8)
+             + P'.wireSizeExtField x'8
   wirePut ft' self'@(Value x'1 x'2 x'3 x'4 x'5 x'6 x'7 x'8)
    = case ft' of
        10 -> put'Fields
@@ -78,7 +78,7 @@ instance P'.Wire Value where
              48 -> Prelude'.fmap (\ !new'Field -> old'Self{sint_value = Prelude'.Just new'Field}) (P'.wireGet 18)
              56 -> Prelude'.fmap (\ !new'Field -> old'Self{bool_value = Prelude'.Just new'Field}) (P'.wireGet 8)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
-                   if Prelude'.or [8 <= field'Number && field'Number <= 18999, 20000 <= field'Number] then
+                   if (8 <= field'Number && field'Number <= 18999) Prelude'.|| (20000 <= field'Number) then
                     P'.loadExtension field'Number wire'Type old'Self else P'.unknown field'Number wire'Type old'Self
 
 instance P'.MessageAPI msg' (msg' -> Value) Value where

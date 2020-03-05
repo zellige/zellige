@@ -10,9 +10,9 @@ import qualified Text.ProtocolBuffers.Header as P'
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature as Vector_tile.Tile (Feature)
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value as Vector_tile.Tile (Value)
 
-data Layer = Layer{version :: !(P'.Word32), name :: !(P'.Utf8), features :: !(P'.Seq Vector_tile.Tile.Feature),
+data Layer = Layer{version :: !P'.Word32, name :: !P'.Utf8, features :: !(P'.Seq Vector_tile.Tile.Feature),
                    keys :: !(P'.Seq P'.Utf8), values :: !(P'.Seq Vector_tile.Tile.Value), extent :: !(P'.Maybe P'.Word32),
-                   ext'field :: !(P'.ExtField)}
+                   ext'field :: !P'.ExtField}
            deriving (Prelude'.Show, Prelude'.Eq, Prelude'.Ord, Prelude'.Typeable, Prelude'.Data, Prelude'.Generic)
 
 instance P'.ExtendMessage Layer where
@@ -38,10 +38,10 @@ instance P'.Wire Layer where
        _ -> P'.wireSizeErr ft' self'
     where
         calc'Size
-         = (P'.wireSizeReq 1 13 x'1 + P'.wireSizeReq 1 9 x'2 + P'.wireSizeRep 1 11 x'3 + P'.wireSizeRep 1 9 x'4 +
+         = P'.wireSizeReq 1 13 x'1 + P'.wireSizeReq 1 9 x'2 + P'.wireSizeRep 1 11 x'3 + P'.wireSizeRep 1 9 x'4 +
              P'.wireSizeRep 1 11 x'5
              + P'.wireSizeOpt 1 13 x'6
-             + P'.wireSizeExtField x'7)
+             + P'.wireSizeExtField x'7
   wirePut ft' self'@(Layer x'1 x'2 x'3 x'4 x'5 x'6 x'7)
    = case ft' of
        10 -> put'Fields
@@ -74,7 +74,7 @@ instance P'.Wire Layer where
              34 -> Prelude'.fmap (\ !new'Field -> old'Self{values = P'.append (values old'Self) new'Field}) (P'.wireGet 11)
              40 -> Prelude'.fmap (\ !new'Field -> old'Self{extent = Prelude'.Just new'Field}) (P'.wireGet 13)
              _ -> let (field'Number, wire'Type) = P'.splitWireTag wire'Tag in
-                   if Prelude'.or [16 <= field'Number && field'Number <= 18999, 20000 <= field'Number] then
+                   if (16 <= field'Number && field'Number <= 18999) Prelude'.|| (20000 <= field'Number) then
                     P'.loadExtension field'Number wire'Type old'Self else P'.unknown field'Number wire'Type old'Self
 
 instance P'.MessageAPI msg' (msg' -> Layer) Layer where

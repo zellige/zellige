@@ -10,7 +10,7 @@ import qualified Data.HashMap.Strict                 as HashMapStrict
 import qualified Data.LinearRing                     as LinearRing
 import qualified Data.LineString                     as LineString
 import qualified Data.Sequence                       as Sequence
-import qualified Geography.VectorTile                as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile                as VectorTile
 
 
 import           Test.Hspec                          (Spec, describe, it,

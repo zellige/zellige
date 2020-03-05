@@ -234,7 +234,7 @@ instance ProtobufGeom G.Polygon where
             | otherwise = Just (p, v')
             where
               p = h { G.inner = is }
-              (is,v') = Seq.breakl (\i -> Maybe.maybe False (>0) (G.area i)) t
+              (is,v') = Seq.breakl (Maybe.maybe False (>0) . G.area) t
           g _ = Nothing
 
   toCommands ps = fold $ evalState (traverse f ps) (G.Point 0 0)

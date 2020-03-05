@@ -96,8 +96,7 @@ test-suite zellige-test
                      , scientific
                      , text
                      , unordered-containers
-                     , vector
-                     , vectortiles >= 1.5.0                
+                     , vector         
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
@@ -137,8 +136,7 @@ benchmark zellige-bench
                      , optparse-generic >= 1.2.3
                      , protobuf >=0.2.1.1 && <0.3
                      , text >=1.2 && <1.3
-                     , vector >=0.11 && <0.13
-                     , vectortiles >= 1.5.0                
+                     , vector >=0.11 && <0.13        
                      , zellige
   hs-source-dirs:
                        bench

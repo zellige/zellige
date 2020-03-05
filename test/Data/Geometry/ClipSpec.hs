@@ -6,7 +6,7 @@ import qualified Data.Aeson                       as Aeson
 import qualified Data.Geospatial                  as Geospatial
 import qualified Data.LinearRing                  as LinearRing
 import qualified Data.Sequence                    as Sequence
-import qualified Geography.VectorTile             as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile             as VectorTile
 import           Test.Hspec                       (Spec, describe, it, shouldBe)
 
 import qualified Data.Geometry.Clip               as GeometryClip

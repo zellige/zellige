@@ -27,7 +27,7 @@ instance P'.Wire Feature where
        11 -> P'.prependMessageSize calc'Size
        _ -> P'.wireSizeErr ft' self'
     where
-        calc'Size = (P'.wireSizeOpt 1 4 x'1 + P'.wireSizePacked 1 13 x'2 + P'.wireSizeOpt 1 14 x'3 + P'.wireSizePacked 1 13 x'4)
+        calc'Size = P'.wireSizeOpt 1 4 x'1 + P'.wireSizePacked 1 13 x'2 + P'.wireSizeOpt 1 14 x'3 + P'.wireSizePacked 1 13 x'4
   wirePut ft' self'@(Feature x'1 x'2 x'3 x'4)
    = case ft' of
        10 -> put'Fields
