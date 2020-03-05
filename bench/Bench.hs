@@ -9,7 +9,7 @@ import qualified Data.LinearRing                 as LinearRing
 import qualified Data.LineString                 as LineString
 import qualified Data.Sequence                   as Sequence
 import qualified Data.Text                       as DataText
-import qualified Geography.VectorTile            as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile            as VectorTile
 
 import qualified Data.Geometry.Clip              as Clip
 import qualified Data.Geometry.MapnikVectorTile  as MapnikVectorTile
