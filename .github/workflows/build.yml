@@ -29,6 +29,7 @@ jobs:
     - name: stack install, build and test
       run: |
         stack build
+        stack test
 
   build_windows:
     runs-on: windows-latest
@@ -61,3 +62,4 @@ jobs:
     - name: stack install, build and test
       run: |
         stack build
+        stack test
