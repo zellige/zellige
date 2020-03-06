@@ -9,11 +9,6 @@ jobs:
     steps:
     - name: Get code
       uses: actions/checkout@v2
-
-    - name: Checkout vectortiles repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/vectortiles
     
     - name: Setup Stack
       uses: mstksg/setup-stack@v2
@@ -37,16 +32,6 @@ jobs:
     steps:
     - name: Get code
       uses: actions/checkout@v2
-
-    - name: Checkout zellige repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/zellige
-
-    - name: Checkout vectortiles repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/vectortiles
     
     - name: Setup Stack
       uses: mstksg/setup-stack@v2
