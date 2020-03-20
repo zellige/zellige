@@ -1,6 +1,6 @@
 name: CI
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   build_linux:
@@ -9,26 +9,22 @@ jobs:
     steps:
     - name: Get code
       uses: actions/checkout@v2
-
-    - name: Checkout vectortiles repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/vectortiles
     
     - name: Setup Stack
       uses: mstksg/setup-stack@v2
     
-    # - name: Cache Stack downloads
-    #   uses: actions/cache@v1
-    #   env:
-    #     cache-name: cache-stack-modules
-    #   with:
-    #     path: /home/runner/.stack/
-    #     key: ${{ hashFiles('**/stack.yaml.lock') }}
+    - name: Cache Stack downloads
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-stack-modules
+      with:
+        path: /home/runner/.stack/
+        key: ${{ hashFiles('stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
         stack build
+        stack test
 
   build_windows:
     runs-on: windows-latest
@@ -36,28 +32,19 @@ jobs:
     steps:
     - name: Get code
       uses: actions/checkout@v2
-
-    - name: Checkout zellige repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/zellige
-
-    - name: Checkout vectortiles repo
-      uses: actions/checkout@v2
-      with:
-        repository: zellige/vectortiles
     
     - name: Setup Stack
       uses: mstksg/setup-stack@v2
     
-    # - name: Cache Stack downloads
-    #   uses: actions/cache@v1
-    #   env:
-    #     cache-name: cache-stack-modules
-    #   with:
-    #     path: /home/runner/.stack/
-    #     key: ${{ hashFiles('**/stack.yaml.lock') }}
+    - name: Cache Stack downloads
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-stack-modules
+      with:
+        path: /home/runner/.stack/
+        key: ${{ hashFiles('stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
         stack build
+        stack test

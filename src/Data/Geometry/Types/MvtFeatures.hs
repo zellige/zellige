@@ -20,10 +20,9 @@ import qualified Data.Scientific                                                
 import qualified Data.Sequence                                                    as Sequence
 import qualified Data.Text                                                        as Text
 import qualified Data.Text.Encoding                                               as TextEncoding
-import qualified Geography.VectorTile                                             as VectorTile
-import qualified Geography.VectorTile.Internal                                    as VectorTileInternal
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
 import           Prelude                                                          hiding
                                                                                    (Left,
                                                                                    Right)
@@ -73,14 +72,14 @@ data KeyStore = KeyStore
 data ValueStore = ValueStore
   { vsValueInt :: Int
   , vsValues   :: HashMapStrict.HashMap VectorTile.Val Int
-  , vsList     :: Sequence.Seq (VectorTileInternal.Protobuf VectorTile.Val)
+  , vsList     :: Sequence.Seq (VectorTile.Protobuf VectorTile.Val)
   }
 
 newKeys :: Foldable t => KeyStore -> t ProtocolBuffersBasic.ByteString -> (Int, HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int, ProtocolBuffersBasic.Seq ProtocolBuffersBasic.Utf8)
 newKeys (KeyStore keyCount keyMap keyList) = foldr (\x (counter, currMap, currSeq) -> addKeyValue counter x currMap currSeq ProtocolBuffersBasic.Utf8) (keyCount, keyMap, keyList)
 
-newValues :: Foldable t => ValueStore -> t VectorTile.Val -> (Int, HashMapStrict.HashMap VectorTile.Val Int, ProtocolBuffersBasic.Seq VectorTileInternal.Value)
-newValues (ValueStore valueCount valueMap valueList) = foldr (\x (counter, currMap, currSeq) -> addKeyValue counter x currMap currSeq VectorTileInternal.toProtobuf) (valueCount, valueMap, valueList)
+newValues :: Foldable t => ValueStore -> t VectorTile.Val -> (Int, HashMapStrict.HashMap VectorTile.Val Int, ProtocolBuffersBasic.Seq VectorTile.Value)
+newValues (ValueStore valueCount valueMap valueList) = foldr (\x (counter, currMap, currSeq) -> addKeyValue counter x currMap currSeq VectorTile.toProtobuf) (valueCount, valueMap, valueList)
 
 addKeyValue :: (Eq a, Hashable.Hashable a) => Int -> a -> HashMapStrict.HashMap a Int -> Sequence.Seq b -> (a -> b)-> (Int, HashMapStrict.HashMap a Int, Sequence.Seq b)
 addKeyValue currentKeyNumber key hashMap seqs f =
@@ -100,8 +99,8 @@ newConvertGeometry acc fid convertedProps keys values geom =
     Geospatial.MultiPolygon g -> checkAndAdd keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
     Geospatial.Collection gs -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
-checkAndAdd :: (VectorTileInternal.ProtobufGeom g, VectorTileInternal.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
+checkAndAdd :: (VectorTile.ProtobufGeom g, VectorTile.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
 checkAndAdd keys values featureType feature@(VectorTile.Feature _ _ geoms) acc =
   if Sequence.null geoms
     then acc
-    else VectorTileInternal.unfeats keys values featureType feature Sequence.<| acc
+    else VectorTile.unfeats keys values featureType feature Sequence.<| acc

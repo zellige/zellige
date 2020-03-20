@@ -13,7 +13,8 @@ import qualified Data.Geospatial                     as Geospatial
 import qualified Data.HashMap.Lazy                   as HashMapLazy
 import           Data.Monoid                         ((<>))
 import qualified Data.Text                           as Text
-import qualified Geography.VectorTile                as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile               as VectorTile
+import qualified Data.Geometry.VectorTile.Types               as VectorTileTypes
 
 import qualified Data.Geometry.Clip                  as Clip
 import qualified Data.Geometry.GeoJsonToMvt          as GeoJsonToMvt
@@ -33,7 +34,7 @@ writeLayer lc = do
 configFromLayerConfig :: TypesLayerConfig.LayerConfig -> TypesConfig.Config
 configFromLayerConfig TypesLayerConfig.LayerConfig{..}  = TypesConfig.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
 
-geoJsonFileToMvt :: FilePath -> TypesConfig.Config -> IO VectorTile.VectorTile
+geoJsonFileToMvt :: FilePath -> TypesConfig.Config -> IO VectorTileTypes.VectorTile
 geoJsonFileToMvt filePath config = do
     geoJson <- readGeoJson filePath
     createMvt config geoJson
@@ -45,7 +46,7 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO VectorTile.VectorTile
+readMvt :: FilePath -> IO VectorTileTypes.VectorTile
 readMvt filePath = do
     b <- ByteString.readFile filePath
     let t = VectorTile.tile b
@@ -54,18 +55,18 @@ readMvt filePath = do
 
 -- Lib
 
-encodeMvt :: VectorTile.VectorTile -> ByteStringChar8.ByteString
+encodeMvt :: VectorTileTypes.VectorTile -> ByteStringChar8.ByteString
 encodeMvt = VectorTile.untile
 
-createMvt :: TypesConfig.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTile.VectorTile
+createMvt :: TypesConfig.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTileTypes.VectorTile
 createMvt TypesConfig.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
   let sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
       clipBb = Clip.createBoundingBox _buffer _extents
       clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
       simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
       TypesGeoJsonFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
-      layer = VectorTile.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
-  pure . VectorTile.VectorTile $ HashMapLazy.fromList [(_name, layer)]
+      layer = VectorTileTypes.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
+  pure . VectorTileTypes.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s TypesGeoJsonFeatures.MvtFeatures
 getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures TypesGeoJsonFeatures.emptyMvtFeatures _geofeatures

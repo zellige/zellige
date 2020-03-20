@@ -18,7 +18,7 @@ import qualified Data.Scientific      as Scientific
 import qualified Data.Semigroup       as Semigroup
 import qualified Data.SeqHelper       as SeqHelper
 import qualified Data.Sequence        as Sequence
-import qualified Geography.VectorTile as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 import           Prelude              hiding (Left, Right)
 
 data MvtFeatures = MvtFeatures

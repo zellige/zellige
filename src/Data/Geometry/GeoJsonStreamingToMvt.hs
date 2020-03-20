@@ -11,8 +11,8 @@ import qualified Data.Geospatial                                               a
 import qualified Data.HashMap.Strict                                           as HashMapStrict
 import           Data.Monoid
 import qualified Data.Sequence                                                 as Sequence
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile       as Tile
-import qualified Geography.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Layer
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile       as Tile
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Layer
 import           Prelude                                                       hiding
                                                                                 (Left,
                                                                                 Right)

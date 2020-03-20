@@ -37,6 +37,17 @@ library
                      , Data.Geometry.Types.GeoJsonFeatures
                      , Data.Geometry.Types.MvtFeatures
                      , Data.Geometry.Simplify.DouglasPeucker
+                     , Data.Geometry.VectorTile.Geometry
+                     , Data.Geometry.VectorTile.Internal
+                     , Data.Geometry.VectorTile.Types
+                     , Data.Geometry.VectorTile.Util
+                     , Data.Geometry.VectorTile.VectorTile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer
+                     , Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value
 
   build-depends:       base >= 4.8 && < 5
                      , aeson
@@ -45,8 +56,10 @@ library
                      , foldl
                      , geojson >= 3.0.4
                      , hashable
+                     , mtl
                      , optparse-applicative
                      , protocol-buffers >=2.4 && <2.5
+                     , protocol-buffers-descriptor >=2.4 && <2.5
                      , scientific
                      , stm
                      , text
@@ -55,8 +68,7 @@ library
                      , unordered-containers
                      , validation
                      , vector
-                     , vector-th-unbox
-                     , vectortiles >= 1.5.0                
+                     , vector-th-unbox              
   ghc-options:         -Wall -Werror -O2                    
   default-language:    Haskell2010
 
@@ -84,8 +96,7 @@ test-suite zellige-test
                      , scientific
                      , text
                      , unordered-containers
-                     , vector
-                     , vectortiles >= 1.5.0                
+                     , vector         
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
@@ -125,8 +136,7 @@ benchmark zellige-bench
                      , optparse-generic >= 1.2.3
                      , protobuf >=0.2.1.1 && <0.3
                      , text >=1.2 && <1.3
-                     , vector >=0.11 && <0.13
-                     , vectortiles >= 1.5.0                
+                     , vector >=0.11 && <0.13        
                      , zellige
   hs-source-dirs:
                        bench
