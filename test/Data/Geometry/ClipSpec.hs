@@ -2,18 +2,20 @@
 
 module Data.Geometry.ClipSpec where
 
-import qualified Data.Aeson                       as Aeson
-import qualified Data.Geospatial                  as Geospatial
-import qualified Data.LinearRing                  as LinearRing
-import qualified Data.Sequence                    as Sequence
-import qualified Data.Geometry.VectorTile.VectorTile             as VectorTile
-import           Test.Hspec                       (Spec, describe, it, shouldBe)
+import qualified Control.Monad                       as ControlMonad
+import qualified Data.Aeson                          as Aeson
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geospatial                     as Geospatial
+import qualified Data.LinearRing                     as LinearRing
+import qualified Data.Sequence                       as Sequence
+import           Test.Hspec                          (Spec, describe, it,
+                                                      shouldBe)
 
-import qualified Data.Geometry.Clip               as GeometryClip
-import qualified Data.Geometry.Clip.Internal.Line as InternalLine
-import qualified Data.Geometry.Types.Geography    as GeometryGeography
+import qualified Data.Geometry.Clip                  as GeometryClip
+import qualified Data.Geometry.Clip.Internal.Line    as InternalLine
+import qualified Data.Geometry.Types.Geography       as GeometryGeography
 
-import qualified Data.SpecHelper                  as SpecHelper
+import qualified Data.SpecHelper                     as SpecHelper
 
 polyPts :: [(Int, Int)]
 polyPts = [ (50,150),  (200, 50)
@@ -209,33 +211,23 @@ testLineHelper =
     it "Single element test" $
       Sequence.empty `shouldBe` InternalLine.segmentToLine (Sequence.fromList ([1] :: [Int]))
 
+lineClippingAlgorithms :: [GeometryGeography.BoundingBox -> Geospatial.GeoLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)]
+lineClippingAlgorithms =
+    [GeometryClip.clipLineCs, GeometryClip.clipLineLb, GeometryClip.clipLineQc, GeometryClip.clipLineNLN]
+
+multilineClippingAlgorithms :: [GeometryGeography.BoundingBox -> Geospatial.GeoMultiLine -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)]
+multilineClippingAlgorithms =
+    [GeometryClip.clipLinesCs, GeometryClip.clipLinesLb, GeometryClip.clipLinesQc, GeometryClip.clipLinesNLN]
+
 testClipLine :: Spec
 testClipLine =
   describe "simple line test" $ do
-    it "Cohen Sutherland returns clipped line" $ do
-      let actual = GeometryClip.clipLineCs lineClip geoLineTst geoLineFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLineFeatureTst
-    it "Cohen Sutherland returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesCs lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLinesFeatureTst
-    it "Liang Barsky returns clipped line" $ do
-      let actual = GeometryClip.clipLineLb lineClip geoLineTst geoLineFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLineFeatureTst
-    it "Liang Barsky returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesLb lineClip geoLinesTst geoLineFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLinesFeatureTst
-    it "QuickClip returns clipped line" $ do
-      let actual = GeometryClip.clipLineQc lineClip geoLineTst geoLineFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLineFeatureTst
-    it "QuickClip returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesQc lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLinesFeatureTst
-    it "NLN returns clipped line" $ do
-      let actual = GeometryClip.clipLineNLN lineClip geoLineTst geoLineFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLineFeatureTst
-    it "NLN returns clipped lines" $ do
-      let actual = GeometryClip.clipLinesNLN lineClip geoLinesTst geoLinesFeatureTst Sequence.empty
-      actual `shouldBe` geoResultLinesFeatureTst
+    it "Algorithms returns clipped line" $ do
+      let actual f = f lineClip geoLineTst geoLineFeatureTst Sequence.empty
+      ControlMonad.forM_ lineClippingAlgorithms (\x -> actual x `shouldBe` geoResultLineFeatureTst)
+    it "Algorithms returns clipped line" $ do
+      let actual f = f lineClip geoLinesTst geoLineFeatureTst Sequence.empty
+      ControlMonad.forM_ multilineClippingAlgorithms (\x -> actual x `shouldBe` geoResultLinesFeatureTst)
 
 testClipPolygon :: Spec
 testClipPolygon =

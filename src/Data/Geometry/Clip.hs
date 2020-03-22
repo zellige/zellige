@@ -22,22 +22,19 @@ module Data.Geometry.Clip (
 , clipPolygonsQc
 , clipFeature
 , clipFeatures
-, clipPolygonNLNN
-, clipPolygonsNLNN
 , mapFeature
 ) where
 
-import qualified Data.Aeson                                                as Aeson
-import qualified Data.Foldable                                             as Foldable
-import qualified Data.Geospatial                                           as Geospatial
-import qualified Data.Sequence                                             as Sequence
+import qualified Data.Aeson                                           as Aeson
+import qualified Data.Foldable                                        as Foldable
+import qualified Data.Geospatial                                      as Geospatial
+import qualified Data.Sequence                                        as Sequence
 
 import           Data.Geometry.Clip.Internal.LineCohenSutherland
 import           Data.Geometry.Clip.Internal.LineLiangBarsky
 import           Data.Geometry.Clip.Internal.LineNichollLeeNicholl
 import           Data.Geometry.Clip.Internal.LineQuickClip
 import           Data.Geometry.Clip.Internal.Point
-import           Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol
 import           Data.Geometry.Clip.Internal.PolygonQuickClip
 import           Data.Geometry.Clip.Internal.PolygonSutherlandHodgman
 import           Data.Geometry.Types.Geography
