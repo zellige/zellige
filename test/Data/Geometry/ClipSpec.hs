@@ -229,16 +229,24 @@ testClipLine =
       let actual f = f lineClip geoLinesTst geoLineFeatureTst Sequence.empty
       ControlMonad.forM_ multilineClippingAlgorithms (\x -> actual x `shouldBe` geoResultLinesFeatureTst)
 
+polgonClippingAlgorithms :: [GeometryGeography.BoundingBox -> Geospatial.GeoPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)]
+polgonClippingAlgorithms =
+    [GeometryClip.clipPolygonSh]
+
+multipolgonClippingAlgorithms :: [GeometryGeography.BoundingBox -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature Aeson.Value -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value)]
+multipolgonClippingAlgorithms =
+    [GeometryClip.clipPolygonsSh]
+
 testClipPolygon :: Spec
 testClipPolygon =
   describe "simple polygon test" $ do
     it "Simple - Returns clipped polygon" $
-      GeometryClip.clipPolygonSh polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolyFeatureTst
+      ControlMonad.forM_ polgonClippingAlgorithms (\x -> x polyClip geoPolyTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolyFeatureTst)
     it "Simple - Returns clipped multipolygon" $
-      GeometryClip.clipPolygonsSh polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolysFeatureTst
+      ControlMonad.forM_ multipolgonClippingAlgorithms (\x -> x polyClip geoPolysTst geoPolygonFeatureTst Sequence.empty `shouldBe` geoResultPolysFeatureTst)
     it "Simple - Negative polygon" $
-      GeometryClip.clipPolygonSh brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty
+      ControlMonad.forM_ polgonClippingAlgorithms (\x -> x brokenClip geoBrokenPolyTst geoBrokenPolyFeatureTst Sequence.empty `shouldBe` Sequence.empty)
     it "Simple - Maximum polygon" $
-      GeometryClip.clipPolygonSh giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst
+      ControlMonad.forM_ polgonClippingAlgorithms (\x -> x giantClip geoGiantPolyTst geoGiantPolyFeatureTst Sequence.empty `shouldBe` geoResultGiantPolyFeatureTst)
     it "Simple - Turning point test" $
-      GeometryClip.clipPolygonSh turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst
+      ControlMonad.forM_ polgonClippingAlgorithms (\x -> x turningClip geoTurningPolyTst geoTurningPolyFeatureTst Sequence.empty `shouldBe` geoResultTurningPolyFeatureTst)
