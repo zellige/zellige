@@ -24,7 +24,6 @@ library
                      , Data.Geometry.Clip.Internal.LineNichollLeeNicholl
                      , Data.Geometry.Clip.Internal.Polygon
                      , Data.Geometry.Clip.Internal.PolygonQuickClip
-                     , Data.Geometry.Clip.Internal.PolygonNichollLeeNichollNicol
                      , Data.Geometry.Clip.Internal.PolygonSutherlandHodgman
                      , Data.Geometry.GeoJsonStreamingToMvt
                      , Data.Geometry.GeoJsonToMvt
