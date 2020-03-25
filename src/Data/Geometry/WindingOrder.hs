@@ -13,6 +13,7 @@ import qualified Data.Geospatial as Geospatial
 import qualified Data.Sequence   as Sequence
 
 data WindingOrder = Clockwise | AntiClockwise
+   deriving (Eq, Show)
 
 -- Surveyor's/Shoelace formula https://en.wikipedia.org/wiki/Shoelace_formula
 -- https://stackoverflow.com/questions/451426/how-do-i-calculate-the-area-of-a-2d-polygon
