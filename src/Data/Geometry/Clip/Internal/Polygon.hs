@@ -4,11 +4,16 @@ module Data.Geometry.Clip.Internal.Polygon (
   closeIfNot
 , surveyor
 , isClockwise
+, rewind
+, ensureOrder
+, WindingOrder(..)
 ) where
 
 import qualified Data.Foldable   as Foldable
 import qualified Data.Geospatial as Geospatial
 import qualified Data.Sequence   as Sequence
+
+data WindingOrder = Clockwise | AntiClockwise
 
 closeIfNot :: Sequence.Seq Geospatial.PointXY -> Maybe (Sequence.Seq Geospatial.PointXY)
 closeIfNot poly =
@@ -42,3 +47,16 @@ surveyor v = (/ 2) . Foldable.foldl' (+) 0 $ Sequence.zipWith3 (\xn yn yp -> xn 
 
 isClockwise :: Sequence.Seq Geospatial.PointXY -> Bool
 isClockwise v = surveyor v <= 0
+
+rewind :: Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
+rewind v =
+    case v of
+      (firstPt Sequence.:<| (middle Sequence.:|> lastPt)) -> (firstPt Sequence.<| Sequence.reverse middle) Sequence.|> lastPt
+      _                                                   -> v
+
+ensureOrder :: WindingOrder -> Sequence.Seq Geospatial.PointXY ->  Sequence.Seq Geospatial.PointXY
+ensureOrder order v =
+  case order of
+    Clockwise     -> if isClockwise v then v else rewind v
+    AntiClockwise -> if isClockwise v then rewind v else v
+
