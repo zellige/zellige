@@ -33,8 +33,6 @@ jobs:
       run: |
         stack build
         stack test
-        stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        zip -r zellige.zip ./zellige
 
     - name: create zip
       run: |
@@ -78,8 +76,6 @@ jobs:
       run: |
         stack build
         stack test
-        stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        zip -r zellige.zip ./zellige.exe
 
     - name: create zip
       run: |
