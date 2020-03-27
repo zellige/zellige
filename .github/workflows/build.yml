@@ -16,11 +16,19 @@ jobs:
     - name: Cache Stack downloads
       uses: actions/cache@v1
       env:
-        cache-name: cache-stack-modules
+        cache-name: cache-stack-modules-linux
       with:
         path: /home/runner/.stack/
-        key: ${{ hashFiles('stack.yaml.lock') }}
-      
+        key: ${{ hashFiles('**/stack.yaml.lock') }}
+
+    - name: Cache Stack Build
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-stack-local-modules-linux
+      with:
+        path: .stack-work/
+        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+
     - name: stack install, build and test
       run: |
         stack build
@@ -39,10 +47,18 @@ jobs:
     - name: Cache Stack downloads
       uses: actions/cache@v1
       env:
-        cache-name: cache-stack-modules
+        cache-name: cache-stack-modules-windows
       with:
-        path: /home/runner/.stack/
-        key: ${{ hashFiles('stack.yaml.lock') }}
+        path: C:\Users\runneradmin\AppData\Roaming\stack
+        key: ${{ hashFiles('**/stack.yaml.lock') }}
+
+    - name: Cache Stack Build
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-stack-local-modules-windows
+      with:
+        path: .stack-work/
+        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
