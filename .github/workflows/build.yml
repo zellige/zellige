@@ -36,6 +36,11 @@ jobs:
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
         zip -r zellige.zip ./zellige
 
+    - name: create zip
+      run: |
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        zip -r zellige.zip ./zellige
+
     - name: Upload zip of binary
       uses: actions/upload-artifact@v1
       with:
@@ -66,13 +71,18 @@ jobs:
       env:
         cache-name: cache-zellige-stack-local-modules-windows
       with:
-        path: .stack-work/
+        path: d:\a\zellige\zellige\.stack-work
         key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
         stack build
         stack test
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        zip -r zellige.zip ./zellige.exe
+
+    - name: create zip
+      run: |
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
         zip -r zellige.zip ./zellige.exe
 
