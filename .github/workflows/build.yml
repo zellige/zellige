@@ -33,6 +33,15 @@ jobs:
       run: |
         stack build
         stack test
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        zip -r zellige.zip ./zellige
+
+    - name: Upload zip of binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: zellige-linux
+        path: ./zellige.zip
+
 
   build_windows:
     runs-on: windows-latest
@@ -64,3 +73,11 @@ jobs:
       run: |
         stack build
         stack test
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        zip -r zellige.zip ./zellige.exe
+
+    - name: Upload zip of binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: zellige-windows
+        path: ./zellige.zip
