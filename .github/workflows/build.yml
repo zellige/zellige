@@ -78,8 +78,9 @@ jobs:
         stack test
 
     - name: create zip
+      shell: powershell -Command "& '{0}'"
       run: |
-        stack install --stack-yaml stack-ci.yaml --local-bin-path .  & exit 0
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
         zip -r zellige.zip ./zellige/zellige.exe
 
     - name: Upload zip of binary
