@@ -79,7 +79,7 @@ jobs:
 
     - name: create zip
       run: |
-        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .  & exit 0
         zip -r zellige.zip ./zellige/zellige.exe
 
     - name: Upload zip of binary
