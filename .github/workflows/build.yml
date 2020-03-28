@@ -37,7 +37,7 @@ jobs:
     - name: create zip
       run: |
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        7z a zellige.zip ./zellige
+        zip -r zellige.zip ./zellige
 
     - name: Upload zip of binary
       uses: actions/upload-artifact@v1
@@ -81,7 +81,7 @@ jobs:
       shell: powershell -Command "& '{0}'"
       run: |
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        zip -r zellige.zip ./zellige/zellige.exe
+        7z a zellige.zip ./zellige
 
     - name: Upload zip of binary
       uses: actions/upload-artifact@v1
