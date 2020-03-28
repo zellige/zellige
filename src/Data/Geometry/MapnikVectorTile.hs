@@ -9,12 +9,12 @@ import qualified Data.Aeson                          as Aeson
 import qualified Data.ByteString                     as ByteString
 import qualified Data.ByteString.Char8               as ByteStringChar8
 import qualified Data.ByteString.Lazy                as ByteStringLazy
+import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 import qualified Data.Geospatial                     as Geospatial
 import qualified Data.HashMap.Lazy                   as HashMapLazy
 import           Data.Monoid                         ((<>))
 import qualified Data.Text                           as Text
-import qualified Data.Geometry.VectorTile.VectorTile               as VectorTile
-import qualified Data.Geometry.VectorTile.Types               as VectorTileTypes
 
 import qualified Data.Geometry.Clip                  as Clip
 import qualified Data.Geometry.GeoJsonToMvt          as GeoJsonToMvt

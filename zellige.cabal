@@ -88,12 +88,14 @@ test-suite zellige-test
   build-depends:       base
                      , aeson
                      , containers
+                     , errors
                      , geojson >= 3.0.4
                      , hspec
                      , lens
                      , QuickCheck
                      , scientific
                      , text
+                     , transformers
                      , unordered-containers
                      , vector         
                      , zellige
