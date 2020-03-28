@@ -37,7 +37,7 @@ jobs:
     - name: create zip
       run: |
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        zip -r zellige.zip ./zellige
+        7z a zellige.zip ./zellige
 
     - name: Upload zip of binary
       uses: actions/upload-artifact@v1
