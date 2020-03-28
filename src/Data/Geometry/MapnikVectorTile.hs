@@ -46,12 +46,10 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO VectorTileTypes.VectorTile
+readMvt :: FilePath -> IO (Either Text.Text VectorTile.VectorTile)
 readMvt filePath = do
-    b <- ByteString.readFile filePath
-    let t = VectorTile.tile b
-        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> Text.unpack a)
-    pure (either rawDecodeError id t)
+  b <- ByteString.readFile filePath
+  pure (VectorTile.tile b)
 
 -- Lib
 

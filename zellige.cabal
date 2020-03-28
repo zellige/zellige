@@ -87,6 +87,7 @@ test-suite zellige-test
   main-is:             Spec.hs
   build-depends:       base
                      , aeson
+                     , bytestring
                      , containers
                      , errors
                      , geojson >= 3.0.4
@@ -102,6 +103,7 @@ test-suite zellige-test
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.GeoJsonToMvtSpec
                      , Data.Geometry.DouglasPeuckerSpec
+                     , Data.Geometry.MapnikVectorTileSpec
                      , Data.Geometry.SphericalMercatorSpec
                      , Data.Geometry.Types.GeographySpec
                      , Data.Geometry.Types.MvtFeaturesSpec

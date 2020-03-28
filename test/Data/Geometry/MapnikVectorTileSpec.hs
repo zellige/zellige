@@ -5,11 +5,13 @@ module Data.Geometry.MapnikVectorTileSpec where
 import qualified Control.Error.Util             as ErrorUtil
 import qualified Control.Monad                  as ControlMonad
 import qualified Control.Monad.IO.Class         as MonadIO
-import           Control.Monad.Trans.Maybe      as TransMaybe
+import qualified Control.Monad.Trans.Maybe      as TransMaybe
 import qualified Data.ByteString.Lazy           as LazyByteString
 import qualified Data.HashMap.Lazy              as LazyHashMap
+import qualified Data.Text                      as Text
 import           Test.Hspec                     (Expectation, Spec, describe,
-                                                 it, shouldBe)
+                                                 expectationFailure, it,
+                                                 shouldBe)
 
 
 import qualified Data.Geometry.MapnikVectorTile as MapnikVectorTile
@@ -23,14 +25,27 @@ testReadFixtures :: Spec
 testReadFixtures =
   describe "all tests" $ do
     it "MVT test 001: Empty tile" $ do
-      inputTile <- MapnikVectorTile.readMvt "./test/mvt-fixtures/fixtures/001/tile.mvt"
-      LazyHashMap.size (VectorTileTypes._layers inputTile) `shouldBe` 0
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/001/tile.mvt"
+      let expectations layers = LazyHashMap.size layers `shouldBe` 0
+      shouldBeSuccess layersOrErr expectations
     it "MVT test 002: Tile with single point feature without id" $ do
-      inputTile <- MapnikVectorTile.readMvt "./test/mvt-fixtures/fixtures/002/tile.mvt"
-      let layers = VectorTileTypes._layers inputTile
-      LazyHashMap.size layers `shouldBe` 1
-      checkLayer layers
-      pure ()
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/002/tile.mvt"
+      let expectations layers = do
+            LazyHashMap.size layers `shouldBe` 1
+            checkLayer layers
+      shouldBeSuccess layersOrErr expectations
+    it "MVT test 003: Tile with single point with missing geometry type" $ do
+      layers <- getLayers "./test/mvt-fixtures/fixtures/003/tile.mvt"
+      either (shouldBe "Geometry type of UNKNOWN given.") (const (expectationFailure "Should've failed")) layers
+
+shouldBeSuccess :: Either Text.Text t -> (t -> Expectation) -> Expectation
+shouldBeSuccess layersOrErr expectations =
+  either (expectationFailure . Text.unpack) expectations layersOrErr
+
+getLayers :: FilePath -> IO (Either Text.Text (LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer))
+getLayers file = do
+  inputTile <- MapnikVectorTile.readMvt file
+  pure $ fmap VectorTileTypes._layers inputTile
 
 checkLayer :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer -> Expectation
 checkLayer layers = ControlMonad.void $ TransMaybe.runMaybeT $ do
