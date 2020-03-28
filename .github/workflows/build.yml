@@ -81,7 +81,7 @@ jobs:
       shell: powershell -Command "& '{0}'"
       run: |
         stack install --stack-yaml stack-ci.yaml --local-bin-path .
-        7z a zellige.zip ./zellige
+        7z a zellige.zip ./zellige.exe
 
     - name: Upload zip of binary
       uses: actions/upload-artifact@v1
