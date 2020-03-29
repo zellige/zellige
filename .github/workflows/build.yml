@@ -16,15 +16,35 @@ jobs:
     - name: Cache Stack downloads
       uses: actions/cache@v1
       env:
-        cache-name: cache-stack-modules
+        cache-name: cache-zellige-stack-modules-linux
       with:
         path: /home/runner/.stack/
-        key: ${{ hashFiles('stack.yaml.lock') }}
-      
+        key: ${{ hashFiles('**/stack.yaml.lock') }}
+
+    - name: Cache Stack Build
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-zellige-stack-local-modules-linux
+      with:
+        path: .stack-work/
+        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+
     - name: stack install, build and test
       run: |
         stack build
         stack test
+
+    - name: create zip
+      run: |
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        zip -r zellige.zip ./zellige
+
+    - name: Upload zip of binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: zellige-linux
+        path: ./zellige.zip
+
 
   build_windows:
     runs-on: windows-latest
@@ -39,12 +59,32 @@ jobs:
     - name: Cache Stack downloads
       uses: actions/cache@v1
       env:
-        cache-name: cache-stack-modules
+        cache-name: cache-zellige-stack-modules-windows
       with:
-        path: /home/runner/.stack/
-        key: ${{ hashFiles('stack.yaml.lock') }}
+        path: C:\Users\runneradmin\AppData\Roaming\stack
+        key: ${{ hashFiles('**/stack.yaml.lock') }}
+
+    - name: Cache Stack Build
+      uses: actions/cache@v1
+      env:
+        cache-name: cache-zellige-stack-local-modules-windows
+      with:
+        path: d:\a\zellige\zellige\.stack-work
+        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
         stack build
         stack test
+
+    - name: create zip
+      shell: powershell -Command "& '{0}'"
+      run: |
+        stack install --stack-yaml stack-ci.yaml --local-bin-path .
+        7z a zellige.zip ./zellige.exe
+
+    - name: Upload zip of binary
+      uses: actions/upload-artifact@v1
+      with:
+        name: zellige-windows
+        path: ./zellige.zip
