@@ -35,8 +35,14 @@ testReadFixtures =
             checkLayer layers
       shouldBeSuccess layersOrErr expectations
     it "MVT test 003: Tile with single point with missing geometry type" $ do
-      layers <- getLayers "./test/mvt-fixtures/fixtures/003/tile.mvt"
-      either (shouldBe "Geometry type of UNKNOWN given.") (const (expectationFailure "Should've failed")) layers
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/003/tile.mvt"
+      either (`shouldBe` "Geometry type of UNKNOWN given.") (const (expectationFailure "Should've failed")) layersOrErr
+    it "MVT test 004: Tile with single point with missing geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/004/tile.mvt"
+      either (`shouldBe` "No points given!") (const (expectationFailure "Should've failed")) layersOrErr
+    it "MVT test 005: Tile with single point with broken tags array" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/005/tile.mvt"
+      either (`shouldBe` "Uneven number of parameters given.") (const (expectationFailure "Should've failed")) layersOrErr
 
 shouldBeSuccess :: Either Text.Text t -> (t -> Expectation) -> Expectation
 shouldBeSuccess layersOrErr expectations =

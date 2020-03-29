@@ -47,46 +47,42 @@ module Data.Geometry.VectorTile.Internal
   ) where
 
 import           Control.Applicative
-                                                                                   ((<|>))
+                                                                                       ((<|>))
 import           Control.Monad
-                                                                                   (foldM,
-                                                                                   void,
-                                                                                   (>=>))
+                                                                                       (foldM,
+                                                                                       void,
+                                                                                       (>=>))
 import           Control.Monad.Except
 import           Control.Monad.State.Strict
 import           Data.Bits
-import qualified Data.ByteString.Lazy                                             as BL
-import           Data.Foldable
-                                                                                   (fold,
-                                                                                   foldl',
-                                                                                   foldlM,
-                                                                                   toList)
-import qualified Data.HashMap.Strict                                              as M
-import qualified Data.HashSet                                                     as HS
-import           Data.Int
-import           Data.List
-                                                                                   (unfoldr)
-import           Data.Maybe
-                                                                                   (fromJust)
-import qualified Data.Maybe                                                       as Maybe
-import qualified Data.Sequence                                                    as Seq
-import           Data.Text
-                                                                                   (Text,
-                                                                                   pack)
-import           Data.Word
+import qualified Data.ByteString.Lazy                                                 as BL
+import qualified Data.Foldable                                                        as Foldable
 import qualified Data.Geometry.VectorTile.Geometry                                    as G
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
+import qualified Data.Geometry.VectorTile.Types                                       as VT
 import           Data.Geometry.VectorTile.Util
-import qualified Data.Geometry.VectorTile.Types                                  as VT
+import qualified Data.HashMap.Strict                                                  as M
+import qualified Data.HashSet                                                         as HS
+import           Data.Int
+import           Data.List
+                                                                                       (unfoldr)
+import           Data.Maybe
+                                                                                       (fromJust)
+import qualified Data.Maybe                                                           as Maybe
+import qualified Data.Sequence                                                        as Seq
+import           Data.Text
+                                                                                       (Text,
+                                                                                       pack)
+import           Data.Word
 import           Text.Printf
 import           Text.ProtocolBuffers.Basic
-                                                                                   (Utf8 (..),
-                                                                                   defaultValue,
-                                                                                   utf8)
+                                                                                       (Utf8 (..),
+                                                                                       defaultValue,
+                                                                                       utf8)
 
 ---
 
@@ -110,7 +106,7 @@ class Protobuffable a where
 
 instance Protobuffable VT.VectorTile where
   fromProtobuf raw = do
-    ls <- traverse fromProtobuf . toList $ Tile.layers raw
+    ls <- traverse fromProtobuf . Foldable.toList $ Tile.layers raw
     pure . VT.VectorTile . M.fromList $ map (\l -> (VT._name l, l)) ls
 
   toProtobuf vt = Tile.Tile { Tile.layers    = Seq.fromList . map toProtobuf . M.elems $ VT._layers vt
@@ -135,7 +131,7 @@ instance Protobuffable VT.Layer where
                              , Layer.ext'field = defaultValue }
     where (ks,vs) = totalMeta (VT._points l) (VT._linestrings l) (VT._polygons l)
           (km,vm) = (M.fromList $ zip ks [0..], M.fromList $ zip vs [0..])
-          fs = fold [ fmap (unfeats km vm GeomType.POINT) (VT._points l)
+          fs = Foldable.fold [ fmap (unfeats km vm GeomType.POINT) (VT._points l)
                     , fmap (unfeats km vm GeomType.LINESTRING) (VT._linestrings l)
                     , fmap (unfeats km vm GeomType.POLYGON) (VT._polygons l) ]
 
@@ -190,7 +186,7 @@ instance ProtobufGeom G.LineString where
           f [] = pure Nothing
           f _  = throwError "LineString decode: Invalid command sequence given."
 
-  toCommands ls = fold $ evalState (traverse f ls) (G.Point 0 0)
+  toCommands ls = Foldable.fold $ evalState (traverse f ls) (G.Point 0 0)
     where f (G.LineString ps) = do
             l <- mapM collapse ps
             pure $ case Seq.viewl l of
@@ -237,14 +233,14 @@ instance ProtobufGeom G.Polygon where
               (is,v') = Seq.breakl (Maybe.maybe False (>0) . G.area) t
           g _ = Nothing
 
-  toCommands ps = fold $ evalState (traverse f ps) (G.Point 0 0)
+  toCommands ps = Foldable.fold $ evalState (traverse f ps) (G.Point 0 0)
     where f :: G.Polygon -> State G.Point [Command]
           f (G.Polygon (p Seq.:|> _) i) = do   -- Exclude the final point.
             x <- mapM collapse p
             case x of
               (h Seq.:<| t) -> do
                 let cs = [ MoveTo (Seq.singleton h), LineTo t, ClosePath ]
-                fold . (cs :) <$> traverse f (toList i)
+                Foldable.fold . (cs :) <$> traverse f (Foldable.toList i)
               _ -> pure []
           f _ = pure []
 
@@ -330,12 +326,12 @@ uncommands = Seq.fromList >=> f
 -- is not possible.
 feats :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
-feats keys vals fs = foldlM g (Feats mempty mempty mempty) fs
+feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty) fs
   where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (GeomVec g))
         f x = VT.Feature
           <$> pure (maybe 0 fromIntegral $ Feature.id x)
           <*> getMeta keys vals (Feature.tags x)
-          <*> (fromCommands . commands . toList $ Feature.geometry x)
+          <*> (fromCommands . commands . Foldable.toList $ Feature.geometry x)
 
         g feets@(Feats ps ls po) fe = case Feature.type' fe of
           Just GeomType.POINT      -> (\fe' -> feets { featPoints = ps Seq.|> fe' }) <$> f fe
@@ -349,8 +345,9 @@ data Feats = Feats { featPoints :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
 
 getMeta :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap BL.ByteString VT.Val)
 getMeta keys vals tags = do
-  let kv = pairsWith fromIntegral (toList tags)
-  foldM (\acc (G.Point k v) -> (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)) M.empty kv
+  let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
+  kv <- safePairsWith fromIntegral tags
+  foldM addKeys M.empty kv
 
 {- TO PROTOBUF -}
 
@@ -383,7 +380,7 @@ unfeats keys vals gt fe = Feature.Feature
 
 -- | Transform a `Seq` of `Point`s into one of Z-encoded Parameter ints.
 params :: Seq.Seq G.Point -> Seq.Seq Word32
-params = foldl' (\acc (G.Point a b) -> acc Seq.|> zig a Seq.|> zig b) Seq.Empty
+params = Foldable.foldl' (\acc (G.Point a b) -> acc Seq.|> zig a Seq.|> zig b) Seq.Empty
 
 -- | Expand a pair of diffs from some reference point into that of a `Point` value.
 expand :: G.Point -> Seq.Seq G.Point -> Seq.Seq G.Point
