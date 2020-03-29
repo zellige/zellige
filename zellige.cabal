@@ -30,6 +30,7 @@ library
                      , Data.Geometry.MapnikVectorTile
                      , Data.Geometry.Simplify
                      , Data.Geometry.SphericalMercator
+                     , Data.Geometry.WindingOrder
                      , Data.Geometry.Types.Config
                      , Data.Geometry.Types.Geography
                      , Data.Geometry.Types.LayerConfig
@@ -101,10 +102,12 @@ test-suite zellige-test
                      , vector         
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
-                     , Data.Geometry.GeoJsonToMvtSpec
                      , Data.Geometry.DouglasPeuckerSpec
                      , Data.Geometry.MapnikVectorTileSpec
+                     , Data.Geometry.GeoJsonToMvtSpec
+                     , Data.Geometry.PolygonSpec
                      , Data.Geometry.SphericalMercatorSpec
+                     , Data.Geometry.WindingOrderSpec
                      , Data.Geometry.Types.GeographySpec
                      , Data.Geometry.Types.MvtFeaturesSpec
                      , Data.SpecHelper

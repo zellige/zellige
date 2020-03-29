@@ -13,6 +13,7 @@ import qualified Data.Aeson                            as Aeson
 import qualified Data.Foldable                         as Foldable
 import qualified Data.Geometry.Simplify.DouglasPeucker as SimplifyDouglasPeucker
 import qualified Data.Geometry.Types.Config            as TypesConfig
+import qualified Data.Geometry.WindingOrder            as WindingOrder
 import qualified Data.Geospatial                       as Geospatial
 import qualified Data.LinearRing                       as LinearRing
 import qualified Data.LineString                       as LineString
@@ -54,17 +55,11 @@ mapFeature algo geometry =
    where
      foldOver = foldr (\geom acc -> mapFeature algo geom Sequence.<| acc) Sequence.empty
 
-simplifyUsing :: TypesConfig.SimplificationAlgorithm -> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
-simplifyUsing TypesConfig.NoAlgorithm    = id
-simplifyUsing TypesConfig.DouglasPeucker = SimplifyDouglasPeucker.douglasPeucker 1.0
-simplifyUsing TypesConfig.Visvalingam    = id
-
 simplifyLineAcc :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Geospatial.GeoFeature a -> Sequence.Seq (Geospatial.GeoFeature a) -> Sequence.Seq (Geospatial.GeoFeature a)
 simplifyLineAcc algo line (Geospatial.GeoFeature bbox _ props fId) acc =
   case simplifyLine algo line of
     Just res -> Geospatial.GeoFeature bbox (Geospatial.Line (Geospatial.GeoLine res)) props fId Sequence.<| acc
     Nothing  -> acc
-
 simplifyLine :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoLine -> Maybe (LineString.LineString Geospatial.GeoPositionWithoutCRS)
 simplifyLine algo (Geospatial.GeoLine points) = either (const Nothing) Just . Validation.toEither $ LineString.fromSeq (createSimplifiedLineString algo points)
 
@@ -88,13 +83,15 @@ simplifyPolygonAcc algo (Geospatial.GeoPolygon polygon) (Geospatial.GeoFeature b
     Just res -> Geospatial.GeoFeature bbox (Geospatial.Polygon (Geospatial.GeoPolygon res)) props fId Sequence.<| acc
     Nothing  -> acc
 
-simplifyPolygon :: Traversable t => TypesConfig.SimplificationAlgorithm -> t (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
+simplifyPolygon :: TypesConfig.SimplificationAlgorithm -> Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS) -> Maybe (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS))
 simplifyPolygon algo polygon =
   if Sequence.null simplifyGeoPolygon
     then Nothing
     else Just simplifyGeoPolygon
   where
-    simplifyGeoPolygon = Foldable.foldr (\points acc -> either (const acc) (Sequence.<| acc) (Validation.toEither . LinearRing.fromSeq $ createSimplifiedLinearRing algo points)) Sequence.empty polygon
+    windingList = Sequence.fromList (WindingOrder.Clockwise : repeat WindingOrder.AntiClockwise)
+    simplifyGeoPolygon = Foldable.foldr (\(points, windingOrder) acc -> either (const acc) (Sequence.<| acc) (Validation.toEither . LinearRing.fromSeq $ createSimplifiedLinearRing algo windingOrder points)) Sequence.empty (Sequence.zip polygon windingList)
+
 
 simplifyPolygonsAcc :: TypesConfig.SimplificationAlgorithm -> Geospatial.GeoMultiPolygon -> Geospatial.GeoFeature a -> Sequence.Seq (Geospatial.GeoFeature a) -> Sequence.Seq (Geospatial.GeoFeature a)
 simplifyPolygonsAcc algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFeature bbox _ props fId) acc =
@@ -102,7 +99,7 @@ simplifyPolygonsAcc algo (Geospatial.GeoMultiPolygon polygons) (Geospatial.GeoFe
     Just res -> Geospatial.GeoFeature bbox (Geospatial.MultiPolygon (Geospatial.GeoMultiPolygon res)) props fId Sequence.<| acc
     Nothing  -> acc
 
-simplifyPolygons :: (Traversable t1, Traversable t2) => TypesConfig.SimplificationAlgorithm -> t1 (t2 (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
+simplifyPolygons :: TypesConfig.SimplificationAlgorithm -> Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)) -> Maybe (Sequence.Seq (Sequence.Seq (LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS)))
 simplifyPolygons algo polygons =
   if Sequence.null foldedPolys
     then Nothing
@@ -112,7 +109,12 @@ simplifyPolygons algo polygons =
     simplifyGeoPolygons = fmap (simplifyPolygon algo) polygons
 
 createSimplifiedLineString :: TypesConfig.SimplificationAlgorithm -> LineString.LineString Geospatial.GeoPositionWithoutCRS -> Sequence.Seq Geospatial.GeoPositionWithoutCRS
-createSimplifiedLineString algo lineString = fmap Geospatial.GeoPointXY (simplifyUsing algo (fmap Geospatial.retrieveXY (LineString.toSeq lineString)))
+createSimplifiedLineString algo lineString = fmap Geospatial.GeoPointXY (simplifyUsing algo WindingOrder.Clockwise (fmap Geospatial.retrieveXY (LineString.toSeq lineString)))
 
-createSimplifiedLinearRing :: TypesConfig.SimplificationAlgorithm -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Sequence.Seq Geospatial.GeoPositionWithoutCRS
-createSimplifiedLinearRing algo linearRing = fmap Geospatial.GeoPointXY (simplifyUsing algo (fmap Geospatial.retrieveXY (LinearRing.toSeq linearRing)))
+createSimplifiedLinearRing :: TypesConfig.SimplificationAlgorithm -> WindingOrder.WindingOrder -> LinearRing.LinearRing Geospatial.GeoPositionWithoutCRS -> Sequence.Seq Geospatial.GeoPositionWithoutCRS
+createSimplifiedLinearRing algo windingOrder linearRing = fmap Geospatial.GeoPointXY (simplifyUsing algo windingOrder (fmap Geospatial.retrieveXY (LinearRing.toSeq linearRing)))
+
+simplifyUsing :: TypesConfig.SimplificationAlgorithm -> WindingOrder.WindingOrder -> Sequence.Seq Geospatial.PointXY -> Sequence.Seq Geospatial.PointXY
+simplifyUsing TypesConfig.NoAlgorithm  _  = id
+simplifyUsing TypesConfig.DouglasPeucker windingOrder = WindingOrder.ensureOrder windingOrder . SimplifyDouglasPeucker.douglasPeucker 1.0
+simplifyUsing TypesConfig.Visvalingam  _  = id
