@@ -56,10 +56,11 @@ getLayers file = do
 checkLayer :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer -> Expectation
 checkLayer layers = ControlMonad.void $ TransMaybe.runMaybeT $ do
     layer <- ErrorUtil.hoistMaybe (LazyHashMap.lookup "hello" layers)
-    MonadIO.liftIO $ VectorTileTypes._name layer `shouldBe` "hello"
-    MonadIO.liftIO $ VectorTileTypes._version layer `shouldBe` 2
-    MonadIO.liftIO $ VectorTileTypes._extent layer `shouldBe` 4096
-    MonadIO.liftIO $ VectorTileTypes.numberOfFeatures layer `shouldBe` 1
+    MonadIO.liftIO $ do
+      VectorTileTypes._name layer `shouldBe` "hello"
+      VectorTileTypes._version layer `shouldBe` 2
+      VectorTileTypes._extent layer `shouldBe` 4096
+      VectorTileTypes.numberOfFeatures layer `shouldBe` 1
 
 
 
