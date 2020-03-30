@@ -30,10 +30,7 @@ testReadFixtures =
       shouldBeSuccess layersOrErr expectations
     it "MVT test 002: Tile with single point feature without id" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/002/tile.mvt"
-      let expectations layers = do
-            LazyHashMap.size layers `shouldBe` 1
-            checkLayer layers
-      shouldBeSuccess layersOrErr expectations
+      shouldBeSuccess layersOrErr checkLayer
     it "MVT test 003: Tile with single point with missing geometry type" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/003/tile.mvt"
       either (`shouldBe` "Geometry type of UNKNOWN given.") (const (expectationFailure "Should've failed")) layersOrErr
@@ -55,6 +52,7 @@ getLayers file = do
 
 checkLayer :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer -> Expectation
 checkLayer layers = ControlMonad.void $ TransMaybe.runMaybeT $ do
+    MonadIO.liftIO $ LazyHashMap.size layers `shouldBe` 1
     layer <- ErrorUtil.hoistMaybe (LazyHashMap.lookup "hello" layers)
     MonadIO.liftIO $ do
       VectorTileTypes._name layer `shouldBe` "hello"
