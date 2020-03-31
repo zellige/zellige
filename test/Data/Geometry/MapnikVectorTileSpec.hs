@@ -69,7 +69,7 @@ testReadFixtures =
       either (\x -> Text.unpack x `shouldContain` "Unknown field found or failure parsing field") (const (expectationFailure "Should've failed")) layersOrErr
     it "MVT test 014: Tile layer without a name" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/014/tile.mvt"
-      either (\x -> Text.unpack x `shouldContain` "Required fields missing when processing ProtoName {protobufName = FIName") (const (expectationFailure "Should've failed")) layersOrErr
+      either (\x -> Text.unpack x `shouldContain` "Required fields missing when processing ProtoName") (const (expectationFailure "Should've failed")) layersOrErr
     it "MVT test 015: Two layers with the same name" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/015/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -79,7 +79,57 @@ testReadFixtures =
     it "MVT test 017: Valid point geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/017/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      shouldBeSuccess layersOrErr (checkLayerWith checkForPoint)
+      let expectedPoints = Sequence.singleton (VectorTileGeometry.Point 25 17)
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoints))
+    it "MVT test 018: Valid linestring geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/018/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedLineStrings))
+    it "MVT test 019: Valid polygon geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/019/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let expectedPolygons = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedPolygons))
+    it "MVT test 020: Valid multipoint geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/020/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let expectedPoints = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoints))
+    it "MVT test 021: Valid multilinestring geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/021/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let expectedLineStrings = Sequence.fromList [VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]), VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 1 1, VectorTileGeometry.Point 3 5])]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedLineStrings))
+    it "MVT test 022: Valid multipolygon geometry" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/022/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let expectedPolygons = Sequence.fromList [
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point 0 0, VectorTileGeometry.Point 10 0, VectorTileGeometry.Point 10 10, VectorTileGeometry.Point 0 10, VectorTileGeometry.Point 0 0])
+              Sequence.empty,
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point 11 11, VectorTileGeometry.Point 20 11, VectorTileGeometry.Point 20 20, VectorTileGeometry.Point 11 20, VectorTileGeometry.Point 11 11])
+              (Sequence.fromList [
+                VectorTileGeometry.Polygon
+                  (Sequence.fromList [
+                    VectorTileGeometry.Point 13 13, VectorTileGeometry.Point 13 17, VectorTileGeometry.Point 17 17, VectorTileGeometry.Point 17 13, VectorTileGeometry.Point 13 13]
+                  )
+                Sequence.empty
+              ])
+            ]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedPolygons))
+    it "MVT test 023: Invalid layer: missing layer name" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/023/tile.mvt"
+      either (\x -> Text.unpack x `shouldContain` "Required fields missing when processing ProtoName") (const (expectationFailure "Should've failed")) layersOrErr
+    it "MVT test 024: Missing layer version" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/024/tile.mvt"
+      either (\x -> Text.unpack x `shouldContain` "Required fields missing when processing ProtoName") (const (expectationFailure "Should've failed")) layersOrErr
+    it "MVT test 025: Layer without features" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/025/tile.mvt"
+      either (`shouldBe` "VectorTile.features: `[RawFeature]` empty") (const (expectationFailure "Should've failed")) layersOrErr
 
 shouldBeSuccess :: Either Text.Text t -> (t -> Expectation) -> Expectation
 shouldBeSuccess layersOrErr expectations =
@@ -106,13 +156,27 @@ basicLayerChecks layer = do
   VectorTileTypes._extent layer `shouldBe` 4096
   VectorTileTypes.numberOfFeatures layer `shouldBe` 1
 
-checkForPoint :: VectorTileTypes.Layer -> IO ()
-checkForPoint layer = do
-  let expectedSeq = Sequence.singleton (VectorTileGeometry.Point 25 17)
-      expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+checkForPoints :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
+checkForPoints expectedSeq layer = do
+  let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
       expectedPoints = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
   VectorTileTypes._points layer `shouldBe` expectedPoints
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
   VectorTileTypes._polygons layer `shouldBe` Sequence.empty
 
+checkForLineStrings :: Sequence.Seq VectorTileGeometry.LineString -> VectorTileTypes.Layer -> IO ()
+checkForLineStrings expectedSeq layer = do
+  let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+      expectedLineString = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+  VectorTileTypes._points layer `shouldBe` Sequence.empty
+  VectorTileTypes._linestrings layer `shouldBe` expectedLineString
+  VectorTileTypes._polygons layer `shouldBe` Sequence.empty
+
+checkForPolygons :: Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()
+checkForPolygons expectedSeq layer = do
+  let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+      expectedPolygon = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+  VectorTileTypes._points layer `shouldBe` Sequence.empty
+  VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
+  VectorTileTypes._polygons layer `shouldBe` expectedPolygon
 
