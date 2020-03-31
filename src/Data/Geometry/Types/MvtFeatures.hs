@@ -10,25 +10,25 @@
 
 module Data.Geometry.Types.MvtFeatures where
 
-import qualified Data.Aeson                                                       as Aeson
-import qualified Data.ByteString.Lazy                                             as ByteStringLazy
-import qualified Data.Foldable                                                    as Foldable
-import qualified Data.Geospatial                                                  as Geospatial
-import qualified Data.Hashable                                                    as Hashable
-import qualified Data.HashMap.Strict                                              as HashMapStrict
-import qualified Data.Scientific                                                  as Scientific
-import qualified Data.Sequence                                                    as Sequence
-import qualified Data.Text                                                        as Text
-import qualified Data.Text.Encoding                                               as TextEncoding
-import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Aeson                                                           as Aeson
+import qualified Data.ByteString.Lazy                                                 as ByteStringLazy
+import qualified Data.Foldable                                                        as Foldable
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
-import           Prelude                                                          hiding
-                                                                                   (Left,
-                                                                                   Right)
-import qualified Text.ProtocolBuffers.Basic                                       as ProtocolBuffersBasic
+import qualified Data.Geometry.VectorTile.VectorTile                                  as VectorTile
+import qualified Data.Geospatial                                                      as Geospatial
+import qualified Data.Hashable                                                        as Hashable
+import qualified Data.HashMap.Strict                                                  as HashMapStrict
+import qualified Data.Scientific                                                      as Scientific
+import qualified Data.Sequence                                                        as Sequence
+import qualified Data.Text                                                            as Text
+import qualified Data.Text.Encoding                                                   as TextEncoding
+import           Prelude                                                              hiding
+                                                                                       (Left,
+                                                                                       Right)
+import qualified Text.ProtocolBuffers.Basic                                           as ProtocolBuffersBasic
 
-import qualified Data.Geometry.Types.GeoJsonFeatures                              as TypesGeoJsonFeatures
+import qualified Data.Geometry.Types.GeoJsonFeatures                                  as TypesGeoJsonFeatures
 
 mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
 mkPoint fId props p = (Sequence.<|) (VectorTile.Feature fId (convertProps props) p)
@@ -91,15 +91,15 @@ newConvertGeometry :: Sequence.Seq Feature.Feature -> Word -> HashMapStrict.Hash
 newConvertGeometry acc fid convertedProps keys values geom =
   case geom of
     Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> checkAndAdd keys values GeomType.POINT (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPoint g)) acc
-    Geospatial.MultiPoint g   -> checkAndAdd keys values GeomType.POINT (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPoint g)) acc
-    Geospatial.Line g         -> checkAndAdd keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertLineString g)) acc
-    Geospatial.MultiLine g    -> checkAndAdd keys values GeomType.LINESTRING (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiLineString g)) acc
-    Geospatial.Polygon g      -> checkAndAdd keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPolygon g)) acc
-    Geospatial.MultiPolygon g -> checkAndAdd keys values GeomType.POLYGON (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
+    Geospatial.Point g        -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPoint g)) acc
+    Geospatial.MultiPoint g   -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPoint g)) acc
+    Geospatial.Line g         -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertLineString g)) acc
+    Geospatial.MultiLine g    -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiLineString g)) acc
+    Geospatial.Polygon g      -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPolygon g)) acc
+    Geospatial.MultiPolygon g -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
     Geospatial.Collection gs -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
-checkAndAdd :: (VectorTile.ProtobufGeom g, VectorTile.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
+checkAndAdd :: (VectorTile.ProtobufGeom g, VectorTile.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Maybe GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
 checkAndAdd keys values featureType feature@(VectorTile.Feature _ _ geoms) acc =
   if Sequence.null geoms
     then acc

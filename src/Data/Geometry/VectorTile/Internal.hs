@@ -141,9 +141,9 @@ instance Protobuffable VT.Layer where
                              , Layer.ext'field = defaultValue }
     where (ks,vs) = totalMeta (VT._points l) (VT._linestrings l) (VT._polygons l)
           (km,vm) = (M.fromList $ zip ks [0..], M.fromList $ zip vs [0..])
-          fs = Foldable.fold [ fmap (unfeats km vm GeomType.POINT) (VT._points l)
-                    , fmap (unfeats km vm GeomType.LINESTRING) (VT._linestrings l)
-                    , fmap (unfeats km vm GeomType.POLYGON) (VT._polygons l) ]
+          fs = Foldable.fold [ fmap (unfeats km vm (Just GeomType.POINT)) (VT._points l)
+                    , fmap (unfeats km vm (Just GeomType.LINESTRING)) (VT._linestrings l)
+                    , fmap (unfeats km vm (Just GeomType.POLYGON)) (VT._polygons l) ]
 
 instance Protobuffable VT.Val where
   fromProtobuf v = maybe (Left "Value decode: No legal Value type offered") Right $
@@ -347,7 +347,8 @@ feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty) fs
           Just GeomType.POINT      -> (\fe' -> feets { featPoints = ps Seq.|> fe' }) <$> f fe
           Just GeomType.LINESTRING -> (\fe' -> feets { featLines  = ls Seq.|> fe' }) <$> f fe
           Just GeomType.POLYGON    -> (\fe' -> feets { featPolys  = po Seq.|> fe' }) <$> f fe
-          _ -> Left "Geometry type of UNKNOWN given."
+          Just GeomType.UNKNOWN -> Left "Geometry type of UNKNOWN given."
+          Nothing -> Left "Missing geometry type."
 
 data Feats = Feats { featPoints :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
                    , featLines  :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
@@ -375,13 +376,13 @@ totalMeta ps ls polys = (keys, vals)
 unfeats :: ProtobufGeom g
         => M.HashMap BL.ByteString Int
         -> M.HashMap VT.Val Int
-        -> GeomType.GeomType
+        -> Maybe GeomType.GeomType
         -> VT.Feature (GeomVec g)
         -> Feature.Feature
 unfeats keys vals gt fe = Feature.Feature
                             { Feature.id       = Just . fromIntegral $ VT._featureId fe
                             , Feature.tags     = Seq.fromList $ tags fe
-                            , Feature.type'    = Just gt
+                            , Feature.type'    = gt
                             , Feature.geometry = uncommands . toCommands $ VT._geometries fe }
   where tags = unpairs . map f . M.toList . VT._metadata
         f (k,v) = (fromIntegral . fromJust $ M.lookup k keys, fromIntegral . fromJust $ M.lookup v vals)
