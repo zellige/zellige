@@ -130,6 +130,9 @@ testReadFixtures =
     it "MVT test 025: Layer without features" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/025/tile.mvt"
       either (`shouldBe` "VectorTile.features: `[RawFeature]` empty") (const (expectationFailure "Should've failed")) layersOrErr
+    it "MVT test 026: Extra value type" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/026/tile.mvt"
+      either (`shouldBe` "VectorTile.metadata: Fewer keys than values") (const (expectationFailure "Should've failed")) layersOrErr
 
 shouldBeSuccess :: Either Text.Text t -> (t -> Expectation) -> Expectation
 shouldBeSuccess layersOrErr expectations =
