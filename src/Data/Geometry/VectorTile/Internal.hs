@@ -326,6 +326,7 @@ uncommands = Seq.fromList >=> f
 -- is not possible.
 feats :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
+feats Seq.Empty (h Seq.:<| _) _ = Left "VectorTile.keys: Keys empty but has values."
 feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty) fs
   where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (GeomVec g))
         f x = VT.Feature
@@ -344,13 +345,10 @@ data Feats = Feats { featPoints :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
                    , featPolys  :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
 
 getMeta :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap BL.ByteString VT.Val)
-getMeta keys vals tags =
-  if Seq.length vals > Seq.length keys then
-    Left "VectorTile.metadata: Fewer keys than values"
-  else do
-    let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
-    kv <- safePairsWith fromIntegral tags
-    foldM addKeys M.empty kv
+getMeta keys vals tags = do
+  let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
+  kv <- safePairsWith fromIntegral tags
+  foldM addKeys M.empty kv
 
 {- TO PROTOBUF -}
 
