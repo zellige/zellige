@@ -1,6 +1,7 @@
 {-# LANGUAGE DataKinds              #-}
 {-# LANGUAGE DuplicateRecordFields  #-}
 {-# LANGUAGE OverloadedStrings      #-}
+{-# LANGUAGE RecordWildCards        #-}
 {-# LANGUAGE TypeFamilyDependencies #-}
 
 -- |
@@ -73,10 +74,13 @@ import           Data.List
 import           Data.Maybe
                                                                                        (fromJust)
 import qualified Data.Maybe                                                           as Maybe
+import           Data.Monoid
+                                                                                       ((<>))
 import qualified Data.Sequence                                                        as Seq
 import           Data.Text
                                                                                        (Text,
                                                                                        pack)
+import qualified Data.Text.Encoding                                                   as TextEncoding
 import           Data.Word
 import           Text.Printf
 import           Text.ProtocolBuffers.Basic
@@ -107,7 +111,13 @@ class Protobuffable a where
 instance Protobuffable VT.VectorTile where
   fromProtobuf raw = do
     ls <- traverse fromProtobuf . Foldable.toList $ Tile.layers raw
-    pure . VT.VectorTile . M.fromList $ map (\l -> (VT._name l, l)) ls
+    let insertOrFail acc l@VT.Layer{..} =
+              if M.member _name acc then
+                Left $ "Duplicate layer name [" <> TextEncoding.decodeUtf8 (BL.toStrict _name) <> "]"
+              else
+                Right $ M.insert _name l acc
+    x <- Foldable.foldlM insertOrFail M.empty ls
+    pure $ VT.VectorTile x
 
   toProtobuf vt = Tile.Tile { Tile.layers    = Seq.fromList . map toProtobuf . M.elems $ VT._layers vt
                             , Tile.ext'field = defaultValue }
@@ -344,10 +354,7 @@ data Feats = Feats { featPoints :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
                    , featPolys  :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
 
 getMeta :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap BL.ByteString VT.Val)
-getMeta keys vals tags =
-  if Seq.length vals > Seq.length keys then
-    Left "VectorTile.metadata: Must have more keys than values"
-  else do
+getMeta keys vals tags = do
     let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
     kv <- safePairsWith fromIntegral tags
     foldM addKeys M.empty kv
