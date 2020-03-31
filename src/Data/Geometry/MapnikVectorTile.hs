@@ -14,6 +14,7 @@ import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 import qualified Data.Geospatial                     as Geospatial
 import qualified Data.HashMap.Lazy                   as HashMapLazy
 import           Data.Monoid                         ((<>))
+import qualified Data.Sequence                       as Sequence
 import qualified Data.Text                           as Text
 
 import qualified Data.Geometry.Clip                  as Clip
@@ -63,7 +64,7 @@ createMvt TypesConfig.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox
       clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
       simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
       TypesGeoJsonFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
-      layer = VectorTileTypes.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
+      layer = VectorTileTypes.Layer (fromIntegral _version) _name Sequence.empty mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
   pure . VectorTileTypes.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s TypesGeoJsonFeatures.MvtFeatures

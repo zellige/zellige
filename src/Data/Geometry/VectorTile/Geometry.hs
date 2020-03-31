@@ -1,17 +1,19 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.Geometry.VectorTile.Geometry where
 
+import           Data.Foldable (foldl')
+import qualified Data.Foldable as Foldable
 import qualified Data.Sequence as S
-import           Data.Foldable    (foldl')
-import qualified Data.Foldable    as Foldable
-import GHC.Generics (Generic)
+import           GHC.Generics  (Generic)
+
+data Unknown = Unknown deriving (Eq, Show, Generic)
 
 data Point = Point {x :: !Int, y :: !Int} deriving (Eq, Show, Generic)
 
@@ -22,7 +24,7 @@ data Polygon = Polygon { polyPoints :: S.Seq Point
 
 area :: Polygon -> Maybe Double
 area p = fmap sum . sequence $ foldl' (\acc a -> area a : acc) [surveyor $ polyPoints p] (inner p)
-                       
+
 -- | The surveyor's formula for calculating the area of a `Polygon`.
 -- If the value reported here is negative, then the `Polygon` should be
 -- considered an Interior Ring.

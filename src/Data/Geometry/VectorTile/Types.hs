@@ -26,6 +26,7 @@ data Layer
       { -- | The version of the spec we follow. Should always be 2.
         _version     :: Word,
         _name        :: BL.ByteString,
+        _unknowns    :: S.Seq (Feature (S.Seq Unknown)),
         _points      :: S.Seq (Feature (S.Seq Point)),
         _linestrings :: S.Seq (Feature (S.Seq LineString)),
         _polygons    :: S.Seq (Feature (S.Seq Polygon)),
@@ -35,7 +36,7 @@ data Layer
   deriving (Eq, Show, Generic)
 
 numberOfFeatures :: Layer -> Int
-numberOfFeatures l = sum [S.length (_points l), S.length (_linestrings l), S.length (_polygons l)]
+numberOfFeatures l = sum [S.length (_unknowns l), S.length (_points l), S.length (_linestrings l), S.length (_polygons l)]
 
 data Feature gs
   = Feature

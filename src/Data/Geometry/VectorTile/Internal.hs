@@ -98,9 +98,10 @@ type instance Protobuf VT.Layer = Layer.Layer
 type instance Protobuf VT.Val = Value.Value
 
 type family GeomVec g = v | v -> g
-type instance GeomVec G.Point      = Seq.Seq G.Point
-type instance GeomVec G.LineString = Seq.Seq G.LineString
-type instance GeomVec G.Polygon    = Seq.Seq G.Polygon
+type instance GeomVec G.Unknown      = Seq.Seq G.Unknown
+type instance GeomVec G.Point        = Seq.Seq G.Point
+type instance GeomVec G.LineString   = Seq.Seq G.LineString
+type instance GeomVec G.Polygon      = Seq.Seq G.Polygon
 
 -- | A type which can be converted to and from an underlying Protobuf type,
 -- according to the `Protobuf` type family.
@@ -124,9 +125,10 @@ instance Protobuffable VT.VectorTile where
 
 instance Protobuffable VT.Layer where
   fromProtobuf l = do
-    Feats ps ls polys <- feats (utf8 <$> Layer.keys l) (Layer.values l) $ Layer.features l
+    Feats us ps ls polys <- feats (utf8 <$> Layer.keys l) (Layer.values l) $ Layer.features l
     pure VT.Layer { VT._version     = fromIntegral $ Layer.version l
                   , VT._name        = utf8 $ Layer.name l
+                  , VT._unknowns    = us
                   , VT._points      = ps
                   , VT._linestrings = ls
                   , VT._polygons    = polys
@@ -168,6 +170,10 @@ instance Protobuffable VT.Val where
 class ProtobufGeom g where
   fromCommands :: [Command] -> Either Text (GeomVec g)
   toCommands   :: GeomVec g -> [Command]
+
+instance ProtobufGeom G.Unknown where
+  fromCommands _ = Right $ Seq.singleton G.Unknown
+  toCommands _ = []
 
 -- | A valid `RawFeature` of points must contain a single `MoveTo` command
 -- with a count greater than 0.
@@ -336,23 +342,24 @@ uncommands = Seq.fromList >=> f
 -- is not possible.
 feats :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
-feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty) fs
+feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
   where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (GeomVec g))
         f x = VT.Feature
           <$> pure (maybe 0 fromIntegral $ Feature.id x)
           <*> getMeta keys vals (Feature.tags x)
           <*> (fromCommands . commands . Foldable.toList $ Feature.geometry x)
 
-        g feets@(Feats ps ls po) fe = case Feature.type' fe of
-          Just GeomType.POINT      -> (\fe' -> feets { featPoints = ps Seq.|> fe' }) <$> f fe
-          Just GeomType.LINESTRING -> (\fe' -> feets { featLines  = ls Seq.|> fe' }) <$> f fe
-          Just GeomType.POLYGON    -> (\fe' -> feets { featPolys  = po Seq.|> fe' }) <$> f fe
-          Just GeomType.UNKNOWN -> Left "Geometry type of UNKNOWN given."
-          Nothing -> Left "Missing geometry type."
+        g feets@(Feats us ps ls po) fe = case Feature.type' fe of
+          Just GeomType.POINT      -> (\fe' -> feets { featPoints    = ps Seq.|> fe' }) <$> f fe
+          Just GeomType.LINESTRING -> (\fe' -> feets { featLines     = ls Seq.|> fe' }) <$> f fe
+          Just GeomType.POLYGON    -> (\fe' -> feets { featPolys     = po Seq.|> fe' }) <$> f fe
+          Just GeomType.UNKNOWN    -> (\fe' -> feets { featUnknowns  = us Seq.|> fe' }) <$> f fe
+          Nothing                  -> Left "Missing geometry type."
 
-data Feats = Feats { featPoints :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
-                   , featLines  :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
-                   , featPolys  :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
+data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (GeomVec G.Unknown)))
+                   , featPoints   :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
+                   , featLines    :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
+                   , featPolys    :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
 
 getMeta :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap BL.ByteString VT.Val)
 getMeta keys vals tags = do
