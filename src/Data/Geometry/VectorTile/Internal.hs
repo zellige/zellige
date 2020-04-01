@@ -49,14 +49,10 @@ module Data.Geometry.VectorTile.Internal
 
 import           Control.Applicative
                                                                                        ((<|>))
-import           Control.Monad
-                                                                                       (foldM,
-                                                                                       void,
-                                                                                       (>=>))
 import           Control.Monad.Except
 import           Control.Monad.State.Strict
 import           Data.Bits
-import qualified Data.ByteString.Lazy                                                 as BL
+import qualified Data.ByteString.Lazy                                                 as ByteStringLazy
 import qualified Data.Foldable                                                        as Foldable
 import qualified Data.Geometry.VectorTile.Geometry                                    as G
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
@@ -114,7 +110,7 @@ instance Protobuffable VT.VectorTile where
     ls <- traverse fromProtobuf . Foldable.toList $ Tile.layers raw
     let insertOrFail acc l@VT.Layer{..} =
               if M.member _name acc then
-                Left $ "Duplicate layer name [" <> TextEncoding.decodeUtf8 (BL.toStrict _name) <> "]"
+                Left $ "Duplicate layer name [" <> TextEncoding.decodeUtf8 (ByteStringLazy.toStrict _name) <> "]"
               else
                 Right $ M.insert _name l acc
     x <- Foldable.foldlM insertOrFail M.empty ls
@@ -340,7 +336,7 @@ uncommands = Seq.fromList >=> f
 -- > feature :: ProtobufGeom g => RawFeature -> Either Text (Feature g)
 --
 -- is not possible.
-feats :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
+feats :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
 feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
   where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (GeomVec g))
@@ -361,18 +357,18 @@ data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (GeomVec G.Unknown)))
                    , featLines    :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
                    , featPolys    :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
 
-getMeta :: Seq.Seq BL.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap BL.ByteString VT.Val)
+getMeta :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap ByteStringLazy.ByteString VT.Val)
 getMeta keys vals tags = do
     let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
     kv <- safePairsWith fromIntegral tags
-    foldM addKeys M.empty kv
+    Foldable.foldlM addKeys M.empty kv
 
 {- TO PROTOBUF -}
 
 totalMeta :: Seq.Seq (VT.Feature (GeomVec G.Point))
           -> Seq.Seq (VT.Feature (GeomVec G.LineString))
           -> Seq.Seq (VT.Feature (GeomVec G.Polygon))
-          -> ([BL.ByteString], [VT.Val])
+          -> ([ByteStringLazy.ByteString], [VT.Val])
 totalMeta ps ls polys = (keys, vals)
   where keys = HS.toList $ f ps <> f ls <> f polys
         vals = HS.toList $ g ps <> g ls <> g polys
@@ -381,7 +377,7 @@ totalMeta ps ls polys = (keys, vals)
 
 -- | Encode a high-level `Feature` back into its mid-level `RawFeature` form.
 unfeats :: ProtobufGeom g
-        => M.HashMap BL.ByteString Int
+        => M.HashMap ByteStringLazy.ByteString Int
         -> M.HashMap VT.Val Int
         -> Maybe GeomType.GeomType
         -> VT.Feature (GeomVec g)

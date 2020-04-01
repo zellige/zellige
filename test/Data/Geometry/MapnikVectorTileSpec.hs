@@ -1,8 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
+
 module Data.Geometry.MapnikVectorTileSpec where
 
 import qualified Control.Error.Util                as ErrorUtil
+import qualified Control.Exception                 as Exception
 import qualified Control.Monad                     as ControlMonad
 import qualified Control.Monad.IO.Class            as MonadIO
 import qualified Control.Monad.Trans.Maybe         as TransMaybe
@@ -12,7 +14,8 @@ import qualified Data.Sequence                     as Sequence
 import qualified Data.Text                         as Text
 import           Test.Hspec                        (Expectation, Spec, describe,
                                                     expectationFailure, it,
-                                                    shouldBe, shouldContain)
+                                                    shouldBe, shouldContain,
+                                                    shouldThrow)
 
 
 import qualified Data.Geometry.MapnikVectorTile    as MapnikVectorTile
@@ -82,9 +85,8 @@ testReadFixtures =
     it "MVT test 017: Valid point geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/017/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPoints = Sequence.singleton (VectorTileGeometry.Point 25 17)
-          expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoints expectedMetadata))
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
     it "MVT test 018: Valid linestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/018/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -193,6 +195,21 @@ testReadFixtures =
     it "MVT test 039: Default values are actually encoded in the tile" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/039/tile.mvt"
       shouldBeSuccess layersOrErr (checkLayerWith (basicLayerChecks 1))
+    it "MVT test 040: Feature has tags that point to non-existent Key in the layer." $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/040/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+      let
+        badMetadata :: VectorTileTypes.Layer -> IO ()
+        badMetadata layer = do
+            let (h Sequence.:<| _) = VectorTileTypes._points layer
+            Exception.evaluate (VectorTileTypes._metadata h) `shouldThrow` errorCallContains "index out of bounds in call to: Data.Sequence.index 2"
+      shouldBeSuccess layersOrErr (checkLayerWith badMetadata)
+    it "MVT test 042: Feature has tags that point to non-existent Value in the layer." $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/042/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "index out of bounds in call to: Data.Sequence.index 2"
+
+errorCallContains :: Text.Text -> Exception.ErrorCall -> Bool
+errorCallContains s (Exception.ErrorCallWithLocation msg _) = s `Text.isInfixOf` Text.pack msg
 
 shouldBeSuccess :: Either Text.Text t -> (t -> Expectation) -> Expectation
 shouldBeSuccess layersOrErr expectations =
