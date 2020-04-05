@@ -89,8 +89,9 @@ testReadFixtures =
     it "MVT test 018: Valid linestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/018/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]))
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedLineStrings))
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
     it "MVT test 019: Valid polygon geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/019/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -105,8 +106,9 @@ testReadFixtures =
     it "MVT test 021: Valid multilinestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/021/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedLineStrings = Sequence.fromList [VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]), VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 1 1, VectorTileGeometry.Point 3 5])]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedLineStrings))
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+          expectedLineStrings = Sequence.fromList [VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]), VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 1 1, VectorTileGeometry.Point 3 5])]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
     it "MVT test 022: Valid multipolygon geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/022/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -230,6 +232,28 @@ testReadFixtures =
     it "MVT test 045: Invalid point geometry that includes a MoveTo command and only half of the xy coordinates" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/045/tile.mvt"
       Exception.evaluate layersOrErr `shouldThrow` errorCallContains "MoveTo Requires 2 Paramters"
+    -- TODO - This is wrong 2,10 should only be there once - it should remove dupes.
+    it "MVT test 046: Invalid linestring geometry that includes two points in the same position, which is not OGC valid" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/046/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList []
+          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 2 10]))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
+    it "MVT test 047: Invalid point geometry that includes a MoveTo command and only half of the xy coordinates" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/047/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "ClosePath was given a parameter count: 2"
+    it "MVT test 048: Invalid polygon with wrong ClosePath count 0 (must be count 1)" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/048/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "ClosePath was given a parameter count: 0"
+    it "MVT test 049: decoding linestring with int32 overflow in x coordinate" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/049/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList []
+          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2147483647 0, VectorTileGeometry.Point 2147483648 1]))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
+    it "MVT test 050: decoding linestring with int32 overflow in y coordinate" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/050/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList []
+          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 0 (-2147483648), VectorTileGeometry.Point (-1) (-2147483649)]))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
 
 errorCallContains :: Text.Text -> Exception.ErrorCall -> Bool
 errorCallContains s (Exception.ErrorCallWithLocation msg _) = s `Text.isInfixOf` Text.pack msg
@@ -279,12 +303,15 @@ checkForPointsInFeatures expectedMetadatas expectedSeqs layer = do
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
   VectorTileTypes._polygons layer `shouldBe` Sequence.empty
 
-checkForLineStrings :: Sequence.Seq VectorTileGeometry.LineString -> VectorTileTypes.Layer -> IO ()
-checkForLineStrings expectedSeq layer = do
-  let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
-      expectedLineString = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+checkForLineStrings :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.LineString -> VectorTileTypes.Layer -> IO ()
+checkForLineStrings expectedMetadata expectedSeq = checkForLineStringsInFeatures (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+
+checkForLineStringsInFeatures :: Sequence.Seq (LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.LineString) -> VectorTileTypes.Layer -> IO ()
+checkForLineStringsInFeatures expectedMetadatas expectedSeqs layer = do
+  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+      expectedLineStrings = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` Sequence.empty
-  VectorTileTypes._linestrings layer `shouldBe` expectedLineString
+  VectorTileTypes._linestrings layer `shouldBe` expectedLineStrings
   VectorTileTypes._polygons layer `shouldBe` Sequence.empty
 
 checkForPolygons :: Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()

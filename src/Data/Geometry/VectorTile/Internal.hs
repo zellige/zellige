@@ -73,8 +73,7 @@ import           Data.Monoid
 import qualified Data.Sequence                                                        as Seq
 import           Data.Text
                                                                                        (Text,
-                                                                                       pack,
-                                                                                       unpack)
+                                                                                       pack)
 import qualified Data.Text.Encoding                                                   as TextEncoding
 import qualified Data.Word                                                            as Word
 import qualified Text.Printf                                                          as TextPrintf
@@ -299,12 +298,12 @@ commands = Seq.unfoldr go
           Pair 1 count ->
             let (ls, rs) = Seq.splitAt (count * 2) ns
             in case safePairsWith unzig ls of
-                Left x        -> error "MoveTo Requires 2 Paramters"
+                Left _        -> error "MoveTo Requires 2 Paramters"
                 Right goodMts -> Just (MoveTo goodMts, rs)
           Pair 2 count ->
             let (ls, rs) = Seq.splitAt (count * 2) ns
             in case safePairsWith unzig ls of
-                Left x        -> error "LineTo Requires 2 Paramters"
+                Left _        -> error "LineTo Requires 2 Paramters"
                 Right goodMts -> Just (LineTo goodMts, rs)
           Pair 7 _ -> Just (ClosePath, ns)
           _ -> error "Sentinel: You should never see this."

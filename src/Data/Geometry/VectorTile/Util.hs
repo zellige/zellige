@@ -27,12 +27,6 @@ safePairsWith f list = if null err then Right pts else Left "Uneven number of pa
     go (a Seq.:<| Seq.Empty) = (Seq.empty, Seq.singleton a)
     go (a Seq.:<| b Seq.:<| rest) = (Point (f a) (f b) Seq.<| (fst . go $ rest), snd . go $ rest)
 
-pairsWith :: (a -> Int) -> [a] -> Seq.Seq Point
-pairsWith f = Seq.unfoldr g
-  where g []       = Nothing
-        g [_]      = Nothing
-        g (a:b:cs) = Just (Point (f a) (f b), cs)
-
 -- | Flatten a list of pairs. Equivalent to:
 --
 -- > ps ^.. each . both
