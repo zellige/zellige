@@ -50,8 +50,8 @@ module Data.Geometry.VectorTile.Internal
 import           Control.Applicative
                                                                                        ((<|>))
 import           Control.Monad.Except
-import           Control.Monad.State.Strict
-import           Data.Bits
+import qualified Control.Monad.State.Strict                                           as MonadStateStrict
+import qualified Data.Bits                                                            as Bits
 import qualified Data.ByteString.Lazy                                                 as ByteStringLazy
 import qualified Data.Foldable                                                        as Foldable
 import qualified Data.Geometry.VectorTile.Geometry                                    as G
@@ -65,8 +65,6 @@ import           Data.Geometry.VectorTile.Util
 import qualified Data.HashMap.Strict                                                  as M
 import qualified Data.HashSet                                                         as HS
 import           Data.Int
-import           Data.List
-                                                                                       (unfoldr)
 import           Data.Maybe
                                                                                        (fromJust)
 import qualified Data.Maybe                                                           as Maybe
@@ -75,10 +73,11 @@ import           Data.Monoid
 import qualified Data.Sequence                                                        as Seq
 import           Data.Text
                                                                                        (Text,
-                                                                                       pack)
+                                                                                       pack,
+                                                                                       unpack)
 import qualified Data.Text.Encoding                                                   as TextEncoding
-import           Data.Word
-import           Text.Printf
+import qualified Data.Word                                                            as Word
+import qualified Text.Printf                                                          as TextPrintf
 import           Text.ProtocolBuffers.Basic
                                                                                        (Utf8 (..),
                                                                                        defaultValue,
@@ -164,46 +163,46 @@ instance Protobuffable VT.Val where
 -- | Any classical type considered a GIS "geometry". These must be able
 -- to convert between an encodable list of `Command`s.
 class ProtobufGeom g where
-  fromCommands :: [Command] -> Either Text (GeomVec g)
-  toCommands   :: GeomVec g -> [Command]
+  fromCommands :: Seq.Seq Command -> Either Text (GeomVec g)
+  toCommands   :: GeomVec g -> Seq.Seq Command
 
 instance ProtobufGeom G.Unknown where
   fromCommands _ = Right $ Seq.singleton G.Unknown
-  toCommands _ = []
+  toCommands _ = Seq.empty
 
 -- | A valid `RawFeature` of points must contain a single `MoveTo` command
 -- with a count greater than 0.
 instance ProtobufGeom G.Point where
-  fromCommands [ MoveTo ps ] = Right $ expand (G.Point 0 0) ps
-  fromCommands (c : _)       = Left . pack $ printf "Invalid command found in Point feature: %s" (show c)
-  fromCommands []            = Left "No points given!"
+  fromCommands (MoveTo ps Seq.:<| Seq.Empty) = Right $ expand (G.Point 0 0) ps
+  fromCommands (c Seq.:<| _)             = Left . pack $ TextPrintf.printf "Invalid command found in Point feature: %s" (show c)
+  fromCommands Seq.Empty                 = Left "No points given!"
 
   -- | A multipoint geometry must reduce to a single `MoveTo` command.
-  toCommands ps = [ MoveTo $ evalState (mapM collapse ps) (G.Point 0 0) ]
+  toCommands ps = Seq.singleton (MoveTo $ MonadStateStrict.evalState (mapM collapse ps) (G.Point 0 0) )
 
 -- | A valid `RawFeature` of linestrings must contain pairs of:
 --
 -- A `MoveTo` with a count of 1, followed by one `LineTo` command with
 -- a count greater than 0.
 instance ProtobufGeom G.LineString where
-  fromCommands cs = evalStateT (unfoldM f cs) (G.Point 0 0)
-    where f :: [Command] -> StateT G.Point (Either Text) (Maybe (G.LineString, [Command]))
-          f (MoveTo (headP Seq.:<| _) : LineTo ps : rs) = do
-            curr <- get
+  fromCommands cs = MonadStateStrict.evalStateT (unfoldM f cs) (G.Point 0 0)
+    where f :: Seq.Seq Command -> MonadStateStrict.StateT G.Point (Either Text) (Maybe (G.LineString, Seq.Seq Command))
+          f (MoveTo (headP Seq.:<| _) Seq.:<| LineTo ps Seq.:<| rs) = do
+            curr <- MonadStateStrict.get
             let ls = G.LineString . expand curr $ (Seq.<|) headP ps
             case Seq.viewr (G.lsPoints ls) of
-              Seq.EmptyR         -> put curr
-              _ Seq.:> lastLsPts -> put lastLsPts
+              Seq.EmptyR         -> MonadStateStrict.put curr
+              _ Seq.:> lastLsPts -> MonadStateStrict.put lastLsPts
             pure $ Just (ls, rs)
-          f [] = pure Nothing
-          f _  = throwError "LineString decode: Invalid command sequence given."
+          f Seq.Empty = pure Nothing
+          f _         = throwError "LineString decode: Invalid command sequence given."
 
-  toCommands ls = Foldable.fold $ evalState (traverse f ls) (G.Point 0 0)
+  toCommands ls = Foldable.fold $ MonadStateStrict.evalState (traverse f ls) (G.Point 0 0)
     where f (G.LineString ps) = do
             l <- mapM collapse ps
             pure $ case Seq.viewl l of
-              Seq.EmptyL         -> []
-              headL Seq.:< tailL -> [ MoveTo (Seq.singleton headL), LineTo tailL ]
+              Seq.EmptyL         -> Seq.Empty
+              headL Seq.:< tailL -> MoveTo (Seq.singleton headL) Seq.<| LineTo tailL Seq.<| Seq.Empty
 
 -- | A valid `RawFeature` of polygons must contain at least one sequence of:
 --
@@ -215,26 +214,26 @@ instance ProtobufGeom G.LineString where
 -- Performs no sanity checks for malformed Interior Rings.
 instance ProtobufGeom G.Polygon where
   fromCommands cs = do
-    polys <- evalStateT (unfoldM f cs) (G.Point 0 0)
+    polys <- MonadStateStrict.evalStateT (unfoldM f cs) (G.Point 0 0)
     pure $ Seq.unfoldr g polys
-    where f :: [Command] -> StateT G.Point (Either Text) (Maybe (G.Polygon, [Command]))
-          f (MoveTo p : LineTo ps : ClosePath : rs) = do
-            curr <- get
+    where f :: Seq.Seq Command -> MonadStateStrict.StateT G.Point (Either Text) (Maybe (G.Polygon, Seq.Seq Command))
+          f (MoveTo p Seq.:<| LineTo ps Seq.:<| ClosePath Seq.:<| rs) = do
+            curr <- MonadStateStrict.get
             case Seq.viewl p of
               Seq.EmptyL -> do
-                put curr
+                MonadStateStrict.put curr
                 pure Nothing
               headP Seq.:< _ -> do
                 let ps' = expand curr $ (Seq.<|) headP ps
                 case Seq.viewr ps' of
-                  Seq.EmptyR       -> put curr
-                  _ Seq.:> lastPs' -> put lastPs'
+                  Seq.EmptyR       -> MonadStateStrict.put curr
+                  _ Seq.:> lastPs' -> MonadStateStrict.put lastPs'
                 pure $ case Seq.viewl ps' of
                   Seq.EmptyL       -> Nothing
                   headPs' Seq.:< _ -> Just (G.Polygon ((Seq.|>) ps' headPs') mempty, rs)
 
-          f [] = pure Nothing
-          f _  = throwError . pack $ printf "Polygon decode: Invalid command sequence given: %s" (show cs)
+          f Seq.Empty = pure Nothing
+          f _         = throwError . pack $ TextPrintf.printf "Polygon decode: Invalid command sequence given: %s" (show cs)
 
           g :: Seq.Seq G.Polygon -> Maybe (G.Polygon, Seq.Seq G.Polygon)
           g v@(h Seq.:<| t)
@@ -245,16 +244,17 @@ instance ProtobufGeom G.Polygon where
               (is,v') = Seq.breakl (Maybe.maybe False (>0) . G.area) t
           g _ = Nothing
 
-  toCommands ps = Foldable.fold $ evalState (traverse f ps) (G.Point 0 0)
-    where f :: G.Polygon -> State G.Point [Command]
+  toCommands ps = Foldable.fold $ MonadStateStrict.evalState (traverse f ps) (G.Point 0 0)
+    where f :: G.Polygon -> MonadStateStrict.State G.Point (Seq.Seq Command)
           f (G.Polygon (p Seq.:|> _) i) = do   -- Exclude the final point.
             x <- mapM collapse p
             case x of
               (h Seq.:<| t) -> do
-                let cs = [ MoveTo (Seq.singleton h), LineTo t, ClosePath ]
+                let cs = MoveTo (Seq.singleton h) Seq.<| LineTo t Seq.<| ClosePath Seq.<| Seq.empty
+                -- TODO - Come back and make this better.
                 Foldable.fold . (cs :) <$> traverse f (Foldable.toList i)
-              _ -> pure []
-          f _ = pure []
+              _ -> pure Seq.empty
+          f _ = pure Seq.empty
 
 -- | The possible commands, and the values they hold.
 data Command = MoveTo (Seq.Seq G.Point)
@@ -262,55 +262,57 @@ data Command = MoveTo (Seq.Seq G.Point)
              | ClosePath deriving (Eq,Show)
 
 -- | Z-encode a 64-bit Int.
-zig :: Int -> Word32
-zig n = fromIntegral $ shift n 1 `xor` shift n (-63)
+zig :: Int -> Word.Word32
+zig n = fromIntegral $ Bits.shift n 1 `Bits.xor` Bits.shift n (-63)
 {-# INLINE zig #-}
 
 -- | Decode a Z-encoded Word32 into a 64-bit Int.
-unzig :: Word32 -> Int
+unzig :: Word.Word32 -> Int
 unzig n = fromIntegral (fromIntegral unzigged :: Int32)
-  where unzigged = shift n (-1) `xor` negate (n .&. 1)
+  where unzigged = Bits.shift n (-1) `Bits.xor` negate (n Bits..&. 1)
 {-# INLINE unzig #-}
 
 -- | Divide a "Command Integer" into its @(Command,Count)@.
 -- Throws if illegal values are given.
-unsafeParseCmd :: Word32 -> Pair
+unsafeParseCmd :: Word.Word32 -> Pair
 unsafeParseCmd n = case cmd of
   1 -> Pair 1 (fromIntegral count)
   2 -> Pair 2 (fromIntegral count)
   7 | count == 1 -> Pair 7 1
     | otherwise  -> error $ "ClosePath was given a parameter count: " <> show count
-  m -> error $ printf "Invalid command integer %d found in: %X" m n
-  where cmd = n .&. 7
-        count = shift n (-3)
+  m -> error $ TextPrintf.printf "Invalid command integer %d found in: %X" m n
+  where cmd = n Bits..&. 7
+        count = Bits.shift n (-3)
 
 -- | Recombine a Command ID and parameter count into a Command Integer.
-unparseCmd :: Pair -> Word32
-unparseCmd (Pair cmd count) = fromIntegral $ (cmd .&. 7) .|. shift count 3
+unparseCmd :: Pair -> Word.Word32
+unparseCmd (Pair cmd count) = fromIntegral $ (cmd Bits..&. 7) Bits..|. Bits.shift count 3
 {-# INLINE unparseCmd #-}
 
 -- | Attempt to parse a list of Command/Parameter integers, as defined here:
 --
 -- https://github.com/mapbox/vector-tile-spec/tree/master/2.1#43-geometry-encoding
-commands :: [Word32] -> [Command]
-commands = unfoldr go
-  where go [] = Nothing
-        go (n : ns) = case unsafeParseCmd n of
+commands :: Seq.Seq Word.Word32 -> Seq.Seq Command
+commands = Seq.unfoldr go
+  where go Seq.Empty = Nothing
+        go (n Seq.:<| ns) = case unsafeParseCmd n of
           Pair 1 count ->
-            let (ls, rs) = splitAt (count * 2) ns
-                mts = MoveTo $ pairsWith unzig ls
-            in Just (mts, rs)
+            let (ls, rs) = Seq.splitAt (count * 2) ns
+            in case safePairsWith unzig ls of
+                Left x        -> error "MoveTo Requires 2 Paramters"
+                Right goodMts -> Just (MoveTo goodMts, rs)
           Pair 2 count ->
-            let (ls, rs) = splitAt (count * 2) ns
-                mts = LineTo $ pairsWith unzig ls
-            in Just (mts, rs)
+            let (ls, rs) = Seq.splitAt (count * 2) ns
+            in case safePairsWith unzig ls of
+                Left x        -> error "LineTo Requires 2 Paramters"
+                Right goodMts -> Just (LineTo goodMts, rs)
           Pair 7 _ -> Just (ClosePath, ns)
           _ -> error "Sentinel: You should never see this."
 
 -- | Convert a list of parsed `Command`s back into their original Command
 -- and Z-encoded Parameter integer forms.
-uncommands :: [Command] -> Seq.Seq Word32
-uncommands = Seq.fromList >=> f
+uncommands :: Seq.Seq Command -> Seq.Seq Word.Word32
+uncommands = (>>= f)
   where f (MoveTo ps) = unparseCmd (Pair 1 (Seq.length ps)) Seq.<| params ps
         f (LineTo ls) = unparseCmd (Pair 2 (Seq.length ls)) Seq.<| params ls
         f ClosePath   = Seq.singleton $ unparseCmd (Pair 7 1)  -- ClosePath, Count 1.
@@ -343,7 +345,7 @@ feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
         f x = VT.Feature
           <$> pure (maybe 0 fromIntegral $ Feature.id x)
           <*> getMeta keys vals (Feature.tags x)
-          <*> (fromCommands . commands . Foldable.toList $ Feature.geometry x)
+          <*> (fromCommands . commands $ Feature.geometry x)
 
         g feets@(Feats us ps ls po) fe = case Feature.type' fe of
           Just GeomType.POINT      -> (\fe' -> feets { featPoints    = ps Seq.|> fe' }) <$> f fe
@@ -357,7 +359,7 @@ data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (GeomVec G.Unknown)))
                    , featLines    :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
                    , featPolys    :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
 
-getMeta :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word32 -> Either Text (M.HashMap ByteStringLazy.ByteString VT.Val)
+getMeta :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word.Word32 -> Either Text (M.HashMap ByteStringLazy.ByteString VT.Val)
 getMeta keys vals tags = do
     let addKeys acc (G.Point k v) = (\v' -> M.insert (keys `Seq.index` k) v' acc) <$> fromProtobuf (vals `Seq.index` v)
     kv <- safePairsWith fromIntegral tags
@@ -393,7 +395,7 @@ unfeats keys vals gt fe = Feature.Feature
 {- UTIL -}
 
 -- | Transform a `Seq` of `Point`s into one of Z-encoded Parameter ints.
-params :: Seq.Seq G.Point -> Seq.Seq Word32
+params :: Seq.Seq G.Point -> Seq.Seq Word.Word32
 params = Foldable.foldl' (\acc (G.Point a b) -> acc Seq.|> zig a Seq.|> zig b) Seq.Empty
 
 -- | Expand a pair of diffs from some reference point into that of a `Point` value.
@@ -403,11 +405,11 @@ expand curr s = Seq.drop 1 $ Seq.scanl (\(G.Point x y) (G.Point dx dy) -> G.Poin
 -- | Collapse a given `Point` into a pair of diffs, relative to
 -- the previous point in the sequence. The reference point is moved
 -- to the `Point` given.
-collapse :: G.Point -> State G.Point G.Point
+collapse :: G.Point -> MonadStateStrict.State G.Point G.Point
 collapse p = do
-  curr <- get
+  curr <- MonadStateStrict.get
   let diff = G.Point (G.x p - G.x curr) (G.y p - G.y curr)
-  put p
+  MonadStateStrict.put p
   pure diff
 
 unfoldM :: Monad m => (s -> m (Maybe (a, s))) -> s -> m (Seq.Seq a)

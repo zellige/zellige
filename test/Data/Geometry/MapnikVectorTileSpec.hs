@@ -3,15 +3,14 @@
 
 module Data.Geometry.MapnikVectorTileSpec where
 
-import qualified Control.Error.Util                as ErrorUtil
 import qualified Control.Exception                 as Exception
-import qualified Control.Monad                     as ControlMonad
 import qualified Control.Monad.IO.Class            as MonadIO
-import qualified Control.Monad.Trans.Maybe         as TransMaybe
 import qualified Data.ByteString.Lazy              as LazyByteString
+import qualified Data.ByteString.Lazy              as ByteStringLazy
 import qualified Data.HashMap.Lazy                 as LazyHashMap
 import qualified Data.Sequence                     as Sequence
 import qualified Data.Text                         as Text
+import qualified Data.Text.Encoding                as TextEncoding
 import           Test.Hspec                        (Expectation, Spec, describe,
                                                     expectationFailure, it,
                                                     shouldBe, shouldContain,
@@ -86,7 +85,7 @@ testReadFixtures =
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/017/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 018: Valid linestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/018/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -102,7 +101,7 @@ testReadFixtures =
       shouldBeSuccess layersOrErr checkLayer
       let expectedPoints = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
           expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoints expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoints))
     it "MVT test 021: Valid multilinestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/021/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -139,8 +138,8 @@ testReadFixtures =
       either (`shouldBe` "VectorTile.features: `[RawFeature]` empty") (const (expectationFailure "Should've failed")) layersOrErr
     it "MVT test 026: Extra value type" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/026/tile.mvt"
-      shouldBeSuccess layersOrErr checkLayer
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPointsNoMetadata expectedPoint))
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "howdy" (basicLayerChecks "howdy" 2 1))
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "howdy" (checkForPointsNoMetadata expectedPoint))
     it "MVT test 027: Layer with unused bool property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/027/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -152,32 +151,32 @@ testReadFixtures =
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/032/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.St "i am a string value")]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 033: Layer with single feature with float property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/033/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.Fl 3.1)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 034: Layer with single feature with double property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/034/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.Do 1.23)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 035: Layer with single feature with int property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/035/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.I64 6)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 036: Layer with single feature with uint property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/036/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.W64 87948)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 037: Layer with single feature with sint property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/037/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
       let expectedMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.S64 87948)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     it "MVT test 038: Layer with all types of property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/038/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -190,11 +189,11 @@ testReadFixtures =
             ("bool_value", VectorTileTypes.B True),
             ("string_value", VectorTileTypes.St "ello")
             ]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedPoint expectedMetadata))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoint))
     -- Default version is 1 https://github.com/mapbox/vector-tile-spec/blob/master/2.1/vector_tile.proto#L55
     it "MVT test 039: Default values are actually encoded in the tile" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/039/tile.mvt"
-      shouldBeSuccess layersOrErr (checkLayerWith (basicLayerChecks 1))
+      shouldBeSuccess layersOrErr (checkLayerWith (basicLayerChecks "hello" 1 1))
     it "MVT test 040: Feature has tags that point to non-existent Key in the layer." $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/040/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
@@ -207,6 +206,30 @@ testReadFixtures =
     it "MVT test 042: Feature has tags that point to non-existent Value in the layer." $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/042/tile.mvt"
       Exception.evaluate layersOrErr `shouldThrow` errorCallContains "index out of bounds in call to: Data.Sequence.index 2"
+    it "MVT test 043: A layer with six points that all share the same key but each has a unique value." $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/043/tile.mvt"
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (basicLayerChecks "park_features" 2 6))
+      let expectedPoints = Sequence.fromList [
+            Sequence.fromList [VectorTileGeometry.Point 25 17],
+            Sequence.fromList [VectorTileGeometry.Point 26 19],
+            Sequence.fromList [VectorTileGeometry.Point 27 15],
+            Sequence.fromList [VectorTileGeometry.Point 60 10],
+            Sequence.fromList [VectorTileGeometry.Point 44 20],
+            Sequence.fromList [VectorTileGeometry.Point 23 49]]
+          expectedMetadata = Sequence.fromList [
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "swing")],
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "water_fountain")],
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "slide")],
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "bathroom")],
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "tree")],
+            LazyHashMap.fromList [("poi", VectorTileTypes.St "bench")]]
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (checkForPointsInFeatures expectedMetadata expectedPoints))
+    it "MVT test 044: Geometry field begins with a ClosePath command, which is invalid" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/044/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "LineTo Requires 2 Paramters"
+    it "MVT test 045: Invalid point geometry that includes a MoveTo command and only half of the xy coordinates" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/045/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "MoveTo Requires 2 Paramters"
 
 errorCallContains :: Text.Text -> Exception.ErrorCall -> Bool
 errorCallContains s (Exception.ErrorCallWithLocation msg _) = s `Text.isInfixOf` Text.pack msg
@@ -221,30 +244,37 @@ getLayers file = do
   pure $ fmap VectorTileTypes._layers inputTile
 
 checkLayer :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer -> Expectation
-checkLayer = checkLayerWith (basicLayerChecks 2)
+checkLayer = checkLayerWith (basicLayerChecks "hello" 2 1)
 
 checkLayerWith :: (VectorTileTypes.Layer -> IO ()) -> LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer -> Expectation
-checkLayerWith checks layers = ControlMonad.void $ TransMaybe.runMaybeT $ do
-    MonadIO.liftIO $ LazyHashMap.size layers `shouldBe` 1
-    layer <- ErrorUtil.hoistMaybe (LazyHashMap.lookup "hello" layers)
-    MonadIO.liftIO $ checks layer
+checkLayerWith = checkNamedLayerWith "hello"
 
-basicLayerChecks :: Word -> VectorTileTypes.Layer -> IO ()
-basicLayerChecks version layer = do
-  VectorTileTypes._name layer `shouldBe` "hello"
+checkNamedLayerWith :: LazyByteString.ByteString -> (VectorTileTypes.Layer -> IO ()) -> LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Layer ->  Expectation
+checkNamedLayerWith layerName checks layers = do
+    MonadIO.liftIO $ LazyHashMap.size layers `shouldBe` 1
+    let layer = LazyHashMap.lookup layerName layers
+    maybe (expectationFailure (Text.unpack $ "[" <> TextEncoding.decodeUtf8 (ByteStringLazy.toStrict layerName) <> "] layer not found")) (MonadIO.liftIO . checks) layer
+
+basicLayerChecks :: LazyByteString.ByteString -> Word -> Int -> VectorTileTypes.Layer -> IO ()
+basicLayerChecks layerName version numberOfFeatures layer = do
+  VectorTileTypes._name layer `shouldBe` layerName
   VectorTileTypes._version layer `shouldBe` version
   VectorTileTypes._extent layer `shouldBe` 4096
-  VectorTileTypes.numberOfFeatures layer `shouldBe` 1
+  VectorTileTypes.numberOfFeatures layer `shouldBe` numberOfFeatures
 
 expectedPoint :: Sequence.Seq VectorTileGeometry.Point
 expectedPoint = Sequence.singleton (VectorTileGeometry.Point 25 17)
 
 checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
-checkForPointsNoMetadata expectedSeq = checkForPoints expectedSeq LazyHashMap.empty
+checkForPointsNoMetadata = checkForPoints LazyHashMap.empty
 
-checkForPoints :: Sequence.Seq VectorTileGeometry.Point -> LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val -> VectorTileTypes.Layer -> IO ()
-checkForPoints expectedSeq expectedMetadata layer = do
-  let expectedPoints = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+checkForPoints :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
+checkForPoints expectedMetadata expectedSeq = checkForPointsInFeatures (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+
+checkForPointsInFeatures :: Sequence.Seq (LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> VectorTileTypes.Layer -> IO ()
+checkForPointsInFeatures expectedMetadatas expectedSeqs layer = do
+  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+      expectedPoints = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` expectedPoints
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
   VectorTileTypes._polygons layer `shouldBe` Sequence.empty
