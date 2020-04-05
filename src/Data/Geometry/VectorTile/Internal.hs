@@ -399,7 +399,11 @@ params = Foldable.foldl' (\acc (G.Point a b) -> acc Seq.|> zig a Seq.|> zig b) S
 
 -- | Expand a pair of diffs from some reference point into that of a `Point` value.
 expand :: G.Point -> Seq.Seq G.Point -> Seq.Seq G.Point
-expand curr s = Seq.drop 1 $ Seq.scanl (\(G.Point x y) (G.Point dx dy) -> G.Point (x + dx) (y + dy)) curr s
+expand curr s = Seq.drop 1 $ Seq.foldlWithIndex (\acc@(_ Seq.:|> G.Point x y) i (G.Point dx dy) -> check i acc x y dx dy) (Seq.singleton curr) s
+  where
+    check i acc x y dx dy
+      | i /=0 && dx == 0 && dy == 0 = acc
+      | otherwise = acc Seq.|> G.Point (x + dx) (y + dy)
 
 -- | Collapse a given `Point` into a pair of diffs, relative to
 -- the previous point in the sequence. The reference point is moved

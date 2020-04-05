@@ -95,13 +95,14 @@ testReadFixtures =
     it "MVT test 019: Valid polygon geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/019/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPolygons = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedPolygons))
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+          expectedPolygons = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedMetadata expectedPolygons))
     it "MVT test 020: Valid multipoint geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/020/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPoints = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
-          expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+          expectedPoints = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
       shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoints))
     it "MVT test 021: Valid multilinestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/021/tile.mvt"
@@ -112,7 +113,8 @@ testReadFixtures =
     it "MVT test 022: Valid multipolygon geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/022/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPolygons = Sequence.fromList [
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+          expectedPolygons = Sequence.fromList [
             VectorTileGeometry.Polygon
               (Sequence.fromList [
                 VectorTileGeometry.Point 0 0, VectorTileGeometry.Point 10 0, VectorTileGeometry.Point 10 10, VectorTileGeometry.Point 0 10, VectorTileGeometry.Point 0 0])
@@ -128,7 +130,7 @@ testReadFixtures =
                 Sequence.empty
               ])
             ]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedPolygons))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedMetadata expectedPolygons))
     it "MVT test 023: Invalid layer: missing layer name" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/023/tile.mvt"
       either (\x -> Text.unpack x `shouldContain` "Required fields missing when processing ProtoName") (const (expectationFailure "Should've failed")) layersOrErr
@@ -232,11 +234,10 @@ testReadFixtures =
     it "MVT test 045: Invalid point geometry that includes a MoveTo command and only half of the xy coordinates" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/045/tile.mvt"
       Exception.evaluate layersOrErr `shouldThrow` errorCallContains "MoveTo Requires 2 Paramters"
-    -- TODO - This is wrong 2,10 should only be there once - it should remove dupes.
     it "MVT test 046: Invalid linestring geometry that includes two points in the same position, which is not OGC valid" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/046/tile.mvt"
       let expectedMetadata = LazyHashMap.fromList []
-          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 2 10]))
+          expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10]))
       shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
     it "MVT test 047: Invalid point geometry that includes a MoveTo command and only half of the xy coordinates" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/047/tile.mvt"
@@ -254,6 +255,60 @@ testReadFixtures =
       let expectedMetadata = LazyHashMap.fromList []
           expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 0 (-2147483648), VectorTileGeometry.Point (-1) (-2147483649)]))
       shouldBeSuccess layersOrErr (checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings))
+    -- This just passes - no error
+    it "MVT test 051: multipoint with a huge count value, useful for ensuring no over-allocation errors." $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/051/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+    it "MVT test 052: multipoint with not enough points" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/052/tile.mvt"
+      Exception.evaluate layersOrErr `shouldThrow` errorCallContains "MoveTo Requires 2 Paramters"
+    it "MVT test 053: clipped square (exact extent): a polygon that covers the entire tile to the exact boundary" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/053/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList [("type", VectorTileTypes.St "exact extent")]
+          expectedPolygons = Sequence.fromList [
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point 0 0, VectorTileGeometry.Point 4096 0, VectorTileGeometry.Point 4096 4096, VectorTileGeometry.Point 0 4096, VectorTileGeometry.Point 0 0])
+              Sequence.empty
+            ]
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "clipped-square" (checkForPolygons expectedMetadata expectedPolygons))
+    it "MVT test 054: clipped square (one unit buffer): a polygon that covers the entire tile plus a one unit buffer" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/054/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList [("type", VectorTileTypes.St "one unit buffer")]
+          expectedPolygons = Sequence.fromList [
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point (-1) (-1), VectorTileGeometry.Point 4097 (-1), VectorTileGeometry.Point 4097 4097, VectorTileGeometry.Point (-1) 4097, VectorTileGeometry.Point (-1) (-1)])
+              Sequence.empty
+            ]
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "clipped-square" (checkForPolygons expectedMetadata expectedPolygons))
+    it "MVT test 055: clipped square (minus one unit buffer): a polygon that almost covers the entire tile minus one unit buffer" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/055/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList [("type", VectorTileTypes.St "almost a clipped-square minus one unit")]
+          expectedPolygons = Sequence.fromList [
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point 1 1, VectorTileGeometry.Point 4095 1, VectorTileGeometry.Point 4095 4095, VectorTileGeometry.Point 1 4095, VectorTileGeometry.Point 1 1])
+              Sequence.empty
+            ]
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "clipped-square" (checkForPolygons expectedMetadata expectedPolygons))
+    it "MVT test 056: clipped square (large buffer): a polygon that covers the entire tile plus a 200 unit buffer" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/056/tile.mvt"
+      let expectedMetadata = LazyHashMap.fromList [("type", VectorTileTypes.St "large 200 unit buffer")]
+          expectedPolygons = Sequence.fromList [
+            VectorTileGeometry.Polygon
+              (Sequence.fromList [
+                VectorTileGeometry.Point (-200) (-200), VectorTileGeometry.Point 4296 (-200), VectorTileGeometry.Point 4296 4296, VectorTileGeometry.Point (-200) 4296, VectorTileGeometry.Point (-200) (-200)])
+              Sequence.empty
+            ]
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "clipped-square" (checkForPolygons expectedMetadata expectedPolygons))
+    it "MVT test 057: A point fixture with a gigantic MoveTo command. Can be used to test decoders for memory overallocation situations" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/057/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+    it "MVT test 058: A linestring fixture with a gigantic LineTo command" $ do
+      layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/058/tile.mvt"
+      shouldBeSuccess layersOrErr checkLayer
+
 
 errorCallContains :: Text.Text -> Exception.ErrorCall -> Bool
 errorCallContains s (Exception.ErrorCallWithLocation msg _) = s `Text.isInfixOf` Text.pack msg
@@ -314,11 +369,18 @@ checkForLineStringsInFeatures expectedMetadatas expectedSeqs layer = do
   VectorTileTypes._linestrings layer `shouldBe` expectedLineStrings
   VectorTileTypes._polygons layer `shouldBe` Sequence.empty
 
-checkForPolygons :: Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()
-checkForPolygons expectedSeq layer = do
-  let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
-      expectedPolygon = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+checkForPolygons :: LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()
+checkForPolygons expectedMetadata expectedSeq layer = do
+  let expectedPolygon = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
   VectorTileTypes._points layer `shouldBe` Sequence.empty
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
   VectorTileTypes._polygons layer `shouldBe` expectedPolygon
+
+checkForPolygonsInFeatures :: Sequence.Seq (LazyHashMap.HashMap LazyByteString.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Polygon) -> VectorTileTypes.Layer -> IO ()
+checkForPolygonsInFeatures expectedMetadatas expectedSeqs layer = do
+  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+      expectedPolygons = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
+  VectorTileTypes._points layer `shouldBe` Sequence.empty
+  VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
+  VectorTileTypes._polygons layer `shouldBe` expectedPolygons
 
