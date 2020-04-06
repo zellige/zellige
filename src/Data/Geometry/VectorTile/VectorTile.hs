@@ -1,8 +1,8 @@
-{-# LANGUAGE DataKinds #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DataKinds             #-}
+{-# LANGUAGE FlexibleInstances     #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE TypeOperators         #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Data.Geometry.VectorTile.VectorTile
@@ -14,6 +14,7 @@ module Data.Geometry.VectorTile.VectorTile
   , Feature(..)
   , Val(..)
   -- * Geometries
+  , Unknown(..)
   , Point(..)
   , LineString(..)
   , Polygon(..)
@@ -25,15 +26,17 @@ module Data.Geometry.VectorTile.VectorTile
   , GeomVec
   ) where
 
-import           Control.Monad ((>=>))
-import           Data.Bifunctor (bimap)
-import qualified Data.ByteString as BS
-import           Data.ByteString.Lazy (fromStrict, toStrict)
-import           Data.Text (Text, pack)
-import           Data.Geometry.VectorTile.Internal (fromProtobuf, toProtobuf, unfeats, GeomVec, Protobuf, ProtobufGeom, Value)
-import           Data.Geometry.VectorTile.Types
+import           Control.Monad                     ((>=>))
+import           Data.Bifunctor                    (bimap)
+import qualified Data.ByteString                   as BS
+import           Data.ByteString.Lazy              (fromStrict, toStrict)
 import           Data.Geometry.VectorTile.Geometry
-import           Text.ProtocolBuffers.WireMessage (messageGet, messagePut)
+import           Data.Geometry.VectorTile.Internal (Protobuf, ProtobufGeom,
+                                                    Value, fromProtobuf,
+                                                    toProtobuf, unfeats)
+import           Data.Geometry.VectorTile.Types
+import           Data.Text                         (Text, pack)
+import           Text.ProtocolBuffers.WireMessage  (messageGet, messagePut)
 
 -- | Attempt to parse a `VectorTile` from a strict collection of bytes.
 tile :: BS.ByteString -> Either Text VectorTile

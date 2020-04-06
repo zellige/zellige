@@ -1,14 +1,15 @@
 module Data.SpecHelper where
 
-import qualified Data.Geospatial               as Geospatial
-import qualified Data.LinearRing               as LinearRing
-import qualified Data.LineString               as LineString
-import qualified Data.Sequence                 as Sequence
-import qualified Data.Geometry.VectorTile.VectorTile          as VectorTile
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geospatial                     as Geospatial
+import qualified Data.LinearRing                     as LinearRing
+import qualified Data.LineString                     as LineString
+import qualified Data.Sequence                       as Sequence
 
-import qualified Data.Geometry.Types.Geography as TypesGeography
+import qualified Data.Geometry.Types.Geography       as TypesGeography
+import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
 
-tupleToPts :: [(Int, Int)] -> Sequence.Seq VectorTile.Point
+tupleToPts :: [(Int, Int)] -> VectorTileTypes.GeomVec VectorTile.Point
 tupleToPts = foldr (\(x,y) acc -> VectorTile.Point x y Sequence.<| acc) Sequence.empty
 
 mkLineString :: (Double, Double) -> (Double, Double) -> [(Double, Double)] -> LineString.LineString Geospatial.GeoPositionWithoutCRS

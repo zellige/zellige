@@ -9,8 +9,6 @@ import qualified Data.Aeson                          as Aeson
 import qualified Data.ByteString                     as ByteString
 import qualified Data.ByteString.Char8               as ByteStringChar8
 import qualified Data.ByteString.Lazy                as ByteStringLazy
-import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
-import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 import qualified Data.Geospatial                     as Geospatial
 import qualified Data.HashMap.Lazy                   as HashMapLazy
 import           Data.Monoid                         ((<>))
@@ -22,8 +20,10 @@ import qualified Data.Geometry.GeoJsonToMvt          as GeoJsonToMvt
 import qualified Data.Geometry.Simplify              as Simplify
 import qualified Data.Geometry.SphericalMercator     as SphericalMercator
 import qualified Data.Geometry.Types.Config          as TypesConfig
-import qualified Data.Geometry.Types.GeoJsonFeatures as TypesGeoJsonFeatures
 import qualified Data.Geometry.Types.LayerConfig     as TypesLayerConfig
+import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+
 
 -- Command line
 
@@ -63,12 +63,12 @@ createMvt TypesConfig.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox
       clipBb = Clip.createBoundingBox _buffer _extents
       clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
       simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
-      TypesGeoJsonFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
+      VectorTileTypes.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
       layer = VectorTileTypes.Layer (fromIntegral _version) _name Sequence.empty mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
   pure . VectorTileTypes.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
-getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s TypesGeoJsonFeatures.MvtFeatures
-getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures TypesGeoJsonFeatures.emptyMvtFeatures _geofeatures
+getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s VectorTileTypes.MvtFeatures
+getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesToMvtFeatures VectorTileTypes.emptyMvtFeatures _geofeatures
 
 convertClipSimplify :: TypesConfig.Config -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 convertClipSimplify TypesConfig.Config{..} feature = simplifiedFeatures

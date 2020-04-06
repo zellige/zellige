@@ -13,34 +13,34 @@ import qualified Data.STRef                          as STRef
 import           Prelude                             hiding (Left, Right)
 
 import qualified Data.Geometry.Types.GeoJsonFeatures as TypesGeoJsonFeatures
-import qualified Data.Geometry.Types.MvtFeatures     as TypesMvtFeatures
+import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
 
 -- Lib
 
-geoJsonFeaturesToMvtFeatures :: TypesGeoJsonFeatures.MvtFeatures -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s TypesGeoJsonFeatures.MvtFeatures
+geoJsonFeaturesToMvtFeatures :: VectorTileTypes.MvtFeatures -> Sequence.Seq (Geospatial.GeoFeature Aeson.Value) -> MonadST.ST s VectorTileTypes.MvtFeatures
 geoJsonFeaturesToMvtFeatures layer features = do
   ops <- STRef.newSTRef 0
   Foldable.foldMap (convertFeature layer ops) features
 
 -- Feature
 
-convertFeature :: TypesGeoJsonFeatures.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s TypesGeoJsonFeatures.MvtFeatures
+convertFeature :: VectorTileTypes.MvtFeatures -> STRef.STRef s Word -> Geospatial.GeoFeature Aeson.Value -> MonadST.ST s VectorTileTypes.MvtFeatures
 convertFeature layer ops (Geospatial.GeoFeature _ geom props mfid) = do
   fid <- convertId mfid ops
   pure $ convertGeometry layer fid props geom
 
 -- Geometry
 
-convertGeometry :: TypesGeoJsonFeatures.MvtFeatures -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> TypesGeoJsonFeatures.MvtFeatures
-convertGeometry layer@TypesGeoJsonFeatures.MvtFeatures{..} fid props geom =
+convertGeometry :: VectorTileTypes.MvtFeatures -> Word -> Aeson.Value -> Geospatial.GeospatialGeometry -> VectorTileTypes.MvtFeatures
+convertGeometry layer@VectorTileTypes.MvtFeatures{..} fid props geom =
   case geom of
     Geospatial.NoGeometry     -> mempty
-    Geospatial.Point g        -> layer { TypesGeoJsonFeatures.mvtPoints   = TypesMvtFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertPoint g) mvtPoints }
-    Geospatial.MultiPoint g   -> layer { TypesGeoJsonFeatures.mvtPoints   = TypesMvtFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertMultiPoint g) mvtPoints }
-    Geospatial.Line g         -> layer { TypesGeoJsonFeatures.mvtLines    = TypesMvtFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertLineString g) mvtLines }
-    Geospatial.MultiLine g    -> layer { TypesGeoJsonFeatures.mvtLines    = TypesMvtFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertMultiLineString g) mvtLines }
-    Geospatial.Polygon g      -> layer { TypesGeoJsonFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertPolygon g) mvtPolygons }
-    Geospatial.MultiPolygon g -> layer { TypesGeoJsonFeatures.mvtPolygons = TypesMvtFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertMultiPolygon g) mvtPolygons }
+    Geospatial.Point g        -> layer { VectorTileTypes.mvtPoints   = TypesGeoJsonFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertPoint g) mvtPoints }
+    Geospatial.MultiPoint g   -> layer { VectorTileTypes.mvtPoints   = TypesGeoJsonFeatures.mkPoint fid props (TypesGeoJsonFeatures.convertMultiPoint g) mvtPoints }
+    Geospatial.Line g         -> layer { VectorTileTypes.mvtLines    = TypesGeoJsonFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertLineString g) mvtLines }
+    Geospatial.MultiLine g    -> layer { VectorTileTypes.mvtLines    = TypesGeoJsonFeatures.mkLineString fid props (TypesGeoJsonFeatures.convertMultiLineString g) mvtLines }
+    Geospatial.Polygon g      -> layer { VectorTileTypes.mvtPolygons = TypesGeoJsonFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertPolygon g) mvtPolygons }
+    Geospatial.MultiPolygon g -> layer { VectorTileTypes.mvtPolygons = TypesGeoJsonFeatures.mkPolygon fid props (TypesGeoJsonFeatures.convertMultiPolygon g) mvtPolygons }
     Geospatial.Collection gs  -> Foldable.foldMap (convertGeometry layer fid props) gs
 
 -- FeatureID

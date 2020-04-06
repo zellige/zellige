@@ -3,24 +3,25 @@
 
 module Data.Geometry.GeoJsonStreamingToMvt where
 
-import qualified Control.Foldl                                                 as Foldl
-import qualified Data.Aeson.Types                                              as AesonTypes
-import qualified Data.ByteString                                               as ByteString
-import qualified Data.ByteString.Lazy                                          as ByteStringLazy
-import qualified Data.Geospatial                                               as Geospatial
-import qualified Data.HashMap.Strict                                           as HashMapStrict
-import           Data.Monoid
-import qualified Data.Sequence                                                 as Sequence
+import qualified Control.Foldl                                                     as Foldl
+import qualified Data.Aeson.Types                                                  as AesonTypes
+import qualified Data.ByteString                                                   as ByteString
+import qualified Data.ByteString.Lazy                                              as ByteStringLazy
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile       as Tile
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Layer
-import           Prelude                                                       hiding
-                                                                                (Left,
-                                                                                Right)
-import qualified Text.ProtocolBuffers.Basic                                    as ProtocolBuffersBasic
-import qualified Text.ProtocolBuffers.WireMessage                              as WireMessage
+import qualified Data.Geospatial                                                   as Geospatial
+import qualified Data.HashMap.Strict                                               as HashMapStrict
+import           Data.Monoid
+import qualified Data.Sequence                                                     as Sequence
+import           Prelude                                                           hiding
+                                                                                    (Left,
+                                                                                    Right)
+import qualified Text.ProtocolBuffers.Basic                                        as ProtocolBuffersBasic
+import qualified Text.ProtocolBuffers.WireMessage                                  as WireMessage
 
-import qualified Data.Geometry.Types.Config                                    as TypesConfig
-import qualified Data.Geometry.Types.MvtFeatures                               as TypesMvtFeatures
+import qualified Data.Geometry.Types.Config                                        as TypesConfig
+import qualified Data.Geometry.Types.GeoJsonFeatures                               as TypesGeoJsonFeatures
+import qualified Data.Geometry.Types.MvtFeatures                                   as TypesMvtFeatures
 
 foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
 foldStreamingLayer = Foldl.Fold step begin done
@@ -29,7 +30,7 @@ foldStreamingLayer = Foldl.Fold step begin done
 
     step (TypesMvtFeatures.StreamingLayer featureId ks vs features) (geom, value) = TypesMvtFeatures.StreamingLayer (featureId + 1) (TypesMvtFeatures.KeyStore newKeyCount newKeyStore newKeyList) (TypesMvtFeatures.ValueStore newValueCount newValueStore newValueList) newFeatures
       where
-        convertedProps = TypesMvtFeatures.convertProps value
+        convertedProps = TypesGeoJsonFeatures.convertProps value
         (newKeyCount, newKeyStore, newKeyList) = TypesMvtFeatures.newKeys ks (HashMapStrict.keys convertedProps)
         (newValueCount, newValueStore, newValueList) = TypesMvtFeatures.newValues vs (HashMapStrict.elems convertedProps)
         newFeatures = TypesMvtFeatures.newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom

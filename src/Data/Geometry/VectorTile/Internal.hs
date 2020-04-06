@@ -30,7 +30,6 @@ module Data.Geometry.VectorTile.Internal
   , Layer.Layer(Layer, version, name, features, keys, values, extent)
   , Feature.Feature(..)
   , Value.Value(..)
-  , GeomVec
   , GeomType.GeomType(..)
     -- * Commands
   , Command(..)
@@ -54,14 +53,6 @@ import qualified Control.Monad.State.Strict                                     
 import qualified Data.Bits                                                            as Bits
 import qualified Data.ByteString.Lazy                                                 as ByteStringLazy
 import qualified Data.Foldable                                                        as Foldable
-import qualified Data.Geometry.VectorTile.Geometry                                    as G
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
-import qualified Data.Geometry.VectorTile.Types                                       as VT
-import           Data.Geometry.VectorTile.Util
 import qualified Data.HashMap.Strict                                                  as M
 import qualified Data.HashSet                                                         as HS
 import           Data.Int
@@ -82,6 +73,15 @@ import           Text.ProtocolBuffers.Basic
                                                                                        defaultValue,
                                                                                        utf8)
 
+import qualified Data.Geometry.VectorTile.Geometry                                    as G
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile          as Tile
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature  as Feature
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as GeomType
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer    as Layer
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Value    as Value
+import qualified Data.Geometry.VectorTile.Types                                       as VT
+import           Data.Geometry.VectorTile.Util
+
 ---
 
 -- | A family of data types which can associated with concrete underlying
@@ -90,12 +90,6 @@ type family Protobuf a = pb | pb -> a
 type instance Protobuf VT.VectorTile = Tile.Tile
 type instance Protobuf VT.Layer = Layer.Layer
 type instance Protobuf VT.Val = Value.Value
-
-type family GeomVec g = v | v -> g
-type instance GeomVec G.Unknown      = Seq.Seq G.Unknown
-type instance GeomVec G.Point        = Seq.Seq G.Point
-type instance GeomVec G.LineString   = Seq.Seq G.LineString
-type instance GeomVec G.Polygon      = Seq.Seq G.Polygon
 
 -- | A type which can be converted to and from an underlying Protobuf type,
 -- according to the `Protobuf` type family.
@@ -119,7 +113,7 @@ instance Protobuffable VT.VectorTile where
 
 instance Protobuffable VT.Layer where
   fromProtobuf l = do
-    Feats us ps ls polys <- feats (utf8 <$> Layer.keys l) (Layer.values l) $ Layer.features l
+    VT.MvtFeatures us ps ls polys <- feats (utf8 <$> Layer.keys l) (Layer.values l) $ Layer.features l
     pure VT.Layer { VT._version     = fromIntegral $ Layer.version l
                   , VT._name        = utf8 $ Layer.name l
                   , VT._unknowns    = us
@@ -162,8 +156,8 @@ instance Protobuffable VT.Val where
 -- | Any classical type considered a GIS "geometry". These must be able
 -- to convert between an encodable list of `Command`s.
 class ProtobufGeom g where
-  fromCommands :: Seq.Seq Command -> Either Text (Seq.Seq g)
-  toCommands   :: Seq.Seq g -> Seq.Seq Command
+  fromCommands :: Seq.Seq Command -> Either Text (VT.GeomVec g)
+  toCommands   :: VT.GeomVec g -> Seq.Seq Command
 
 instance ProtobufGeom G.Unknown where
   fromCommands _ = Right $ Seq.singleton G.Unknown
@@ -337,26 +331,21 @@ uncommands = (>>= f)
 -- > feature :: ProtobufGeom g => RawFeature -> Either Text (Feature g)
 --
 -- is not possible.
-feats :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
+feats :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text VT.MvtFeatures
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
-feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
-  where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (Seq.Seq g))
+feats keys vals fs = Foldable.foldlM g VT.emptyMvtFeatures fs
+  where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (VT.GeomVec g))
         f x = VT.Feature
           <$> pure (maybe 0 fromIntegral $ Feature.id x)
           <*> getMeta keys vals (Feature.tags x)
           <*> (fromCommands . commands $ Feature.geometry x)
 
-        g feets@(Feats us ps ls po) fe = case Feature.type' fe of
-          Just GeomType.POINT      -> (\fe' -> feets { featPoints    = ps Seq.|> fe' }) <$> f fe
-          Just GeomType.LINESTRING -> (\fe' -> feets { featLines     = ls Seq.|> fe' }) <$> f fe
-          Just GeomType.POLYGON    -> (\fe' -> feets { featPolys     = po Seq.|> fe' }) <$> f fe
-          Just GeomType.UNKNOWN    -> (\fe' -> feets { featUnknowns  = us Seq.|> fe' }) <$> f fe
+        g feets@(VT.MvtFeatures us ps ls po) fe = case Feature.type' fe of
+          Just GeomType.POINT      -> (\fe' -> feets { VT.mvtPoints    = ps Seq.|> fe' }) <$> f fe
+          Just GeomType.LINESTRING -> (\fe' -> feets { VT.mvtLines     = ls Seq.|> fe' }) <$> f fe
+          Just GeomType.POLYGON    -> (\fe' -> feets { VT.mvtPolygons  = po Seq.|> fe' }) <$> f fe
+          Just GeomType.UNKNOWN    -> (\fe' -> feets { VT.mvtUnknowns  = us Seq.|> fe' }) <$> f fe
           Nothing                  -> Left "Missing geometry type."
-
-data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (Seq.Seq G.Unknown)))
-                   , featPoints   :: !(Seq.Seq (VT.Feature (Seq.Seq G.Point)))
-                   , featLines    :: !(Seq.Seq (VT.Feature (Seq.Seq G.LineString)))
-                   , featPolys    :: !(Seq.Seq (VT.Feature (Seq.Seq G.Polygon))) }
 
 getMeta :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word.Word32 -> Either Text (M.HashMap ByteStringLazy.ByteString VT.Val)
 getMeta keys vals tags = do
@@ -366,9 +355,9 @@ getMeta keys vals tags = do
 
 {- TO PROTOBUF -}
 
-totalMeta :: Seq.Seq (VT.Feature (Seq.Seq G.Point))
-          -> Seq.Seq (VT.Feature (Seq.Seq G.LineString))
-          -> Seq.Seq (VT.Feature (Seq.Seq G.Polygon))
+totalMeta :: Seq.Seq (VT.Feature (VT.GeomVec G.Point))
+          -> Seq.Seq (VT.Feature (VT.GeomVec G.LineString))
+          -> Seq.Seq (VT.Feature (VT.GeomVec G.Polygon))
           -> ([ByteStringLazy.ByteString], [VT.Val])
 totalMeta ps ls polys = (keys, vals)
   where keys = HS.toList $ f ps <> f ls <> f polys
@@ -381,7 +370,7 @@ unfeats :: ProtobufGeom g
         => M.HashMap ByteStringLazy.ByteString Int
         -> M.HashMap VT.Val Int
         -> Maybe GeomType.GeomType
-        -> VT.Feature (Seq.Seq g)
+        -> VT.Feature (VT.GeomVec g)
         -> Feature.Feature
 unfeats keys vals gt fe = Feature.Feature
                             { Feature.id       = Just . fromIntegral $ VT._featureId fe
