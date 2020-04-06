@@ -318,7 +318,7 @@ uncommands = (>>= f)
 
 {- FROM PROTOBUF -}
 
--- | Convert a list of `RawFeature`s of parsed protobuf data into `V.Vector`s
+-- | Convert a list of `RawFeature`s of parsed protobuf data into `Seq.Sequence`s
 -- of each of the three legal `ProtobufGeom` types.
 --
 -- The long type signature is due to two things:
