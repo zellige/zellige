@@ -21,9 +21,8 @@ import           Data.Hashable                     (Hashable)
 import qualified Data.HashMap.Lazy                 as M
 import           Data.Int
 import qualified Data.Semigroup                    as Semigroup
-import qualified Data.Sequence                     as Seq
-import qualified Data.Sequence                     as S
-import           Data.Word
+import qualified Data.Sequence                     as Sequence
+import qualified Data.Word                         as Word
 import           GHC.Generics                      (Generic)
 
 
@@ -34,17 +33,17 @@ data Layer
       { -- | The version of the spec we follow. Should always be 2.
         _version     :: Word,
         _name        :: BL.ByteString,
-        _unknowns    :: S.Seq (Feature (GeomVec G.Unknown)),
-        _points      :: S.Seq (Feature (GeomVec G.Point)),
-        _linestrings :: S.Seq (Feature (GeomVec G.LineString)),
-        _polygons    :: S.Seq (Feature (GeomVec G.Polygon)),
+        _unknowns    :: Sequence.Seq (Feature (GeomVec G.Unknown)),
+        _points      :: Sequence.Seq (Feature (GeomVec G.Point)),
+        _linestrings :: Sequence.Seq (Feature (GeomVec G.LineString)),
+        _polygons    :: Sequence.Seq (Feature (GeomVec G.Polygon)),
         -- | Default: 4096
         _extent      :: Word
       }
   deriving (Eq, Show, Generic)
 
 numberOfFeatures :: Layer -> Int
-numberOfFeatures l = sum [S.length (_unknowns l), S.length (_points l), S.length (_linestrings l), S.length (_polygons l)]
+numberOfFeatures l = sum [Sequence.length (_unknowns l), Sequence.length (_points l), Sequence.length (_linestrings l), Sequence.length (_polygons l)]
 
 data Feature gs
   = Feature
@@ -55,20 +54,20 @@ data Feature gs
       }
   deriving (Eq, Show, Generic)
 
-data Val = St BL.ByteString | Fl Float | Do Double | I64 Int64 | W64 Word64 | S64 Int64 | B Bool
+data Val = St BL.ByteString | Fl Float | Do Double | I64 Int64 | W64 Word.Word64 | S64 Int64 | B Bool
   deriving (Eq, Ord, Show, Generic, Hashable)
 
 type family GeomVec g = v | v -> g
-type instance GeomVec G.Unknown      = Seq.Seq G.Unknown
-type instance GeomVec G.Point        = Seq.Seq G.Point
-type instance GeomVec G.LineString   = Seq.Seq G.LineString
-type instance GeomVec G.Polygon      = Seq.Seq G.Polygon
+type instance GeomVec G.Unknown      = Sequence.Seq G.Unknown
+type instance GeomVec G.Point        = Sequence.Seq G.Point
+type instance GeomVec G.LineString   = Sequence.Seq G.LineString
+type instance GeomVec G.Polygon      = Sequence.Seq G.Polygon
 
 data MvtFeatures = MvtFeatures
-  { mvtUnknowns :: !(S.Seq (Feature (GeomVec G.Unknown)))
-  , mvtPoints   :: !(S.Seq (Feature (GeomVec G.Point)))
-  , mvtLines    :: !(S.Seq (Feature (GeomVec G.LineString)))
-  , mvtPolygons :: !(S.Seq (Feature (GeomVec G.Polygon)))
+  { mvtUnknowns :: !(Sequence.Seq (Feature (GeomVec G.Unknown)))
+  , mvtPoints   :: !(Sequence.Seq (Feature (GeomVec G.Point)))
+  , mvtLines    :: !(Sequence.Seq (Feature (GeomVec G.LineString)))
+  , mvtPolygons :: !(Sequence.Seq (Feature (GeomVec G.Polygon)))
   } deriving (Eq, Show)
 
 instance Semigroup.Semigroup MvtFeatures where

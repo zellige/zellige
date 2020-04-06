@@ -2,7 +2,7 @@
 
 module Data.Geometry.Types.GeoJsonFeatures where
 
-import qualified Data.Aeson                          as Aeson
+import qualified Data.Aeson.Types                    as AesonTypes
 import qualified Data.ByteString.Lazy                as ByteStringLazy
 import qualified Data.Foldable                       as Foldable
 import qualified Data.Geospatial                     as Geospatial
@@ -22,26 +22,28 @@ import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 sToF :: Scientific.Scientific -> Double
 sToF = Scientific.toRealFloat
 
-mkPoint :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
+mkPoint :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
 mkPoint fId props p = (Sequence.<|) (VectorTile.Feature fId (convertProps props) p)
 
-mkLineString :: Word -> Aeson.Value -> Sequence.Seq VectorTile.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
+mkLineString :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
 mkLineString fId props l = (Sequence.<|) (mkFeature fId props l)
 
-mkPolygon :: Word -> Aeson.Value -> Sequence.Seq VectorTile.Polygon -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
+mkPolygon :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.Polygon -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Polygon))
 mkPolygon x props o = (Sequence.<|) (mkFeature x props o)
 
-mkFeature :: Word -> Aeson.Value -> Sequence.Seq g -> VectorTile.Feature (Sequence.Seq g)
+mkFeature :: Word -> AesonTypes.Value -> Sequence.Seq g -> VectorTile.Feature (Sequence.Seq g)
 mkFeature fId props = VectorTile.Feature fId (convertProps props)
 
-convertProps :: Aeson.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
-convertProps (Aeson.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> HashMapStrict.insert k' v' acc) (convertElems (k, v))) HashMapStrict.empty x
+convertProps :: AesonTypes.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
+convertProps (AesonTypes.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> HashMapStrict.insert k' v' acc) (convertElems (k, v))) HashMapStrict.empty x
 convertProps _                 = HashMapStrict.empty
 
-convertElems :: (Text.Text, Aeson.Value) -> Maybe (ByteStringLazy.ByteString, VectorTile.Val)
-convertElems (!k, Aeson.String !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.St ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) v))
-convertElems (!k, Aeson.Number !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))
-convertElems (!k, Aeson.Bool !v)   = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.B v)
+-- data Val = St BL.ByteString | Fl Float | Do Double | I64 Int64 | W64 Word.Word64 | S64 Int64 | B Bool
+
+convertElems :: (Text.Text, AesonTypes.Value) -> Maybe (ByteStringLazy.ByteString, VectorTile.Val)
+convertElems (!k, AesonTypes.String !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.St ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) v))
+convertElems (!k, AesonTypes.Number !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))
+convertElems (!k, AesonTypes.Bool !v)   = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.B v)
 convertElems _                     = Nothing
 
 -- Points
