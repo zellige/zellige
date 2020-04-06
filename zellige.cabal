@@ -88,18 +88,22 @@ test-suite zellige-test
   main-is:             Spec.hs
   build-depends:       base
                      , aeson
+                     , bytestring
                      , containers
+                     , errors
                      , geojson >= 3.0.4
                      , hspec
                      , lens
                      , QuickCheck
                      , scientific
                      , text
+                     , transformers
                      , unordered-containers
                      , vector         
                      , zellige
   other-modules:       Data.Geometry.ClipSpec
                      , Data.Geometry.DouglasPeuckerSpec
+                     , Data.Geometry.MapnikVectorTileSpec
                      , Data.Geometry.GeoJsonToMvtSpec
                      , Data.Geometry.PolygonSpec
                      , Data.Geometry.SphericalMercatorSpec

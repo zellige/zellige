@@ -9,12 +9,13 @@ import qualified Data.Aeson                          as Aeson
 import qualified Data.ByteString                     as ByteString
 import qualified Data.ByteString.Char8               as ByteStringChar8
 import qualified Data.ByteString.Lazy                as ByteStringLazy
+import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
 import qualified Data.Geospatial                     as Geospatial
 import qualified Data.HashMap.Lazy                   as HashMapLazy
 import           Data.Monoid                         ((<>))
+import qualified Data.Sequence                       as Sequence
 import qualified Data.Text                           as Text
-import qualified Data.Geometry.VectorTile.VectorTile               as VectorTile
-import qualified Data.Geometry.VectorTile.Types               as VectorTileTypes
 
 import qualified Data.Geometry.Clip                  as Clip
 import qualified Data.Geometry.GeoJsonToMvt          as GeoJsonToMvt
@@ -46,12 +47,10 @@ readGeoJson geoJsonFile = do
         decodeError = error . (("Unable to decode " <> geoJsonFile <> ": ") <>)
     pure (either decodeError id ebs)
 
-readMvt :: FilePath -> IO VectorTileTypes.VectorTile
+readMvt :: FilePath -> IO (Either Text.Text VectorTile.VectorTile)
 readMvt filePath = do
-    b <- ByteString.readFile filePath
-    let t = VectorTile.tile b
-        rawDecodeError a = error ("Unable to read " <> filePath <> ": " <> Text.unpack a)
-    pure (either rawDecodeError id t)
+  b <- ByteString.readFile filePath
+  pure (VectorTile.tile b)
 
 -- Lib
 
@@ -65,7 +64,7 @@ createMvt TypesConfig.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox
       clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
       simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
       TypesGeoJsonFeatures.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
-      layer = VectorTileTypes.Layer (fromIntegral _version) _name mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
+      layer = VectorTileTypes.Layer (fromIntegral _version) _name Sequence.empty mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
   pure . VectorTileTypes.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s TypesGeoJsonFeatures.MvtFeatures
