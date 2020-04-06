@@ -162,8 +162,8 @@ instance Protobuffable VT.Val where
 -- | Any classical type considered a GIS "geometry". These must be able
 -- to convert between an encodable list of `Command`s.
 class ProtobufGeom g where
-  fromCommands :: Seq.Seq Command -> Either Text (GeomVec g)
-  toCommands   :: GeomVec g -> Seq.Seq Command
+  fromCommands :: Seq.Seq Command -> Either Text (Seq.Seq g)
+  toCommands   :: Seq.Seq g -> Seq.Seq Command
 
 instance ProtobufGeom G.Unknown where
   fromCommands _ = Right $ Seq.singleton G.Unknown
@@ -340,7 +340,7 @@ uncommands = (>>= f)
 feats :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Feature.Feature -> Either Text Feats
 feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
 feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
-  where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (GeomVec g))
+  where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (Seq.Seq g))
         f x = VT.Feature
           <$> pure (maybe 0 fromIntegral $ Feature.id x)
           <*> getMeta keys vals (Feature.tags x)
@@ -353,10 +353,10 @@ feats keys vals fs = Foldable.foldlM g (Feats mempty mempty mempty mempty) fs
           Just GeomType.UNKNOWN    -> (\fe' -> feets { featUnknowns  = us Seq.|> fe' }) <$> f fe
           Nothing                  -> Left "Missing geometry type."
 
-data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (GeomVec G.Unknown)))
-                   , featPoints   :: !(Seq.Seq (VT.Feature (GeomVec G.Point)))
-                   , featLines    :: !(Seq.Seq (VT.Feature (GeomVec G.LineString)))
-                   , featPolys    :: !(Seq.Seq (VT.Feature (GeomVec G.Polygon))) }
+data Feats = Feats { featUnknowns :: !(Seq.Seq (VT.Feature (Seq.Seq G.Unknown)))
+                   , featPoints   :: !(Seq.Seq (VT.Feature (Seq.Seq G.Point)))
+                   , featLines    :: !(Seq.Seq (VT.Feature (Seq.Seq G.LineString)))
+                   , featPolys    :: !(Seq.Seq (VT.Feature (Seq.Seq G.Polygon))) }
 
 getMeta :: Seq.Seq ByteStringLazy.ByteString -> Seq.Seq Value.Value -> Seq.Seq Word.Word32 -> Either Text (M.HashMap ByteStringLazy.ByteString VT.Val)
 getMeta keys vals tags = do
@@ -366,9 +366,9 @@ getMeta keys vals tags = do
 
 {- TO PROTOBUF -}
 
-totalMeta :: Seq.Seq (VT.Feature (GeomVec G.Point))
-          -> Seq.Seq (VT.Feature (GeomVec G.LineString))
-          -> Seq.Seq (VT.Feature (GeomVec G.Polygon))
+totalMeta :: Seq.Seq (VT.Feature (Seq.Seq G.Point))
+          -> Seq.Seq (VT.Feature (Seq.Seq G.LineString))
+          -> Seq.Seq (VT.Feature (Seq.Seq G.Polygon))
           -> ([ByteStringLazy.ByteString], [VT.Val])
 totalMeta ps ls polys = (keys, vals)
   where keys = HS.toList $ f ps <> f ls <> f polys
@@ -381,7 +381,7 @@ unfeats :: ProtobufGeom g
         => M.HashMap ByteStringLazy.ByteString Int
         -> M.HashMap VT.Val Int
         -> Maybe GeomType.GeomType
-        -> VT.Feature (GeomVec g)
+        -> VT.Feature (Seq.Seq g)
         -> Feature.Feature
 unfeats keys vals gt fe = Feature.Feature
                             { Feature.id       = Just . fromIntegral $ VT._featureId fe

@@ -99,7 +99,7 @@ newConvertGeometry acc fid convertedProps keys values geom =
     Geospatial.MultiPolygon g -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
     Geospatial.Collection gs -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
-checkAndAdd :: (VectorTile.ProtobufGeom g, VectorTile.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Maybe GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
+checkAndAdd :: VectorTile.ProtobufGeom g => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Maybe GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq g) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature
 checkAndAdd keys values featureType feature@(VectorTile.Feature _ _ geoms) acc =
   if Sequence.null geoms
     then acc
