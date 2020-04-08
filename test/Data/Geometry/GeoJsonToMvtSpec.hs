@@ -26,10 +26,10 @@ import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
 import           Data.SpecHelper
 
 config :: Config.Config
-config = Config.mkConfig "foo" 18 (236629,160842) 128 2048 1 Config.NoAlgorithm
+config = Config.mkConfig "foo" 18 (236629,160842) 128 (Just 2048) 1 Config.NoAlgorithm
 
 extentsBb :: Config.Config -> Config.ZoomConfig
-extentsBb Config.Config{..} = Config.ZoomConfig _extents _quantizePixels (SphericalMercator.boundingBox _gtc) Config.NoAlgorithm
+extentsBb Config.Config{..} = Config.ZoomConfig (Config.defaultExtents _extents) _quantizePixels (SphericalMercator.boundingBox _gtc) Config.NoAlgorithm
 
 pt1 :: Geospatial.GeoPoint
 pt1 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 840 2194))

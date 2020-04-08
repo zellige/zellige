@@ -43,7 +43,7 @@ createLayerFromStreamingLayer TypesConfig.Config{..} (TypesMvtFeatures.Streaming
   , Layer.features  = features
   , Layer.keys      = keysList
   , Layer.values    = valuesList
-  , Layer.extent    = Just $ fromIntegral _extents
+  , Layer.extent    = fmap fromIntegral _extents
   , Layer.ext'field = ProtocolBuffersBasic.defaultValue
   }
 

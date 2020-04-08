@@ -33,7 +33,7 @@ writeLayer lc = do
     ByteString.writeFile (TypesLayerConfig._layerOutput lc) (encodeMvt mvt)
 
 configFromLayerConfig :: TypesLayerConfig.LayerConfig -> TypesConfig.Config
-configFromLayerConfig TypesLayerConfig.LayerConfig{..}  = TypesConfig.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer _layerExtent _layerQuantizePixels _layerSimplification
+configFromLayerConfig TypesLayerConfig.LayerConfig{..}  = TypesConfig.mkConfig _layerName _layerZoom (_layerX, _layerY) _layerBuffer (Just _layerExtent) _layerQuantizePixels _layerSimplification
 
 geoJsonFileToMvt :: FilePath -> TypesConfig.Config -> IO VectorTileTypes.VectorTile
 geoJsonFileToMvt filePath config = do
@@ -59,12 +59,14 @@ encodeMvt = VectorTile.untile
 
 createMvt :: TypesConfig.Config -> Geospatial.GeoFeatureCollection Aeson.Value -> IO VectorTileTypes.VectorTile
 createMvt TypesConfig.Config{..} (Geospatial.GeoFeatureCollection geoFeatureBbox geoFeatures) = do
-  let sphericalMercatorPts = SphericalMercator.convertFeatures _extents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
-      clipBb = Clip.createBoundingBox _buffer _extents
-      clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
-      simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
-      VectorTileTypes.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
-      layer = VectorTileTypes.Layer (fromIntegral _version) _name Sequence.empty mvtPoints mvtLines mvtPolygons (fromIntegral _extents)
+  let
+    getExtents = TypesConfig.defaultExtents _extents
+    sphericalMercatorPts = SphericalMercator.convertFeatures getExtents _quantizePixels (SphericalMercator.boundingBox _gtc) geoFeatures
+    clipBb = Clip.createBoundingBox _buffer getExtents
+    clippedFeatures = Clip.clipFeatures clipBb sphericalMercatorPts
+    simplifiedFeatures = Simplify.simplifyFeatures _simplify clippedFeatures
+    VectorTileTypes.MvtFeatures{..} = ST.runST $ getFeatures (Geospatial.GeoFeatureCollection geoFeatureBbox simplifiedFeatures)
+    layer = VectorTileTypes.Layer (fromIntegral _version) _name Sequence.empty mvtPoints mvtLines mvtPolygons (fromIntegral getExtents)
   pure . VectorTileTypes.VectorTile $ HashMapLazy.fromList [(_name, layer)]
 
 getFeatures :: Geospatial.GeoFeatureCollection Aeson.Value -> ST.ST s VectorTileTypes.MvtFeatures
@@ -73,7 +75,8 @@ getFeatures Geospatial.GeoFeatureCollection{..} = GeoJsonToMvt.geoJsonFeaturesTo
 convertClipSimplify :: TypesConfig.Config -> Geospatial.GeospatialGeometry -> Geospatial.GeospatialGeometry
 convertClipSimplify TypesConfig.Config{..} feature = simplifiedFeatures
   where
-    sphericalMercatorPts = SphericalMercator.mapFeature _extents _quantizePixels (SphericalMercator.boundingBox _gtc) feature
-    clipBb = Clip.createBoundingBox _buffer _extents
+    getExtents = TypesConfig.defaultExtents _extents
+    sphericalMercatorPts = SphericalMercator.mapFeature getExtents _quantizePixels (SphericalMercator.boundingBox _gtc) feature
+    clipBb = Clip.createBoundingBox _buffer getExtents
     clippedFeatures = Clip.mapFeature clipBb sphericalMercatorPts
     simplifiedFeatures = Simplify.mapFeature _simplify clippedFeatures

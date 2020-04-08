@@ -18,10 +18,10 @@ import           Data.Geometry.Types.Config
 import           Data.SpecHelper
 
 config :: Config
-config = mkConfig "foo" 18 (236629,160842) 128 2048 1 NoAlgorithm
+config = mkConfig "foo" 18 (236629,160842) 128 (Just 2048) 1 NoAlgorithm
 
 extentsBb :: ZoomConfig
-extentsBb = ZoomConfig (_extents config) (_quantizePixels config) (boundingBox $ _gtc config) NoAlgorithm
+extentsBb = ZoomConfig (defaultExtents $ _extents config) (_quantizePixels config) (boundingBox $ _gtc config) NoAlgorithm
 
 pt1 :: Geospatial.GeoPoint
 pt1 = Geospatial.GeoPoint (Geospatial.GeoPointXY (Geospatial.PointXY 144.961043 (-37.800096)))

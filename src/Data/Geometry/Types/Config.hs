@@ -14,6 +14,7 @@ module Data.Geometry.Types.Config where
 import qualified Data.Aeson                    as Aeson
 import qualified Data.ByteString.Lazy          as ByteStringLazy
 import qualified Data.Char                     as Char
+import qualified Data.Maybe                    as Maybe
 import qualified Data.Monoid                   as Monoid
 import qualified Data.Semigroup                as Semigroup
 import qualified Data.String                   as String
@@ -27,15 +28,18 @@ data Config = Config
   { _name           :: ByteStringLazy.ByteString
   , _gtc            :: TypesGeography.GoogleTileCoordsInt
   , _buffer         :: Word.Word
-  , _extents        :: Int
+  , _extents        :: Maybe Int
   , _quantizePixels :: Int
   , _simplify       :: SimplificationAlgorithm
   , _version        :: Word.Word
   } deriving (Show, Eq)
 
-mkConfig :: Text.Text -> TypesGeography.Pixels -> (TypesGeography.Pixels, TypesGeography.Pixels) -> TypesGeography.Pixels -> TypesGeography.Pixels -> TypesGeography.Pixels -> SimplificationAlgorithm -> Config
+mkConfig :: Text.Text -> TypesGeography.Pixels -> (TypesGeography.Pixels, TypesGeography.Pixels) -> TypesGeography.Pixels -> Maybe TypesGeography.Pixels -> TypesGeography.Pixels -> SimplificationAlgorithm -> Config
 mkConfig name z (x, y) buffer extents quantizePixels simplify = Config ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) name) (TypesGeography.mkGoogleTileCoordsInt z x y)
-  (fromIntegral buffer) (fromIntegral extents) (TypesGeography.toInt quantizePixels) simplify TypesGeography.defaultVersion
+  (fromIntegral buffer) (fmap fromIntegral extents) (TypesGeography.toInt quantizePixels) simplify TypesGeography.defaultVersion
+
+defaultExtents :: Maybe Int -> Int
+defaultExtents = Maybe.fromMaybe 4096
 
 -- Zoom Config
 

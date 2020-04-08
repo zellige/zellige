@@ -28,7 +28,7 @@ spec =
   testWriteFixtures
 
 config :: TypesConfig.Config
-config = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer 4096 1 TypesConfig.NoAlgorithm
+config = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer (Just 4096) 1 TypesConfig.NoAlgorithm
 
 testWriteFixtures :: Spec
 testWriteFixtures =
