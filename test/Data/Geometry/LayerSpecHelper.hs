@@ -62,22 +62,22 @@ checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileT
 checkForPointsNoMetadata = checkForPoints LazyHashMap.empty
 
 checkForPointsAt :: Word -> LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
-checkForPointsAt startId expectedMetadata expectedSeq = checkForPointsInFeatures startId (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+checkForPointsAt startId expectedMeta expectedSeq = checkForPointsInFeatures startId (Sequence.singleton expectedMeta) (Sequence.singleton expectedSeq)
 
 checkForPoints :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
-checkForPoints expectedMetadata expectedSeq = checkForPointsInFeatures 1 (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+checkForPoints expectedMeta expectedSeq = checkForPointsInFeatures 1 (Sequence.singleton expectedMeta) (Sequence.singleton expectedSeq)
 
 checkForPointsInFeatures :: Word -> Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> VectorTileTypes.Layer -> IO ()
 checkForPointsInFeatures startId expectedMetadatas seqPoints = checkForAllFeatures startId expectedMetadatas seqPoints Sequence.empty Sequence.empty
 
 checkForLineStrings :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.LineString -> VectorTileTypes.Layer -> IO ()
-checkForLineStrings expectedMetadata expectedSeq = checkForAllFeatures 1 (Sequence.singleton expectedMetadata) Sequence.empty (Sequence.singleton expectedSeq) Sequence.empty
+checkForLineStrings expectedMeta expectedSeq = checkForAllFeatures 1 (Sequence.singleton expectedMeta) Sequence.empty (Sequence.singleton expectedSeq) Sequence.empty
 
 checkForLineStringsInFeatures :: Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.LineString) -> VectorTileTypes.Layer -> IO ()
 checkForLineStringsInFeatures expectedMetadatas seqLineStrings = checkForAllFeatures 1 expectedMetadatas Sequence.empty seqLineStrings Sequence.empty
 
 checkForPolygons :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()
-checkForPolygons expectedMetadata seqPolygons = checkForAllFeatures 1 (Sequence.singleton expectedMetadata) Sequence.empty Sequence.empty (Sequence.singleton seqPolygons)
+checkForPolygons expectedMeta seqPolygons = checkForAllFeatures 1 (Sequence.singleton expectedMeta) Sequence.empty Sequence.empty (Sequence.singleton seqPolygons)
 
 checkForAllFeatures :: Word -> Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.LineString) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Polygon) -> VectorTileTypes.Layer -> IO ()
 checkForAllFeatures startId expectedMetadatas seqPoints seqLineStrings seqPolygons layer = do

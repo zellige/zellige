@@ -52,7 +52,7 @@ testReadFixtures =
     -- Default of 4096 if missing. https://github.com/mapbox/vector-tile-spec/blob/master/2.1/vector_tile.proto#L70
     it "MVT test 009: Tile layer extent missing" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/009/tile.mvt"
-      shouldBeSuccess layersOrErr checkLayer
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints emptyMetadata expectedPoint))
     it "MVT test 010: Tile layer value is encoded as int, but pretends to be string" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/010/tile.mvt"
       either (\x -> Text.unpack x `shouldContain` "Unknown field found or failure parsing field") (const (expectationFailure "Should've failed")) layersOrErr

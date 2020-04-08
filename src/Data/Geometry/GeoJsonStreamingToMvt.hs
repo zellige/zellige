@@ -22,17 +22,22 @@ import qualified Data.Geometry.Types.Config                                     
 import qualified Data.Geometry.Types.GeoJsonFeatures                               as TypesGeoJsonFeatures
 import qualified Data.Geometry.Types.MvtFeatures                                   as TypesMvtFeatures
 
-foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
-foldStreamingLayer = Foldl.Fold step begin done
-  where
-    begin = TypesMvtFeatures.emptyStreamingLayer
 
-    step (TypesMvtFeatures.StreamingLayer featureId ks vs features) (geom, value) = TypesMvtFeatures.StreamingLayer (featureId + 1) (TypesMvtFeatures.KeyStore newKeyCount newKeyStore newKeyList) (TypesMvtFeatures.ValueStore newValueCount newValueStore newValueList) newFeatures
+foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
+foldStreamingLayer = foldStreamingLayerFrom (Just 0)
+
+foldStreamingLayerFrom :: Maybe Word -> Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
+foldStreamingLayerFrom maybeStartId = Foldl.Fold step begin done
+  where
+    begin = TypesMvtFeatures.emptyStreamingLayer maybeStartId
+
+    step (TypesMvtFeatures.StreamingLayer featureId ks vs features) (geom, value) = TypesMvtFeatures.StreamingLayer incFeatureId (TypesMvtFeatures.KeyStore newKeyCount newKeyStore newKeyList) (TypesMvtFeatures.ValueStore newValueCount newValueStore newValueList) newFeatures
       where
+        incFeatureId = fmap (+1) featureId
         convertedProps = TypesGeoJsonFeatures.convertProps value
         (newKeyCount, newKeyStore, newKeyList) = TypesMvtFeatures.newKeys ks (HashMapStrict.keys convertedProps)
         (newValueCount, newValueStore, newValueList) = TypesMvtFeatures.newValues vs (HashMapStrict.elems convertedProps)
-        newFeatures = TypesMvtFeatures.newConvertGeometry features (featureId + 1) convertedProps newKeyStore newValueStore geom
+        newFeatures = TypesMvtFeatures.newConvertGeometry features incFeatureId convertedProps newKeyStore newValueStore geom
 
     done = id
 
@@ -49,7 +54,7 @@ createLayerFromStreamingLayer TypesConfig.Config{..} (TypesMvtFeatures.Streaming
 
 createTileFromStreamingLayer :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> Tile.Tile
 createTileFromStreamingLayer config sl@TypesMvtFeatures.StreamingLayer{..}
-  | featureId == 0 = Tile.Tile
+  | Sequence.null slFeatures = Tile.Tile
     { Tile.layers = Sequence.empty
     , Tile.ext'field = ProtocolBuffersBasic.defaultValue
     }
