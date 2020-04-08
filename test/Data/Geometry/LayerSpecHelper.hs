@@ -63,7 +63,7 @@ checkForPoints expectedMetadata expectedSeq = checkForPointsInFeatures 1 (Sequen
 
 checkForPointsInFeatures :: Word -> Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> VectorTileTypes.Layer -> IO ()
 checkForPointsInFeatures startId expectedMetadatas expectedSeqs layer = do
-  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [startId..]
+  let ids = fmap Just . Sequence.fromList $ take (Sequence.length expectedSeqs) [startId..]
       expectedPoints = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` expectedPoints
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
@@ -74,7 +74,7 @@ checkForLineStrings expectedMetadata expectedSeq = checkForLineStringsInFeatures
 
 checkForLineStringsInFeatures :: Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.LineString) -> VectorTileTypes.Layer -> IO ()
 checkForLineStringsInFeatures expectedMetadatas expectedSeqs layer = do
-  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+  let ids = fmap Just . Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
       expectedLineStrings = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` Sequence.empty
   VectorTileTypes._linestrings layer `shouldBe` expectedLineStrings
@@ -82,14 +82,14 @@ checkForLineStringsInFeatures expectedMetadatas expectedSeqs layer = do
 
 checkForPolygons :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Polygon -> VectorTileTypes.Layer -> IO ()
 checkForPolygons expectedMetadata expectedSeq layer = do
-  let expectedPolygon = Sequence.singleton (VectorTileTypes.Feature 1 expectedMetadata expectedSeq)
+  let expectedPolygon = Sequence.singleton (VectorTileTypes.Feature (Just 1) expectedMetadata expectedSeq)
   VectorTileTypes._points layer `shouldBe` Sequence.empty
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
   VectorTileTypes._polygons layer `shouldBe` expectedPolygon
 
 checkForPolygonsInFeatures :: Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Polygon) -> VectorTileTypes.Layer -> IO ()
 checkForPolygonsInFeatures expectedMetadatas expectedSeqs layer = do
-  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+  let ids = fmap Just . Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
       expectedPolygons = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` Sequence.empty
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty

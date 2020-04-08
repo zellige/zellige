@@ -58,7 +58,7 @@ testPoints =
       let point = Geospatial.Point pt1
           feature = Geospatial.GeoFeature Nothing point AesonTypes.Null (mkFeatureID x)
           pts = tupleToPts [(840, 2194)]
-          result = VectorTileTypes.MvtFeatures mempty (Sequence.singleton $ VectorTile.Feature x HashMapStrict.empty pts) mempty mempty
+          result = VectorTileTypes.MvtFeatures mempty (Sequence.singleton $ VectorTile.Feature (Just x) HashMapStrict.empty pts) mempty mempty
           actual = MonadST.runST $ GeoJsonToMvt.geoJsonFeaturesToMvtFeatures VectorTileTypes.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
@@ -70,7 +70,7 @@ testLines =
       let feature = Geospatial.GeoFeature Nothing line AesonTypes.Null (mkFeatureID x)
           line = Geospatial.Line . Geospatial.GeoLine $ LineString.makeLineString (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) Sequence.empty
           pts = tupleToPts [(840, 2194), (23, 2098)]
-          result = VectorTileTypes.MvtFeatures mempty mempty (Sequence.fromList [VectorTile.Feature x HashMapStrict.empty (Sequence.fromList [VectorTile.LineString pts])]) mempty
+          result = VectorTileTypes.MvtFeatures mempty mempty (Sequence.fromList [VectorTile.Feature (Just x) HashMapStrict.empty (Sequence.fromList [VectorTile.LineString pts])]) mempty
           actual = MonadST.runST $ GeoJsonToMvt.geoJsonFeaturesToMvtFeatures VectorTileTypes.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
@@ -82,7 +82,7 @@ testPolygons =
       let feature = Geospatial.GeoFeature Nothing polygon AesonTypes.Null (mkFeatureID x)
           polygon = Geospatial.Polygon . Geospatial.GeoPolygon $ Sequence.fromList [LinearRing.makeLinearRing (Geospatial._unGeoPoint pt1) (Geospatial._unGeoPoint pt2) (Geospatial._unGeoPoint pt3) mempty]
           pts = tupleToPts [(840, 2194), (23, 2098), (178, 1162), (840, 2194)]
-          result = VectorTileTypes.MvtFeatures mempty mempty mempty (Sequence.fromList [VectorTile.Feature x HashMapStrict.empty (Sequence.fromList [VectorTile.Polygon pts mempty])])
+          result = VectorTileTypes.MvtFeatures mempty mempty mempty (Sequence.fromList [VectorTile.Feature (Just x) HashMapStrict.empty (Sequence.fromList [VectorTile.Polygon pts mempty])])
           actual = MonadST.runST $ GeoJsonToMvt.geoJsonFeaturesToMvtFeatures VectorTileTypes.emptyMvtFeatures (Sequence.fromList [feature])
       actual `shouldBe` result
 
@@ -93,6 +93,6 @@ testCounter =
     let feature = Geospatial.GeoFeature Nothing point AesonTypes.Null Nothing
         point = Geospatial.Point pt1
         pts = tupleToPts [(840, 2194)]
-        result = VectorTileTypes.MvtFeatures mempty (Sequence.fromList [VectorTile.Feature 1 HashMapStrict.empty pts, VectorTile.Feature 2 HashMapStrict.empty pts]) mempty mempty
+        result = VectorTileTypes.MvtFeatures mempty (Sequence.fromList [VectorTile.Feature (Just 1) HashMapStrict.empty pts, VectorTile.Feature (Just 2) HashMapStrict.empty pts]) mempty mempty
         actual = MonadST.runST $ GeoJsonToMvt.geoJsonFeaturesToMvtFeatures VectorTileTypes.emptyMvtFeatures (Sequence.fromList [feature, feature])
     actual `shouldBe` result

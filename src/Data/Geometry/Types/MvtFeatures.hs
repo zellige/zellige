@@ -64,12 +64,12 @@ newConvertGeometry :: Sequence.Seq Feature.Feature -> Word -> HashMapStrict.Hash
 newConvertGeometry acc fid convertedProps keys values geom =
   case geom of
     Geospatial.NoGeometry     -> acc
-    Geospatial.Point g        -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPoint g)) acc
-    Geospatial.MultiPoint g   -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPoint g)) acc
-    Geospatial.Line g         -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertLineString g)) acc
-    Geospatial.MultiLine g    -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiLineString g)) acc
-    Geospatial.Polygon g      -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertPolygon g)) acc
-    Geospatial.MultiPolygon g -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature fid convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
+    Geospatial.Point g        -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertPoint g)) acc
+    Geospatial.MultiPoint g   -> checkAndAdd keys values (Just GeomType.POINT) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertMultiPoint g)) acc
+    Geospatial.Line g         -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertLineString g)) acc
+    Geospatial.MultiLine g    -> checkAndAdd keys values (Just GeomType.LINESTRING) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertMultiLineString g)) acc
+    Geospatial.Polygon g      -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertPolygon g)) acc
+    Geospatial.MultiPolygon g -> checkAndAdd keys values (Just GeomType.POLYGON) (VectorTile.Feature (Just fid) convertedProps (TypesGeoJsonFeatures.convertMultiPolygon g)) acc
     Geospatial.Collection gs -> Foldable.foldMap (newConvertGeometry acc fid convertedProps keys values) gs
 
 checkAndAdd :: (VectorTile.ProtobufGeom g, VectorTile.GeomVec g ~ ProtocolBuffersBasic.Seq a) => HashMapStrict.HashMap ProtocolBuffersBasic.ByteString Int -> HashMapStrict.HashMap VectorTile.Val Int -> Maybe GeomType.GeomType -> VectorTile.Feature (ProtocolBuffersBasic.Seq a) -> ProtocolBuffersBasic.Seq Feature.Feature -> ProtocolBuffersBasic.Seq Feature.Feature

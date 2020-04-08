@@ -336,7 +336,7 @@ feats _ _ Seq.Empty = Left "VectorTile.features: `[RawFeature]` empty"
 feats keys vals fs = Foldable.foldlM g VT.emptyMvtFeatures fs
   where f :: ProtobufGeom g => Feature.Feature -> Either Text (VT.Feature (VT.GeomVec g))
         f x = VT.Feature
-          <$> pure (maybe 0 fromIntegral $ Feature.id x)
+          <$> pure (fmap fromIntegral (Feature.id x))
           <*> getMeta keys vals (Feature.tags x)
           <*> (fromCommands . commands $ Feature.geometry x)
 
@@ -372,12 +372,12 @@ unfeats :: ProtobufGeom g
         -> Maybe GeomType.GeomType
         -> VT.Feature (VT.GeomVec g)
         -> Feature.Feature
-unfeats keys vals gt fe = Feature.Feature
-                            { Feature.id       = Just . fromIntegral $ VT._featureId fe
-                            , Feature.tags     = Seq.fromList $ tags fe
+unfeats keys vals gt VT.Feature{..} = Feature.Feature
+                            { Feature.id       = fmap fromIntegral _featureId
+                            , Feature.tags     = Seq.fromList tags
                             , Feature.type'    = gt
-                            , Feature.geometry = uncommands . toCommands $ VT._geometries fe }
-  where tags = unpairs . map f . M.toList . VT._metadata
+                            , Feature.geometry = uncommands $ toCommands _geometries }
+  where tags = unpairs . map f $ M.toList _metadata
         f (k,v) = (fromIntegral . fromJust $ M.lookup k keys, fromIntegral . fromJust $ M.lookup v vals)
 
 {- UTIL -}

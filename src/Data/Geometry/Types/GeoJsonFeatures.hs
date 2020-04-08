@@ -23,7 +23,7 @@ sToF :: Scientific.Scientific -> Double
 sToF = Scientific.toRealFloat
 
 mkPoint :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.Point -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.Point))
-mkPoint fId props p = (Sequence.<|) (VectorTile.Feature fId (convertProps props) p)
+mkPoint fId props p = (Sequence.<|) (VectorTile.Feature (Just fId) (convertProps props) p)
 
 mkLineString :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.LineString -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString)) -> Sequence.Seq (VectorTile.Feature (Sequence.Seq VectorTile.LineString))
 mkLineString fId props l = (Sequence.<|) (mkFeature fId props l)
@@ -32,7 +32,7 @@ mkPolygon :: Word -> AesonTypes.Value -> Sequence.Seq VectorTile.Polygon -> Sequ
 mkPolygon x props o = (Sequence.<|) (mkFeature x props o)
 
 mkFeature :: Word -> AesonTypes.Value -> Sequence.Seq g -> VectorTile.Feature (Sequence.Seq g)
-mkFeature fId props = VectorTile.Feature fId (convertProps props)
+mkFeature fId props = VectorTile.Feature (Just fId) (convertProps props)
 
 convertProps :: AesonTypes.Value -> HashMapStrict.HashMap ByteStringLazy.ByteString VectorTile.Val
 convertProps (AesonTypes.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> HashMapStrict.insert k' v' acc) (convertElems (k, v))) HashMapStrict.empty x

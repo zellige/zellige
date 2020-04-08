@@ -48,7 +48,7 @@ numberOfFeatures l = sum [Sequence.length (_unknowns l), Sequence.length (_point
 data Feature gs
   = Feature
       { -- | Default: 0
-        _featureId  :: Word,
+        _featureId  :: Maybe Word,
         _metadata   :: M.HashMap BL.ByteString Val,
         _geometries :: gs
       }
