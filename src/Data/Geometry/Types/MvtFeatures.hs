@@ -34,7 +34,7 @@ data StreamingLayer = StreamingLayer
   }
 
 emptyStreamingLayer :: StreamingLayer
-emptyStreamingLayer = StreamingLayer 1 (KeyStore 0 mempty mempty) (ValueStore 0 mempty mempty) mempty
+emptyStreamingLayer = StreamingLayer 0 (KeyStore 0 mempty mempty) (ValueStore 0 mempty mempty) mempty
 
 data KeyStore = KeyStore
   { ksKeyInt :: Int

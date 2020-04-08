@@ -49,7 +49,7 @@ createLayerFromStreamingLayer TypesConfig.Config{..} (TypesMvtFeatures.Streaming
 
 createTileFromStreamingLayer :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> Tile.Tile
 createTileFromStreamingLayer config sl@TypesMvtFeatures.StreamingLayer{..}
-  | featureId == 1 = Tile.Tile
+  | featureId == 0 = Tile.Tile
     { Tile.layers = Sequence.empty
     , Tile.ext'field = ProtocolBuffersBasic.defaultValue
     }

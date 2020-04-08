@@ -4,21 +4,15 @@
 module Data.Geometry.MapnikVectorTileSpec where
 
 import qualified Control.Exception                 as Exception
-import qualified Control.Monad.IO.Class            as MonadIO
-import qualified Data.ByteString.Lazy              as LazyByteString
-import qualified Data.ByteString.Lazy              as ByteStringLazy
-import           Data.Geometry.LayerSpecHelper
 import qualified Data.HashMap.Lazy                 as LazyHashMap
 import qualified Data.Sequence                     as Sequence
 import qualified Data.Text                         as Text
-import qualified Data.Text.Encoding                as TextEncoding
-import           Test.Hspec                        (Expectation, Spec, describe,
+import           Test.Hspec                        (Spec, describe,
                                                     expectationFailure, it,
                                                     shouldBe, shouldContain,
                                                     shouldThrow)
 
-
-import qualified Data.Geometry.MapnikVectorTile    as MapnikVectorTile
+import           Data.Geometry.LayerSpecHelper
 import qualified Data.Geometry.VectorTile.Geometry as VectorTileGeometry
 import qualified Data.Geometry.VectorTile.Types    as VectorTileTypes
 
@@ -35,7 +29,8 @@ testReadFixtures =
       shouldBeSuccess layersOrErr expectations
     it "MVT test 002: Tile with single point feature without id" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/002/tile.mvt"
-      shouldBeSuccess layersOrErr checkLayer
+      let expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPointsAt 0 expectedMetadata expectedPoint))
     -- Default of UKNOWN if missing. https://github.com/mapbox/vector-tile-spec/blob/master/2.1/vector_tile.proto#L41
     it "MVT test 003: Tile with single point with missing geometry type" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/003/tile.mvt"
@@ -228,7 +223,7 @@ testReadFixtures =
             LazyHashMap.fromList [("poi", VectorTileTypes.St "bathroom")],
             LazyHashMap.fromList [("poi", VectorTileTypes.St "tree")],
             LazyHashMap.fromList [("poi", VectorTileTypes.St "bench")]]
-      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (checkForPointsInFeatures expectedMetadata expectedPoints))
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (checkForPointsInFeatures 1 expectedMetadata expectedPoints))
     it "MVT test 044: Geometry field begins with a ClosePath command, which is invalid" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/044/tile.mvt"
       Exception.evaluate layersOrErr `shouldThrow` errorCallContains "LineTo Requires 2 Paramters"

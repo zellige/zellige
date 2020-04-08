@@ -1,26 +1,21 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module Data.Geometry.LayerSpecHelper where
 
-import qualified Control.Exception                   as Exception
-import qualified Control.Monad.IO.Class              as MonadIO
-import qualified Data.ByteString.Lazy                as ByteStringLazy
-import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
-import qualified Data.Geospatial                     as Geospatial
-import qualified Data.HashMap.Lazy                   as LazyHashMap
-import qualified Data.LinearRing                     as LinearRing
-import qualified Data.LineString                     as LineString
-import qualified Data.Sequence                       as Sequence
-import qualified Data.Text                           as Text
-import qualified Data.Text.Encoding                  as TextEncoding
-import           Test.Hspec                          (Expectation, Spec,
-                                                      describe,
-                                                      expectationFailure, it,
-                                                      shouldBe, shouldContain,
-                                                      shouldThrow)
+import qualified Control.Exception                 as Exception
+import qualified Control.Monad.IO.Class            as MonadIO
+import qualified Data.ByteString.Lazy              as ByteStringLazy
+import qualified Data.HashMap.Lazy                 as LazyHashMap
+import qualified Data.Sequence                     as Sequence
+import qualified Data.Text                         as Text
+import qualified Data.Text.Encoding                as TextEncoding
+import           Test.Hspec                        (Expectation,
+                                                    expectationFailure,
+                                                    shouldBe)
 
-import qualified Data.Geometry.MapnikVectorTile      as MapnikVectorTile
-import qualified Data.Geometry.Types.Geography       as TypesGeography
-import qualified Data.Geometry.VectorTile.Geometry   as VectorTileGeometry
-import qualified Data.Geometry.VectorTile.Types      as VectorTileTypes
+import qualified Data.Geometry.MapnikVectorTile    as MapnikVectorTile
+import qualified Data.Geometry.VectorTile.Geometry as VectorTileGeometry
+import qualified Data.Geometry.VectorTile.Types    as VectorTileTypes
 
 
 errorCallContains :: Text.Text -> Exception.ErrorCall -> Bool
@@ -60,12 +55,15 @@ expectedPoint = Sequence.singleton (VectorTileGeometry.Point 25 17)
 checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
 checkForPointsNoMetadata = checkForPoints LazyHashMap.empty
 
-checkForPoints :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
-checkForPoints expectedMetadata expectedSeq = checkForPointsInFeatures (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+checkForPointsAt :: Word -> LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
+checkForPointsAt startId expectedMetadata expectedSeq = checkForPointsInFeatures startId (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
 
-checkForPointsInFeatures :: Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> VectorTileTypes.Layer -> IO ()
-checkForPointsInFeatures expectedMetadatas expectedSeqs layer = do
-  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [1..]
+checkForPoints :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
+checkForPoints expectedMetadata expectedSeq = checkForPointsInFeatures 1 (Sequence.singleton expectedMetadata) (Sequence.singleton expectedSeq)
+
+checkForPointsInFeatures :: Word -> Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> VectorTileTypes.Layer -> IO ()
+checkForPointsInFeatures startId expectedMetadatas expectedSeqs layer = do
+  let ids = Sequence.fromList $ take (Sequence.length expectedSeqs) [startId..]
       expectedPoints = Sequence.zipWith3 VectorTileTypes.Feature ids expectedMetadatas expectedSeqs
   VectorTileTypes._points layer `shouldBe` expectedPoints
   VectorTileTypes._linestrings layer `shouldBe` Sequence.empty
