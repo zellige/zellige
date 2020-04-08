@@ -31,7 +31,7 @@ jobs:
         cache-name: cache-zellige-stack-local-modules-linux-v2
       with:
         path: .stack-work/
-        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
 
     - name: stack install, build and test
       run: |
@@ -78,7 +78,7 @@ jobs:
         cache-name: cache-zellige-stack-local-modules-windows-v2
       with:
         path: d:\a\zellige\zellige\.stack-work
-        key: ${{ hashFiles('**/hastile.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
       
     - name: stack install, build and test
       run: |
