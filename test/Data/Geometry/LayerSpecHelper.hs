@@ -52,6 +52,12 @@ basicLayerChecks layerName version numberOfFeatures layer = do
 expectedPoint :: Sequence.Seq VectorTileGeometry.Point
 expectedPoint = Sequence.singleton (VectorTileGeometry.Point 25 17)
 
+emptyMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+emptyMetadata = LazyHashMap.empty
+
+expectedMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+
 checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
 checkForPointsNoMetadata = checkForPoints LazyHashMap.empty
 

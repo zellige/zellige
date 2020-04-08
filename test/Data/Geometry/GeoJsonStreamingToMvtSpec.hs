@@ -47,21 +47,18 @@ testWriteFixtures =
     it "MVT test 009: Tile layer extent missing" $ do
       let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Point . Geospatial.GeoPoint . Geospatial.GeoPointXY $ Geospatial.PointXY 25 17, AesonTypes.Null))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
-          expectedMetadata = HashMapLazy.empty
-          checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
+          checkPoints = checkLayerWith (checkForPoints emptyMetadata expectedPoint)
       checkWriteTile tile checkPoints
       checkWriteTile tile checkLayer
     it "MVT test 017: Tile layer extent missing" $ do
       let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Point . Geospatial.GeoPoint . Geospatial.GeoPointXY $ Geospatial.PointXY 25 17, AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
-          expectedMetadata = HashMapLazy.fromList [("hello", VectorTileTypes.St "world")]
           checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
       checkWriteTile tile checkPoints
       checkWriteTile tile checkLayer
     it "MVT test 018: Valid linestring geometry" $ do
       let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Line (Geospatial.GeoLine $ LineString.makeLineString (Geospatial.GeoPointXY $ Geospatial.PointXY 2 2) (Geospatial.GeoPointXY $ Geospatial.PointXY 2 10) (Sequence.singleton $ Geospatial.GeoPointXY $ Geospatial.PointXY 10 10)), AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
-          expectedMetadata = HashMapLazy.fromList [("hello", VectorTileTypes.St "world")]
           expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]))
           checkPoints = checkLayerWith (checkForLineStrings expectedMetadata expectedLineStrings)
       checkWriteTile tile checkPoints
@@ -69,7 +66,6 @@ testWriteFixtures =
     it "MVT test 019: Valid polygon geometry" $ do
       let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Polygon (Geospatial.GeoPolygon $ Sequence.singleton $ LinearRing.makeLinearRing (Geospatial.GeoPointXY $ Geospatial.PointXY 3 6) (Geospatial.GeoPointXY $ Geospatial.PointXY 8 12) (Geospatial.GeoPointXY $ Geospatial.PointXY 20 34) (Sequence.singleton (Geospatial.GeoPointXY $ Geospatial.PointXY 3 6))), AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
-          expectedMetadata = HashMapLazy.fromList [("hello", VectorTileTypes.St "world")]
           expectedPolygons = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
           checkPoints = checkLayerWith (checkForPolygons expectedMetadata expectedPolygons)
       checkWriteTile tile checkPoints
