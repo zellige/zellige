@@ -38,12 +38,14 @@ testWriteFixtures =
           tile = GeoJsonStreamingToMvt.vtToBytes config stream
           expectations layers = HashMapLazy.size layers `shouldBe` 0
       checkWriteTile tile expectations
-    it "MVT test 002: Tile with single point feature without id" $ do
-      let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Point . Geospatial.GeoPoint . Geospatial.GeoPointXY $ Geospatial.PointXY 25 17,  AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]))
-          tile = GeoJsonStreamingToMvt.vtToBytes config stream
-          expectedMetadata = HashMapLazy.fromList [("hello", VectorTileTypes.St "world")]
-          foo = checkLayerWith (checkForPointsAt 0 expectedMetadata expectedPoint)
-      checkWriteTile tile foo
+    it "MVT test 009: Tile layer extent missing" $ do
+      let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Point . Geospatial.GeoPoint . Geospatial.GeoPointXY $ Geospatial.PointXY 25 17, AesonTypes.Null))
+          noExtentConfig = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer Nothing 1 TypesConfig.NoAlgorithm
+          tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
+          expectedMetadata = HashMapLazy.empty
+          checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
+      checkWriteTile tile checkPoints
+      checkWriteTile tile checkLayer
 
 checkWriteTile :: ByteString.ByteString -> (HashMapStrict.HashMap ByteStringLazy.ByteString VectorTileTypes.Layer -> Expectation) -> IO ()
 checkWriteTile tile expectations = IOTemp.withSystemTempFile "tile" $ \_ h -> do

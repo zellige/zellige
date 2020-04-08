@@ -32,7 +32,7 @@ foldStreamingLayer = Foldl.Fold step begin done
         convertedProps = TypesGeoJsonFeatures.convertProps value
         (newKeyCount, newKeyStore, newKeyList) = TypesMvtFeatures.newKeys ks (HashMapStrict.keys convertedProps)
         (newValueCount, newValueStore, newValueList) = TypesMvtFeatures.newValues vs (HashMapStrict.elems convertedProps)
-        newFeatures = TypesMvtFeatures.newConvertGeometry features featureId convertedProps newKeyStore newValueStore geom
+        newFeatures = TypesMvtFeatures.newConvertGeometry features (featureId + 1) convertedProps newKeyStore newValueStore geom
 
     done = id
 
