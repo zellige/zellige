@@ -38,8 +38,6 @@ convertProps :: AesonTypes.Value -> HashMapStrict.HashMap ByteStringLazy.ByteStr
 convertProps (AesonTypes.Object !x) = HashMapStrict.foldrWithKey (\k v acc -> maybe acc (\(!k', !v') -> HashMapStrict.insert k' v' acc) (convertElems (k, v))) HashMapStrict.empty x
 convertProps _                 = HashMapStrict.empty
 
--- data Val = St BL.ByteString | Fl Float | Do Double | I64 Int64 | W64 Word.Word64 | S64 Int64 | B Bool
-
 convertElems :: (Text.Text, AesonTypes.Value) -> Maybe (ByteStringLazy.ByteString, VectorTile.Val)
 convertElems (!k, AesonTypes.String !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.St ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) v))
 convertElems (!k, AesonTypes.Number !v) = Just ((ByteStringLazy.fromStrict . TextEncoding.encodeUtf8) k, VectorTile.Do (sToF v))

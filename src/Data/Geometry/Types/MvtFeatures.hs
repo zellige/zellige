@@ -33,6 +33,9 @@ data StreamingLayer = StreamingLayer
   , slFeatures   :: Sequence.Seq Feature.Feature
   }
 
+emptyStreamingLayer :: StreamingLayer
+emptyStreamingLayer = StreamingLayer 1 (KeyStore 0 mempty mempty) (ValueStore 0 mempty mempty) mempty
+
 data KeyStore = KeyStore
   { ksKeyInt :: Int
   , ksKeys   :: HashMapStrict.HashMap ByteStringLazy.ByteString Int

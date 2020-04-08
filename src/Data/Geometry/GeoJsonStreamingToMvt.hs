@@ -11,7 +11,6 @@ import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile    
 import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Layer as Layer
 import qualified Data.Geospatial                                                   as Geospatial
 import qualified Data.HashMap.Strict                                               as HashMapStrict
-import           Data.Monoid
 import qualified Data.Sequence                                                     as Sequence
 import           Prelude                                                           hiding
                                                                                     (Left,
@@ -26,7 +25,7 @@ import qualified Data.Geometry.Types.MvtFeatures                                
 foldStreamingLayer :: Foldl.Fold (Geospatial.GeospatialGeometry, AesonTypes.Value) TypesMvtFeatures.StreamingLayer
 foldStreamingLayer = Foldl.Fold step begin done
   where
-    begin = TypesMvtFeatures.StreamingLayer 1 (TypesMvtFeatures.KeyStore 0 mempty mempty) (TypesMvtFeatures.ValueStore 0 mempty mempty) mempty
+    begin = TypesMvtFeatures.emptyStreamingLayer
 
     step (TypesMvtFeatures.StreamingLayer featureId ks vs features) (geom, value) = TypesMvtFeatures.StreamingLayer (featureId + 1) (TypesMvtFeatures.KeyStore newKeyCount newKeyStore newKeyList) (TypesMvtFeatures.ValueStore newValueCount newValueStore newValueList) newFeatures
       where
@@ -49,10 +48,15 @@ createLayerFromStreamingLayer TypesConfig.Config{..} (TypesMvtFeatures.Streaming
   }
 
 createTileFromStreamingLayer :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> Tile.Tile
-createTileFromStreamingLayer config sl = Tile.Tile
-  { Tile.layers    = Sequence.fromList [createLayerFromStreamingLayer config sl]
-  , Tile.ext'field = ProtocolBuffersBasic.defaultValue
-  }
+createTileFromStreamingLayer config sl@TypesMvtFeatures.StreamingLayer{..}
+  | featureId == 1 = Tile.Tile
+    { Tile.layers = Sequence.empty
+    , Tile.ext'field = ProtocolBuffersBasic.defaultValue
+    }
+  | otherwise = Tile.Tile
+    { Tile.layers    = Sequence.singleton (createLayerFromStreamingLayer config sl)
+    , Tile.ext'field = ProtocolBuffersBasic.defaultValue
+    }
 
 vtToBytes :: TypesConfig.Config -> TypesMvtFeatures.StreamingLayer -> ByteString.ByteString
 vtToBytes config sl = ByteStringLazy.toStrict . WireMessage.messagePut $ createTileFromStreamingLayer config sl
