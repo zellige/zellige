@@ -23,7 +23,7 @@ jobs:
         cache-name: cache-zellige-stack-modules-linux-v3
       with:
         path: /home/runner/.stack/
-        key: ${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/stack.yaml.lock') }}-v3
 
     - name: Cache Stack Build
       uses: actions/cache@v1
@@ -31,7 +31,7 @@ jobs:
         cache-name: cache-zellige-stack-local-modules-linux-v3
       with:
         path: .stack-work/
-        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}-v3
 
     - name: stack install, build and test
       run: |
@@ -70,7 +70,7 @@ jobs:
         cache-name: cache-zellige-stack-modules-windows-v3
       with:
         path: C:\Users\runneradmin\AppData\Roaming\stack
-        key: ${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/stack.yaml.lock') }}-v3
 
     - name: Cache Stack Build
       uses: actions/cache@v1
@@ -78,7 +78,7 @@ jobs:
         cache-name: cache-zellige-stack-local-modules-windows-v3
       with:
         path: d:\a\zellige\zellige\.stack-work
-        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}
+        key: ${{ hashFiles('**/zellige.cabal') }}${{ hashFiles('**/stack.yaml.lock') }}-v3
       
     - name: stack install, build and test
       run: |
