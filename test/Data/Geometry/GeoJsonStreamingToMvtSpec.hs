@@ -46,6 +46,14 @@ testWriteFixtures =
           checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
       checkWriteTile tile checkPoints
       checkWriteTile tile checkLayer
+    it "MVT test 017: Tile layer extent missing" $ do
+      let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (Geospatial.Point . Geospatial.GeoPoint . Geospatial.GeoPointXY $ Geospatial.PointXY 25 17, AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]))
+          noExtentConfig = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer Nothing 1 TypesConfig.NoAlgorithm
+          tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
+          expectedMetadata = HashMapLazy.fromList [("hello", VectorTileTypes.St "world")]
+          checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
+      checkWriteTile tile checkPoints
+      checkWriteTile tile checkLayer
 
 checkWriteTile :: ByteString.ByteString -> (HashMapStrict.HashMap ByteStringLazy.ByteString VectorTileTypes.Layer -> Expectation) -> IO ()
 checkWriteTile tile expectations = IOTemp.withSystemTempFile "tile" $ \_ h -> do
