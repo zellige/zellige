@@ -88,13 +88,11 @@ testReadFixtures =
     it "MVT test 019: Valid polygon geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/019/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPolygons = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedMetadata expectedPolygons))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPolygons expectedMetadata expectedPolygon))
     it "MVT test 020: Valid multipoint geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/020/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedPoints = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedPoints))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadata expectedMultiPoint))
     it "MVT test 021: Valid multilinestring geometry" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/021/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer

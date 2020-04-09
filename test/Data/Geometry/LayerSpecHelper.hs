@@ -52,6 +52,12 @@ basicLayerChecks layerName version numberOfFeatures layer = do
 expectedPoint :: Sequence.Seq VectorTileGeometry.Point
 expectedPoint = Sequence.singleton (VectorTileGeometry.Point 25 17)
 
+expectedPolygon :: Sequence.Seq VectorTileGeometry.Polygon
+expectedPolygon = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
+
+expectedMultiPoint :: Sequence.Seq VectorTileGeometry.Point
+expectedMultiPoint = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
+
 emptyMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
 emptyMetadata = LazyHashMap.empty
 
