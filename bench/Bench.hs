@@ -2,21 +2,21 @@ module Main where
 
 import           Criterion.Main
 
-import qualified Data.Aeson                      as Aeson
-import qualified Data.Aeson.Types                as AesonTypes
-import qualified Data.Geospatial                 as Geospatial
-import qualified Data.LinearRing                 as LinearRing
-import qualified Data.LineString                 as LineString
-import qualified Data.Sequence                   as Sequence
-import qualified Data.Text                       as DataText
-import qualified Data.Geometry.VectorTile.VectorTile            as VectorTile
+import qualified Data.Aeson                          as Aeson
+import qualified Data.Aeson.Types                    as AesonTypes
+import qualified Data.Geometry.VectorTile.VectorTile as VectorTile
+import qualified Data.Geospatial                     as Geospatial
+import qualified Data.LinearRing                     as LinearRing
+import qualified Data.LineString                     as LineString
+import qualified Data.Sequence                       as Sequence
+import qualified Data.Text                           as DataText
 
-import qualified Data.Geometry.Clip              as Clip
-import qualified Data.Geometry.MapnikVectorTile  as MapnikVectorTile
-import qualified Data.Geometry.Types.Config      as Config
-import qualified Data.Geometry.Types.Config      as TypesConfig
-import qualified Data.Geometry.Types.Geography   as TypesGeography
-import qualified Data.Geometry.Types.LayerConfig as LayerConfig
+import qualified Data.Geometry.Clip                  as Clip
+import qualified Data.Geometry.MapnikVectorTile      as MapnikVectorTile
+import qualified Data.Geometry.Types.Config          as Config
+import qualified Data.Geometry.Types.Config          as TypesConfig
+import qualified Data.Geometry.Types.Geography       as TypesGeography
+import qualified Data.Geometry.Types.LayerConfig     as LayerConfig
 
 
 main :: IO ()
@@ -134,7 +134,7 @@ main = do
           , bench "100 Points" $ nf (testPolys 100 boundBox multiTenThousandPoly) Sequence.empty
           , bench "1000 Points" $ nf (testPolys 1000 boundBox multiTenThousandPoly) Sequence.empty
           , bench "10000 Points" $ nf (testPolys 10000 boundBox multiTenThousandPoly) Sequence.empty
-        ]
+          ]
       ]
     ]
 
@@ -201,7 +201,7 @@ boundBox :: TypesGeography.BoundingBox
 boundBox = TypesGeography.bboxPtsToBbox $ TypesGeography.BoundingBoxPts (VectorTile.Point 0 0) (VectorTile.Point 1 1)
 
 testConf :: Config.Config
-testConf = Config.mkConfig (DataText.pack "demo") 15 (28999,19781) 128 2048 1 TypesConfig.NoAlgorithm
+testConf = Config.mkConfig (DataText.pack "demo") 15 (28999,19781) 128 (Just 2048) 1 TypesConfig.NoAlgorithm
 
 smallFC :: LayerConfig.LayerConfig
 smallFC = LayerConfig.LayerConfig "./test/integration/small.json" "./dump/small.mvt" (DataText.pack "demo") 15 28999 19781 128 2048 1 TypesConfig.NoAlgorithm
