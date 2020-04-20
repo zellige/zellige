@@ -160,6 +160,7 @@ testReadFixtures =
     it "MVT test 039: Default values are actually encoded in the tile" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/039/tile.mvt"
       shouldBeSuccess layersOrErr (checkLayerWith (basicLayerChecks "hello" 1 1))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForUnknown 0 emptyMetadata))
     it "MVT test 040: Feature has tags that point to non-existent Key in the layer." $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/040/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
