@@ -10,6 +10,7 @@ import qualified Data.HashMap.Lazy                   as HashMapLazy
 import qualified Data.HashMap.Strict                 as HashMapStrict
 import qualified Data.LinearRing                     as LinearRing
 import qualified Data.LineString                     as LineString
+import qualified Data.Scientific                     as Scientific
 import qualified Data.Sequence                       as Sequence
 import qualified System.IO                           as IO
 import qualified System.IO.Temp                      as IOTemp
@@ -52,8 +53,7 @@ testWriteFixtures =
       checkWriteTile tile checkPoints
       checkWriteTile tile checkLayer
     it "MVT test 017: Tile layer extent missing" $ do
-      let point = Geospatial.Point . Geospatial.GeoPoint $ mkGeoPoint 25 17
-          stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, metadata))
+      let stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, metadata))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
           checkPoints = checkLayerWith (checkForPoints expectedMetadata expectedPoint)
       checkWriteTile tile checkPoints
@@ -94,14 +94,29 @@ testWriteFixtures =
       checkWriteTile tile checkMultiPolys
       checkWriteTile tile checkLayer
     it "MVT test 032: Layer with single feature with string property value" $ do
-      let point = Geospatial.Point . Geospatial.GeoPoint $ mkGeoPoint 25 17
-          stringMetadata = AesonTypes.Object $ HashMapStrict.fromList [( "key1", AesonTypes.String "i am a string value")]
+      let stringMetadata = AesonTypes.Object $ HashMapStrict.fromList [( "key1", AesonTypes.String "i am a string value")]
           stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, stringMetadata))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
       checkWriteTile tile (checkLayerWith (checkForPoints expectedStringMetadata expectedPoint))
+    it "MVT test 034: Layer with single feature with double property value" $ do
+      let floatMetadata = AesonTypes.Object $ HashMapStrict.fromList [( "key1", AesonTypes.Number (Scientific.fromFloatDigits (1.23 :: Double)))]
+          stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, floatMetadata))
+          tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
+      checkWriteTile tile (checkLayerWith (checkForPoints expectedDoubleMetadataKey expectedPoint))
+    it "MVT test 038: Layer with all types of property value" $ do
+      let floatMetadata = AesonTypes.Object $ HashMapStrict.fromList [
+            ( "string_value", AesonTypes.String "ello"),
+            ( "double_value", AesonTypes.Number (Scientific.fromFloatDigits (1.23 :: Double))),
+            ( "bool_value", AesonTypes.Bool True)]
+          stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, floatMetadata))
+          tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
+      checkWriteTile tile (checkLayerWith (checkForPoints expectedAllSupportedMetadataVals expectedPoint))
 
 mkGeoPoint :: Double -> Double -> Geospatial.GeoPositionWithoutCRS
 mkGeoPoint x y = Geospatial.GeoPointXY $ Geospatial.PointXY x y
+
+point :: Geospatial.GeospatialGeometry
+point = Geospatial.Point . Geospatial.GeoPoint $ mkGeoPoint 25 17
 
 checkWriteTile :: ByteString.ByteString -> (HashMapStrict.HashMap ByteStringLazy.ByteString VectorTileTypes.Layer -> Expectation) -> IO ()
 checkWriteTile tile expectations = IOTemp.withSystemTempFile "tile" $ \_ h -> do

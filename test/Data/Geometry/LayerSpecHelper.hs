@@ -90,6 +90,27 @@ expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
 expectedStringMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
 expectedStringMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.St "i am a string value")]
 
+expectedFloatingMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedFloatingMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.Fl 3.1)]
+
+expectedDoubleMetadataKey :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedDoubleMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.Do 1.23)]
+
+expectedIntMetadataKey :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedIntMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.I64 6)]
+
+expectedUnsignedMetadataKey :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedUnsignedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.W64 87948)]
+
+expectedSignedMetadataKey :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedSignedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.S64 87948)]
+
+expectedAllSupportedMetadataVals :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedAllSupportedMetadataVals = LazyHashMap.fromList [
+  ("double_value", VectorTileTypes.Do 1.23),
+  ("bool_value", VectorTileTypes.B True),
+  ("string_value", VectorTileTypes.St "ello")
+  ]
 
 checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
 checkForPointsNoMetadata = checkForPoints LazyHashMap.empty

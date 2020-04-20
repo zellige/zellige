@@ -127,40 +127,34 @@ testReadFixtures =
     it "MVT test 033: Layer with single feature with float property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/033/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.Fl 3.1)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedFloatingMetadata expectedPoint))
     it "MVT test 034: Layer with single feature with double property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/034/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.Do 1.23)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedDoubleMetadataKey expectedPoint))
     it "MVT test 035: Layer with single feature with int property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/035/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.I64 6)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedIntMetadataKey expectedPoint))
     it "MVT test 036: Layer with single feature with uint property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/036/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.W64 87948)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedUnsignedMetadataKey expectedPoint))
     it "MVT test 037: Layer with single feature with sint property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/037/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.S64 87948)]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedSignedMetadataKey expectedPoint))
     it "MVT test 038: Layer with all types of property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/038/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataVals = LazyHashMap.fromList [
-            ("float_value", VectorTileTypes.Fl 3.1),
-            ("double_value", VectorTileTypes.Do 1.23),
-            ("int_value", VectorTileTypes.I64 6),
-            ("uint_value", VectorTileTypes.W64 87948),
-            ("sint_value", VectorTileTypes.S64 (-87948)),
-            ("bool_value", VectorTileTypes.B True),
-            ("string_value", VectorTileTypes.St "ello")
-            ]
+      let expectedMetadataVals = LazyHashMap.union
+            (LazyHashMap.fromList [
+              ("float_value", VectorTileTypes.Fl 3.1),
+              ("int_value", VectorTileTypes.I64 6),
+              ("uint_value", VectorTileTypes.W64 87948),
+              ("sint_value", VectorTileTypes.S64 (-87948))
+              ])
+            expectedAllSupportedMetadataVals
       shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataVals expectedPoint))
     -- Default version is 1 https://github.com/mapbox/vector-tile-spec/blob/master/2.1/vector_tile.proto#L55
     it "MVT test 039: Default values are actually encoded in the tile" $ do
