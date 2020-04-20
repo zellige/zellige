@@ -1,13 +1,19 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, DeriveGeneric, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE BangPatterns          #-}
+{-# LANGUAGE DeriveDataTypeable    #-}
+{-# LANGUAGE DeriveGeneric         #-}
+{-# LANGUAGE FlexibleInstances     #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# OPTIONS_GHC  -fno-warn-unused-imports #-}
 module Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.Feature (Feature(..)) where
-import Prelude ((+), (/))
-import qualified Prelude as Prelude'
-import qualified Data.Typeable as Prelude'
-import qualified GHC.Generics as Prelude'
-import qualified Data.Data as Prelude'
-import qualified Text.ProtocolBuffers.Header as P'
-import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as Vector_tile.Tile (GeomType)
+import qualified Data.Data                                                            as Prelude'
+import qualified Data.Geometry.VectorTile.Protobuf.Internal.Vector_tile.Tile.GeomType as Vector_tile.Tile
+import qualified Data.Typeable                                                        as Prelude'
+import qualified GHC.Generics                                                         as Prelude'
+import           Prelude
+                                                                                       ((+),
+                                                                                       (/))
+import qualified Prelude                                                              as Prelude'
+import qualified Text.ProtocolBuffers.Header                                          as P'
 
 data Feature = Feature{id :: !(P'.Maybe P'.Word64), tags :: !(P'.Seq P'.Word32), type' :: !(P'.Maybe Vector_tile.Tile.GeomType),
                        geometry :: !(P'.Seq P'.Word32)}
@@ -17,15 +23,17 @@ instance P'.Mergeable Feature where
   mergeAppend (Feature x'1 x'2 x'3 x'4) (Feature y'1 y'2 y'3 y'4)
    = Feature (P'.mergeAppend x'1 y'1) (P'.mergeAppend x'2 y'2) (P'.mergeAppend x'3 y'3) (P'.mergeAppend x'4 y'4)
 
+-- (Prelude'.Just (Prelude'.read "UNKNOWN"))
+-- (Prelude'.Just Vector_tile.Tile.UNKNOWN)
 instance P'.Default Feature where
-  defaultValue = Feature (Prelude'.Just 0) P'.defaultValue (Prelude'.Just (Prelude'.read "UNKNOWN")) P'.defaultValue
+  defaultValue = Feature (Prelude'.Just 0) P'.defaultValue (Prelude'.Just Vector_tile.Tile.UNKNOWN) P'.defaultValue
 
 instance P'.Wire Feature where
   wireSize ft' self'@(Feature x'1 x'2 x'3 x'4)
    = case ft' of
        10 -> calc'Size
        11 -> P'.prependMessageSize calc'Size
-       _ -> P'.wireSizeErr ft' self'
+       _  -> P'.wireSizeErr ft' self'
     where
         calc'Size = P'.wireSizeOpt 1 4 x'1 + P'.wireSizePacked 1 13 x'2 + P'.wireSizeOpt 1 14 x'3 + P'.wireSizePacked 1 13 x'4
   wirePut ft' self'@(Feature x'1 x'2 x'3 x'4)
@@ -46,7 +54,7 @@ instance P'.Wire Feature where
    = case ft' of
        10 -> P'.getBareMessageWith update'Self
        11 -> P'.getMessageWith update'Self
-       _ -> P'.wireGetErr ft'
+       _  -> P'.wireGetErr ft'
     where
         update'Self wire'Tag old'Self
          = case wire'Tag of
