@@ -52,11 +52,35 @@ basicLayerChecks layerName version numberOfFeatures layer = do
 expectedPoint :: Sequence.Seq VectorTileGeometry.Point
 expectedPoint = Sequence.singleton (VectorTileGeometry.Point 25 17)
 
+expectedLineStrings :: Sequence.Seq VectorTileGeometry.LineString
+expectedLineStrings = Sequence.singleton (VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]))
+
+expectedMultiLineStrings :: Sequence.Seq VectorTileGeometry.LineString
+expectedMultiLineStrings = Sequence.fromList [VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 2 2, VectorTileGeometry.Point 2 10, VectorTileGeometry.Point 10 10]), VectorTileGeometry.LineString (Sequence.fromList [VectorTileGeometry.Point 1 1, VectorTileGeometry.Point 3 5])]
+
 expectedPolygon :: Sequence.Seq VectorTileGeometry.Polygon
 expectedPolygon = Sequence.singleton (VectorTileGeometry.Polygon (Sequence.fromList [VectorTileGeometry.Point 3 6, VectorTileGeometry.Point 8 12, VectorTileGeometry.Point 20 34, VectorTileGeometry.Point 3 6]) Sequence.empty)
 
 expectedMultiPoint :: Sequence.Seq VectorTileGeometry.Point
 expectedMultiPoint = Sequence.fromList [VectorTileGeometry.Point 5 7, VectorTileGeometry.Point 3 2]
+
+expectedPolygons :: Sequence.Seq VectorTileGeometry.Polygon
+expectedPolygons = Sequence.fromList [
+  VectorTileGeometry.Polygon
+    (Sequence.fromList [
+      VectorTileGeometry.Point 0 0, VectorTileGeometry.Point 10 0, VectorTileGeometry.Point 10 10, VectorTileGeometry.Point 0 10, VectorTileGeometry.Point 0 0])
+    Sequence.empty,
+  VectorTileGeometry.Polygon
+    (Sequence.fromList [
+      VectorTileGeometry.Point 11 11, VectorTileGeometry.Point 20 11, VectorTileGeometry.Point 20 20, VectorTileGeometry.Point 11 20, VectorTileGeometry.Point 11 11])
+    (Sequence.fromList [
+      VectorTileGeometry.Polygon
+        (Sequence.fromList [
+          VectorTileGeometry.Point 13 13, VectorTileGeometry.Point 13 17, VectorTileGeometry.Point 17 17, VectorTileGeometry.Point 17 13, VectorTileGeometry.Point 13 13]
+        )
+      Sequence.empty
+    ])
+  ]
 
 emptyMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
 emptyMetadata = LazyHashMap.empty
@@ -88,10 +112,10 @@ checkForPolygons expectedMeta seqPolygons = checkForAllFeatures 1 (Sequence.sing
 checkForAllFeatures :: Word -> Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Point) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.LineString) -> Sequence.Seq (Sequence.Seq VectorTileGeometry.Polygon) -> VectorTileTypes.Layer -> IO ()
 checkForAllFeatures startId expectedMetadatas seqPoints seqLineStrings seqPolygons layer = do
   let ids seqs = fmap Just . Sequence.fromList $ take (Sequence.length seqs) [startId..]
-      expectedPolygons = Sequence.zipWith3 VectorTileTypes.Feature (ids seqPolygons) expectedMetadatas seqPolygons
-      expectedLineStrings = Sequence.zipWith3 VectorTileTypes.Feature (ids seqLineStrings) expectedMetadatas seqLineStrings
-      expectedPoints = Sequence.zipWith3 VectorTileTypes.Feature (ids seqPoints) expectedMetadatas seqPoints
-  VectorTileTypes._points layer `shouldBe` expectedPoints
-  VectorTileTypes._linestrings layer `shouldBe` expectedLineStrings
-  VectorTileTypes._polygons layer `shouldBe` expectedPolygons
+      expectedPts = Sequence.zipWith3 VectorTileTypes.Feature (ids seqPoints) expectedMetadatas seqPoints
+      expectedLineStrs = Sequence.zipWith3 VectorTileTypes.Feature (ids seqLineStrings) expectedMetadatas seqLineStrings
+      expectedPolys = Sequence.zipWith3 VectorTileTypes.Feature (ids seqPolygons) expectedMetadatas seqPolygons
+  VectorTileTypes._points layer `shouldBe` expectedPts
+  VectorTileTypes._linestrings layer `shouldBe` expectedLineStrs
+  VectorTileTypes._polygons layer `shouldBe` expectedPolys
 
