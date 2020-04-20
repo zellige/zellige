@@ -123,8 +123,7 @@ testReadFixtures =
     it "MVT test 032: Layer with single feature with string property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/032/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer
-      let expectedMetadataKey = LazyHashMap.fromList [("key1", VectorTileTypes.St "i am a string value")]
-      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedMetadataKey expectedPoint))
+      shouldBeSuccess layersOrErr (checkLayerWith (checkForPoints expectedStringMetadata expectedPoint))
     it "MVT test 033: Layer with single feature with float property value" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/033/tile.mvt"
       shouldBeSuccess layersOrErr checkLayer

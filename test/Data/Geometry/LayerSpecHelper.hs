@@ -38,7 +38,6 @@ checkLayerWith = checkNamedLayerWith "hello"
 
 checkNamedLayerWith :: ByteStringLazy.ByteString -> (VectorTileTypes.Layer -> IO ()) -> LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Layer ->  Expectation
 checkNamedLayerWith layerName checks layers = do
-    MonadIO.liftIO $ LazyHashMap.size layers `shouldBe` 1
     let layer = LazyHashMap.lookup layerName layers
     maybe (expectationFailure (Text.unpack $ "[" <> TextEncoding.decodeUtf8 (ByteStringLazy.toStrict layerName) <> "] layer not found")) (MonadIO.liftIO . checks) layer
 
@@ -87,6 +86,10 @@ emptyMetadata = LazyHashMap.empty
 
 expectedMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
 expectedMetadata = LazyHashMap.fromList [("hello", VectorTileTypes.St "world")]
+
+expectedStringMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
+expectedStringMetadata = LazyHashMap.fromList [("key1", VectorTileTypes.St "i am a string value")]
+
 
 checkForPointsNoMetadata :: Sequence.Seq VectorTileGeometry.Point -> VectorTileTypes.Layer -> IO ()
 checkForPointsNoMetadata = checkForPoints LazyHashMap.empty

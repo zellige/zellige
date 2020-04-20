@@ -93,6 +93,12 @@ testWriteFixtures =
           checkMultiPolys = checkLayerWith (checkForPolygons expectedMetadata expectedPolygons)
       checkWriteTile tile checkMultiPolys
       checkWriteTile tile checkLayer
+    it "MVT test 032: Layer with single feature with string property value" $ do
+      let point = Geospatial.Point . Geospatial.GeoPoint $ mkGeoPoint 25 17
+          stringMetadata = AesonTypes.Object $ HashMapStrict.fromList [( "key1", AesonTypes.String "i am a string value")]
+          stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, stringMetadata))
+          tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
+      checkWriteTile tile (checkLayerWith (checkForPoints expectedStringMetadata expectedPoint))
 
 mkGeoPoint :: Double -> Double -> Geospatial.GeoPositionWithoutCRS
 mkGeoPoint x y = Geospatial.GeoPointXY $ Geospatial.PointXY x y
