@@ -35,6 +35,9 @@ config = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer (Just
 noExtentConfig :: TypesConfig.Config
 noExtentConfig = TypesConfig.mkConfig "hello" 1 (2,3) TypesGeography.defaultBuffer Nothing 1 TypesConfig.NoAlgorithm
 
+poiConfig :: TypesConfig.Config
+poiConfig = TypesConfig.mkConfig "park_features" 1 (2,3) TypesGeography.defaultBuffer Nothing 1 TypesConfig.NoAlgorithm
+
 metadata :: AesonTypes.Value
 metadata = AesonTypes.Object $ HashMapStrict.fromList [( "hello", AesonTypes.String "world")]
 
@@ -111,6 +114,20 @@ testWriteFixtures =
           stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer (Sequence.singleton (point, floatMetadata))
           tile = GeoJsonStreamingToMvt.vtToBytes noExtentConfig stream
       checkWriteTile tile (checkLayerWith (checkForPoints expectedAllSupportedMetadataVals expectedPoint))
+    it "MVT test 043: A layer with six points that all share the same key but each has a unique value." $ do
+      let poiMetadata = Sequence.fromList [
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "swing")],
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "water_fountain")],
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "slide")],
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "bathroom")],
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "tree")],
+              AesonTypes.Object $ HashMapStrict.fromList [( "poi", AesonTypes.String "bench")]
+            ]
+          poiPoints = Sequence.fromList [ mkGeoPoint 25 17, mkGeoPoint 26 19, mkGeoPoint 27 15, mkGeoPoint 60 10, mkGeoPoint 44 20, mkGeoPoint 23 49]
+          ptsAndMetadata = Sequence.zipWith (\x y -> (Geospatial.Point $ Geospatial.GeoPoint x, y)) poiPoints poiMetadata
+          stream = Foldl.fold GeoJsonStreamingToMvt.foldStreamingLayer ptsAndMetadata
+          tile = GeoJsonStreamingToMvt.vtToBytes poiConfig stream
+      checkWriteTile tile (checkNamedLayerWith "park_features" (checkForPointsInFeatures 1 expectedPoiMetadata expectedPoiPoints))
 
 mkGeoPoint :: Double -> Double -> Geospatial.GeoPositionWithoutCRS
 mkGeoPoint x y = Geospatial.GeoPointXY $ Geospatial.PointXY x y

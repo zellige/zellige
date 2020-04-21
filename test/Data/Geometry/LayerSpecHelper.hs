@@ -81,6 +81,15 @@ expectedPolygons = Sequence.fromList [
     ])
   ]
 
+expectedPoiPoints :: Sequence.Seq (Sequence.Seq VectorTileGeometry.Point)
+expectedPoiPoints = Sequence.fromList [
+    Sequence.fromList [VectorTileGeometry.Point 25 17],
+    Sequence.fromList [VectorTileGeometry.Point 26 19],
+    Sequence.fromList [VectorTileGeometry.Point 27 15],
+    Sequence.fromList [VectorTileGeometry.Point 60 10],
+    Sequence.fromList [VectorTileGeometry.Point 44 20],
+    Sequence.fromList [VectorTileGeometry.Point 23 49]]
+
 emptyMetadata :: LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val
 emptyMetadata = LazyHashMap.empty
 
@@ -111,6 +120,15 @@ expectedAllSupportedMetadataVals = LazyHashMap.fromList [
   ("bool_value", VectorTileTypes.B True),
   ("string_value", VectorTileTypes.St "ello")
   ]
+
+expectedPoiMetadata :: Sequence.Seq (LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val)
+expectedPoiMetadata = Sequence.fromList [
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "swing")],
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "water_fountain")],
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "slide")],
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "bathroom")],
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "tree")],
+  LazyHashMap.fromList [("poi", VectorTileTypes.St "bench")]]
 
 checkForUnknown :: Word -> LazyHashMap.HashMap ByteStringLazy.ByteString VectorTileTypes.Val -> VectorTileTypes.Layer -> IO ()
 checkForUnknown startId expectedMeta = checkForAllFeatures startId (Sequence.singleton expectedMeta) (Sequence.singleton $ Sequence.singleton VectorTileGeometry.Unknown) Sequence.empty Sequence.empty Sequence.empty
@@ -144,7 +162,9 @@ checkForAllFeatures startId expectedMetadatas seqUnknowns seqPoints seqLineStrin
       expectedLineStrs = Sequence.zipWith3 VectorTileTypes.Feature (ids seqLineStrings) expectedMetadatas seqLineStrings
       expectedPolys = Sequence.zipWith3 VectorTileTypes.Feature (ids seqPolygons) expectedMetadatas seqPolygons
   VectorTileTypes._unknowns layer `shouldBe` expectedUnknowns
-  VectorTileTypes._points layer `shouldBe` expectedPts
-  VectorTileTypes._linestrings layer `shouldBe` expectedLineStrs
-  VectorTileTypes._polygons layer `shouldBe` expectedPolys
+  sortFeatures (VectorTileTypes._points layer) `shouldBe` expectedPts
+  sortFeatures (VectorTileTypes._linestrings layer) `shouldBe` expectedLineStrs
+  sortFeatures (VectorTileTypes._polygons layer) `shouldBe` expectedPolys
 
+sortFeatures :: Sequence.Seq (VectorTileTypes.Feature gs) -> Sequence.Seq (VectorTileTypes.Feature gs)
+sortFeatures = Sequence.sortBy (\a b -> compare (VectorTileTypes._featureId a) (VectorTileTypes._featureId b))

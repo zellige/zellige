@@ -176,21 +176,7 @@ testReadFixtures =
     it "MVT test 043: A layer with six points that all share the same key but each has a unique value." $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/043/tile.mvt"
       shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (basicLayerChecks "park_features" 2 6))
-      let expectedPoints = Sequence.fromList [
-            Sequence.fromList [VectorTileGeometry.Point 25 17],
-            Sequence.fromList [VectorTileGeometry.Point 26 19],
-            Sequence.fromList [VectorTileGeometry.Point 27 15],
-            Sequence.fromList [VectorTileGeometry.Point 60 10],
-            Sequence.fromList [VectorTileGeometry.Point 44 20],
-            Sequence.fromList [VectorTileGeometry.Point 23 49]]
-          expectedMetadataVals = Sequence.fromList [
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "swing")],
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "water_fountain")],
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "slide")],
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "bathroom")],
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "tree")],
-            LazyHashMap.fromList [("poi", VectorTileTypes.St "bench")]]
-      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (checkForPointsInFeatures 1 expectedMetadataVals expectedPoints))
+      shouldBeSuccess layersOrErr (checkNamedLayerWith "park_features" (checkForPointsInFeatures 1 expectedPoiMetadata expectedPoiPoints))
     it "MVT test 044: Geometry field begins with a ClosePath command, which is invalid" $ do
       layersOrErr <- getLayers "./test/mvt-fixtures/fixtures/044/tile.mvt"
       Exception.evaluate layersOrErr `shouldThrow` errorCallContains "LineTo Requires 2 Paramters"
